@@ -231,6 +231,12 @@ extractRegion <- function(SampleTileObj,
   }
   parallel::stopCluster(cl)
 
+  #Check if there's a different number of rows in each index of allGroupsDF
+  if(length(unique(sapply(allGroupsDF, nrow))) > 1){
+    #Identify unique values 
+  }
+  
+
   names(allGroupsDF) <- names(allGroups)
 
   newMetadata <- SampleTileObj@metadata
@@ -242,6 +248,7 @@ extractRegion <- function(SampleTileObj,
   }
   newMetadata$Type <- Type1
 
+  # 
   countSE <- SummarizedExperiment::SummarizedExperiment(allGroupsDF,
     metadata = newMetadata
   )
@@ -391,7 +398,15 @@ averageSlidingBinCoverage <- function(iterList) {
 cleanDataFrame1 <- function(iterList) {
   group1 <- iterList[[1]]
   subGroupdf <- as.data.frame(group1)
-  subGroupdf$Groups <- rep(iterList[[2]], length(group1))
+  #Group by idx and take the weighted mean of each score
+  subGroupdf <- dplyr::group_by(subGroupdf, idx)
+  subGroupdf <- dplyr::summarize(subGroupdf, 
+                  seqnames = unique(seqnames),
+                  start= mean(min(start), max(end), na.rm = TRUE),
+                  score = weighted.mean(score, width, na.rm = TRUE))
+  subGroupdf <- dplyr::ungroup(subGroupdf)
+  subGroupdf <- dplyr::select(subGroupdf, -idx)
+  subGroupdf$Groups <- rep(iterList[[2]], nrow(subGroupdf))
 
   covdf <- subGroupdf[, c("seqnames", "start", "score", "Groups")]
   colnames(covdf) <- c("chr", "Locus", "Counts", "Groups")
