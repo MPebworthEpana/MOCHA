@@ -179,7 +179,7 @@ extractRegion <- function(SampleTileObj,
     if (verbose) {
       message(stringr::str_interp("Extracting coverage from cell population '${x}'"))
     }
-    Browser()
+    browser()
     # If the region is too large, bin the data.
     if (GenomicRanges::end(regionGRanges) - GenomicRanges::start(regionGRanges) > approxLimit) {
       iterList <- lapply(seq_along(subSamples), function(y) {
