@@ -211,7 +211,6 @@ extractRegion <- function(SampleTileObj,
     cellPopSubsampleCov
   })
 
-  browser()
   names(cellPopulation_Files) <- cellPopulations
   allGroups <- unlist(cellPopulation_Files)
 
@@ -419,7 +418,6 @@ cleanDataFrame2 <- function(iterList) {
   tmp <- plyranges::tile_ranges(group1, width = 1)
   tmp$score <- group1$score[tmp$partition]
   tmp$Groups <- rep(iterList[[2]], length(tmp))
-
 
   covdf <- as.data.frame(tmp)[, c("seqnames", "start", "score", "Groups")]
   colnames(covdf) <- c("chr", "Locus", "Counts", "Groups")
