@@ -157,7 +157,7 @@ extractRegion <- function(SampleTileObj,
     
     # Edge case: One or more samples are missing coverage for this cell population,
     # e.g. if a cell population only exists in one sample.
-    lapply(seq_along(subSamples), function(y) {
+    for(y in seq_along(subSamples)){
       if (!all(subSamples[[y]] %in% names(originalCovGRanges)) & !skipEmpty) {
         missingSamples <- paste(subSamples[[y]][!subSamples[[y]] %in% names(originalCovGRanges)], collapse = ", ")
         stop(stringr::str_interp(c(
@@ -174,12 +174,12 @@ extractRegion <- function(SampleTileObj,
         )))
         subSamples[[y]] = subSamples[[y]][subSamples[[y]] %in% names(originalCovGRanges)] # Remove the samples that are missing coverage
       }
-    })
+    }
 
     if (verbose) {
       message(stringr::str_interp("Extracting coverage from cell population '${x}'"))
     }
-    browser()
+   
     # If the region is too large, bin the data.
     if (GenomicRanges::end(regionGRanges) - GenomicRanges::start(regionGRanges) > approxLimit) {
       iterList <- lapply(seq_along(subSamples), function(y) {
@@ -211,6 +211,7 @@ extractRegion <- function(SampleTileObj,
     cellPopSubsampleCov
   })
 
+  browser()
   names(cellPopulation_Files) <- cellPopulations
   allGroups <- unlist(cellPopulation_Files)
 
