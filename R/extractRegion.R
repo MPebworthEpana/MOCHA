@@ -56,6 +56,7 @@ extractRegion <- function(SampleTileObj,
                           subGroups = NULL,
                           sampleSpecific = FALSE,
                           approxLimit = 100000,
+                          skipEmpty = TRUE,
                           binSize = 250,
                           sliding = NULL,
                           numCores = 1,
@@ -157,13 +158,21 @@ extractRegion <- function(SampleTileObj,
     # Edge case: One or more samples are missing coverage for this cell population,
     # e.g. if a cell population only exists in one sample.
     lapply(seq_along(subSamples), function(y) {
-      if (!all(subSamples[[y]] %in% names(originalCovGRanges))) {
+      if (!all(subSamples[[y]] %in% names(originalCovGRanges)) & !skipEmpty) {
         missingSamples <- paste(subSamples[[y]][!subSamples[[y]] %in% names(originalCovGRanges)], collapse = ", ")
         stop(stringr::str_interp(c(
           "There is no fragment coverage for cell population '${x}' in the ",
           "following samples in sample grouping '${names(subSamples)[y]}': ",
           "${missingSamples}"
         )))
+      }else if (!all(subSamples[[y]] %in% names(originalCovGRanges)) & skipEmpty) {
+        missingSamples <- paste(subSamples[[y]][!subSamples[[y]] %in% names(originalCovGRanges)], collapse = ", ")
+        warning(stringr::str_interp(c(
+          "There is no fragment coverage for cell population '${x}' in the ",
+          "following samples in sample grouping '${names(subSamples)[y]}': ",
+          "${missingSamples}"
+        )))
+        subSamples[[y]] = subSamples[[y]][subSamples[[y]] %in% names(originalCovGRanges)] # Remove the samples that are missing coverage
       }
     })
 
