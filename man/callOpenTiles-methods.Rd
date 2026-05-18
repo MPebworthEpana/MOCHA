@@ -105,9 +105,19 @@ callOpenTiles(
 )
 }
 \arguments{
-\item{ATACFragments}{an ArchR Project, or a GRangesList of fragments. Each
-GRanges in the GRanges list must have unique cell IDs in the column given
-by 'cellCol'.}
+\item{ATACFragments}{an ArchR Project, a Seurat object with a Signac
+ChromatinAssay (fragment paths in the assay), or a GRangesList of fragments.
+Two input formats are supported for non-ArchR GRangesList input:
+\itemize{
+  \item **Legacy:** each list element is named `CellPopulation#Sample`
+    (optional `__normalizationFactor` suffix), with mixed cell types already
+    split per sample.
+  \item **Sample-level:** each list element is named by sample ID (matching
+    `cellColData[[sampleColumn]]`), containing fragments from all cell types
+    in that sample. Cell populations are derived from `cellColData` using
+    `cellPopLabel` and `cellCol`.
+}
+Each GRanges must contain unique cell IDs in the column given by `cellCol`.}
 
 \item{cellColData}{A DataFrame containing cell-level metadata. This must
 contain both a column 'Sample' with unique sample IDs and the column
@@ -179,40 +189,5 @@ tileResults A MultiAssayExperiment object containing ranged data for
 \code{callOpenTiles} is the main peak-calling function in MOCHA
   that serves as a wrapper function to call peaks provided a set of fragment
   files and an ArchR Project for meta-data purposes
-}
-\examples{
-\dontrun{
-# Starting from an ArchR Project:
-tileResults <- MOCHA::callOpenTiles(
-  ArchRProj = myArchRProj,
-  cellPopLabel = "celltype_labeling",
-  cellPopulations = "CD4",
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
-  OrgDb = "org.Hs.eg.db",
-  numCores = 1
-)
-}
-\donttest{
-# Starting from GRangesList:
-if (
-  requireNamespace("BSgenome.Hsapiens.UCSC.hg19") &&
-  requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene") &&
-  requireNamespace("org.Hs.eg.db")
-) {
-  tiles <- MOCHA::callOpenTiles(
-    ATACFragments = MOCHA::exampleFragments,
-    cellColData = MOCHA::exampleCellColData,
-    blackList = MOCHA::exampleBlackList,
-    genome = "BSgenome.Hsapiens.UCSC.hg19",
-    TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
-    OrgDb = "org.Hs.eg.db",
-    outDir = tempdir(),
-    cellPopLabel = "Clusters",
-    cellPopulations = c("C2", "C5"),
-    numCores = 1
-  )
-}
-}
-
 }
 \keyword{core}

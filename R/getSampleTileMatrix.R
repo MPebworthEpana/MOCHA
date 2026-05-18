@@ -100,32 +100,34 @@ getSampleTileMatrix <- function(tileResults,
     list(MultiAssayExperiment::experiments(subTileResults)[[x]], sampleData, threshold, groupColumn, verbose)
   })
   cl <- parallel::makeCluster(numCores)
-  tilesByCellPop <- pbapply::pblapply(cl = cl, X = iterList, FUN = simplifiedConsensusTiles)
-  names(tilesByCellPop) <- names(subTileResults)
+  tryCatch({
+    tilesByCellPop <- pbapply::pblapply(cl = cl, X = iterList, FUN = simplifiedConsensusTiles)
+    names(tilesByCellPop) <- names(subTileResults)
 
-  rm(iterList)
-  errorMessages <- pbapply::pblapply(cl = cl, X = tilesByCellPop, FUN = extractErrorFromConsensusTiles)
-  names(errorMessages) <- names(subTileResults)
-  if (any(!is.na(errorMessages))) {
-    stop(
-      "Issues around thresholding and/or sample metadata. Please check user inputs, and attempt again",
-      "If there are too few valid samples for a given cell type, use the variable cellPopulations to run this function on a subset of cell types, ",
-      "Or, you can lower the threshold. ",
-      "The following cell types were impacted:",
-      paste(names(errorMessages)[!is.na(errorMessages)], collapse = ", ")
-    )
-  }
-  allTiles <- base::sort(unique(do.call("c", tilesByCellPop)))
-  if (verbose) {
-    message(stringr::str_interp("Generating sample-tile matrix across all populations."))
-  }
-  # consensusTiles is used to  extract rows (tiles) from this matrix
-  iterList <- lapply(seq_along(MultiAssayExperiment::experiments(subTileResults)), function(x) {
-    list(MultiAssayExperiment::experiments(subTileResults)[[x]], allTiles)
+    rm(iterList)
+    errorMessages <- pbapply::pblapply(cl = cl, X = tilesByCellPop, FUN = extractErrorFromConsensusTiles)
+    names(errorMessages) <- names(subTileResults)
+    if (any(!is.na(errorMessages))) {
+      stop(
+        "Issues around thresholding and/or sample metadata. Please check user inputs, and attempt again",
+        "If there are too few valid samples for a given cell type, use the variable cellPopulations to run this function on a subset of cell types, ",
+        "Or, you can lower the threshold. ",
+        "The following cell types were impacted:",
+        paste(names(errorMessages)[!is.na(errorMessages)], collapse = ", ")
+      )
+    }
+    allTiles <- base::sort(unique(do.call("c", tilesByCellPop)))
+    if (verbose) {
+      message(stringr::str_interp("Generating sample-tile matrix across all populations."))
+    }
+    iterList <- lapply(seq_along(MultiAssayExperiment::experiments(subTileResults)), function(x) {
+      list(MultiAssayExperiment::experiments(subTileResults)[[x]], allTiles)
+    })
+    sampleTileIntensityMatList <- pbapply::pblapply(cl = cl, X = iterList, FUN = simplifiedSampleTile)
+    names(sampleTileIntensityMatList) <- names(subTileResults)
+  }, finally = {
+    try(parallel::stopCluster(cl), silent = TRUE)
   })
-  sampleTileIntensityMatList <- pbapply::pblapply(cl = cl, X = iterList, FUN = simplifiedSampleTile)
-  names(sampleTileIntensityMatList) <- names(subTileResults)
-  parallel::stopCluster(cl)
   # Order sampleData rows to match the same order as the columns
   maxMat <- which.max(lapply(sampleTileIntensityMatList, ncol))
   colOrder <- colnames(sampleTileIntensityMatList[[maxMat]])

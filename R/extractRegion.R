@@ -65,15 +65,7 @@ extractRegion <- function(SampleTileObj,
 
   cellNames <- names(SummarizedExperiment::assays(SampleTileObj))
   metaFile <- SummarizedExperiment::colData(SampleTileObj)
-  outDir <- SampleTileObj@metadata$Directory
-
-  if (is.na(outDir)) {
-    stop("Missing coverage file directory. SampleTileObj$metadata must contain 'Directory'.")
-  }
-
-  if (!file.exists(outDir)) {
-    stop("Directory given by SampleTileObj@metadata$Directory does not exist.")
-  }
+  outDir <- .validateCoverageDirectory(SampleTileObj, objectName = "SampleTileObj")
 
   if (is.character(region)) {
 
@@ -87,12 +79,7 @@ extractRegion <- function(SampleTileObj,
 
     
     
-  if (all(toupper(cellNames) == "COUNTS")) {
-    stop(
-      "The only assay in the SummarizedExperiment is Counts. The names of assays must reflect cell types,",
-      " such as those in the Summarized Experiment output of getSampleTileMatrix."
-    )
-  }
+  .requireCellPopulationAssays(cellNames)
 
   if (all(toupper(cellPopulations) == "ALL")) {
     cellPopulations <- cellNames
@@ -101,24 +88,9 @@ extractRegion <- function(SampleTileObj,
     stop("Some or all cell populations provided are not found.")
   }
 
-  # Pull out a list of samples by group.
-
-  if (!is.null(subGroups) & !is.null(groupColumn)) {
-    # If the user defined a list of subgroup(s) within the groupColumn from the metadata, then it subsets to just those samples
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-    names(subSamples) <- subGroups
-  } else if (!is.null(groupColumn)) {
-
-    # If no subGroup defined, then it'll form a list of samples across all labels within the groupColumn
-    subGroups <- unique(metaFile[, groupColumn])
-
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-  } else {
-
-    # If neither groupColumn nor subGroup is defined, then it forms one list of all sample names
-    subGroups <- "All"
-    subSamples <- list("All" = metaFile[, "Sample"])
-  }
+  grouping <- .prepSampleTileGrouping(metaFile, groupColumn, subGroups)
+  subGroups <- grouping$subGroups
+  subSamples <- grouping$subSamples
 
   # Determine if binning is needed to simplify things
   if (GenomicRanges::end(regionGRanges) - GenomicRanges::start(regionGRanges) > approxLimit) {
@@ -142,17 +114,8 @@ extractRegion <- function(SampleTileObj,
   # Pull up the cell types of interest, and filter for samples and subset down to region of interest
   cellPopulation_Files <- lapply(cellPopulations, function(x) {
 
-    # Pull up coverage files
-    originalCovGRanges <- readRDS(paste(outDir, "/", x, "_CoverageFiles.RDS", sep = ""))
-    if(type & 'Accessibility' %in% names(originalCovGRanges)){
-     originalCovGRanges <- originalCovGRanges[['Accessibility']]
-    }else if (type & !'Accessibility' %in% names(originalCovGRanges)){
-      originalCovGRanges <- originalCovGRanges
-    }else if (!type & 'Accessibility' %in% names(originalCovGRanges)){
-      originalCovGRanges <- originalCovGRanges[['Insertions']]
-    }else{
-        stop('Error around reading coverage files. Check that coverage files are not corrupted.')
-    }
+    coverageBundle <- .readCoverageBundle(outDir, x)
+    originalCovGRanges <- .selectCoverageFromBundle(coverageBundle, coverage = type)
     
     
     # Edge case: One or more samples are missing coverage for this cell population,
@@ -288,23 +251,6 @@ subsetBPCoverage <- function(iterList) {
   mergedCounts <- plyranges::compute_coverage(mergedCounts, weight = mergedCounts$score / sampleCount)
   mergedCounts <- plyranges::join_overlap_intersect(mergedCounts, iterList[[1]])
 
-  return(mergedCounts)
-}
-
-# Generates average single basepair coverage for a given region
-averageBPCoverage <- function(iterList) {
-  regionGRanges <- iterList[[1]]
-  sampleCount <- length(iterList[[2]])
-  
-  filterCounts <- lapply(1:sampleCount, function(z) {
-    plyranges::join_overlap_intersect(iterList[[2]][[z]], regionGRanges)
-  })
-  
-  mergedCounts <- IRanges::stack(methods::as(filterCounts, "GRangesList"))
-  mergedCounts <- plyranges::join_overlap_intersect(mergedCounts, regionGRanges)
-  mergedCounts <- plyranges::compute_coverage(mergedCounts, weight = mergedCounts$score / sampleCount)
-  mergedCounts <- plyranges::join_overlap_intersect(mergedCounts, regionGRanges)
-  
   return(mergedCounts)
 }
 

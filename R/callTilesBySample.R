@@ -117,7 +117,7 @@ callTilesBySample <- function(blackList,
 #'
 
 simplifiedTilesBySample <- function(x) {
-  callTilesBySample(
+  .callWithPackedArgs(callTilesBySample, list(
     blackList = x[[1]],
     returnAllTiles = TRUE,
     totalFrags = length(x[[2]]),
@@ -125,5 +125,5 @@ simplifiedTilesBySample <- function(x) {
     cellCol = x[[3]],
     verbose = x[[4]],
     StudypreFactor = x[[5]]
-  )
+  ))
 }

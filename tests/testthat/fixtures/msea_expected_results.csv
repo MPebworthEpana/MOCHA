@@ -1,0 +1,3 @@
+ligand,adjp_val,PercentSigTF,PercInNicheNet,p_val
+TGFB1,0.0123,0.4,0.25,0.001
+VEGFA,0.0456,0.3,0.2,0.01

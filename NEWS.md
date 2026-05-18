@@ -1,3 +1,8 @@
+# MOCHA (development version)
+* Internal refactor to reduce duplicated helper logic across coverage extraction,
+  export, motif footprinting, and co-accessibility workflows. No intended
+  user-facing behavior changes.
+
 # MOCHA 1.1.0
 * New Functions:
   - Sharing MOCHA objects between file systems

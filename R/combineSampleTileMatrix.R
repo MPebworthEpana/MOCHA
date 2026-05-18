@@ -63,46 +63,58 @@ combineSampleTileMatrix <- function(SampleTileObj,
   cellTypeLabelList <- Var1 <- NULL
 
   summarizedData <- S4Vectors::metadata(SampleTileObj)$summarizedData
-  cellCounts <- as.data.frame(
+  .pivot_counts_to_sample_keys <- function(countsWide) {
+    countsWide$CellPop <- rownames(countsWide)
+    rownames(countsWide) <- NULL
+    countsLong <- tidyr::pivot_longer(
+      countsWide,
+      cols = -CellPop,
+      names_to = "bioSample",
+      values_to = "countValue"
+    )
+    countsLong$Sample <- gsub(" ", "_", paste(countsLong$CellPop, countsLong$bioSample, sep = "__"))
+    countsLong
+  }
+
+  cellCountsWide <- as.data.frame(
     SummarizedExperiment::assays(summarizedData)[["CellCounts"]]
   )
-  cellTypes <- rownames(cellCounts)
-  cellCounts <- tidyr::pivot_longer(
-    cellCounts,
-    cols = colnames(cellCounts),
-    names_to = "Sample",
-    values_to = "CellCounts"
-  )
-  cellCounts <- dplyr::mutate(
-    cellCounts,
-    Sample = rownames(allSampleData)
-  )
+  cellCountsLong <- .pivot_counts_to_sample_keys(cellCountsWide)
+  cellCountsLong <- dplyr::rename(cellCountsLong, CellCounts = countValue)
 
-  fragCounts <- as.data.frame(
+  fragCountsWide <- as.data.frame(
     SummarizedExperiment::assays(summarizedData)[["FragmentCounts"]]
   )
-  cellTypes <- rownames(fragCounts)
-  fragCounts <- tidyr::pivot_longer(
-    fragCounts,
-    cols = colnames(fragCounts),
-    names_to = "Sample",
-    values_to = "FragmentCounts"
-  )
-  fragCounts <- dplyr::mutate(
-    fragCounts,
-    Sample = rownames(allSampleData)
-  )
+  fragCountsLong <- .pivot_counts_to_sample_keys(fragCountsWide)
+  fragCountsLong <- dplyr::rename(fragCountsLong, FragmentCounts = countValue)
 
-  # The sample column now is actually CellType_Sample, unlike before
+  if (anyDuplicated(cellCountsLong$Sample) > 0 || anyDuplicated(fragCountsLong$Sample) > 0) {
+    stop("Duplicate CellType__Sample keys found while joining count metadata.")
+  }
+
+  missingKeys <- setdiff(allSampleData$Sample, cellCountsLong$Sample)
+  if (length(missingKeys) > 0) {
+    stop(
+      "Could not map all combined sample keys to CellCounts metadata. Missing: ",
+      paste(missingKeys, collapse = ", ")
+    )
+  }
+
   allSampleData <- dplyr::left_join(
-    allSampleData, cellCounts,
+    allSampleData,
+    dplyr::select(cellCountsLong, Sample, CellCounts),
     by = "Sample"
   )
 
   allSampleData <- dplyr::left_join(
-    allSampleData, fragCounts,
+    allSampleData,
+    dplyr::select(fragCountsLong, Sample, FragmentCounts),
     by = "Sample"
   )
+
+  if (nrow(allSampleData) != length(newSamplesNames)) {
+    stop("Count metadata join changed the number of combined samples.")
+  }
 
   # Artificially set all the cell type columns in rowRanges to TRUE, incase of later subsetting.
   allRanges <- SummarizedExperiment::rowRanges(SampleTileObj)

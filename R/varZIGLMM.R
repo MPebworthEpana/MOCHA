@@ -76,8 +76,6 @@ varZIGLMM <- function(TSAM_Object,
     newObj <- combineSampleTileMatrix(subsetMOCHAObject(TSAM_Object, subsetBy = "celltype", groupList = cellPopulation, subsetPeaks = TRUE))
   }
 
-    browser()
-
   modelingData <- log2(SummarizedExperiment::assays(newObj)[["counts"]] + 1)
   MetaDF <- as.data.frame(SummarizedExperiment::colData(newObj))
 

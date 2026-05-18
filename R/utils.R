@@ -1,10 +1,241 @@
+# Internal helpers for SampleTileObject coverage workflows
+.resolveSubSamples <- function(metaFile, groupColumn = NULL, subGroups = NULL) {
+  if (!is.null(subGroups) & !is.null(groupColumn)) {
+    subSamples <- lapply(subGroups, function(x) {
+      metaFile[metaFile[, groupColumn] %in% x, "Sample"]
+    })
+    names(subSamples) <- subGroups
+    subGroupsOut <- subGroups
+  } else if (!is.null(groupColumn)) {
+    subGroupsOut <- unique(metaFile[, groupColumn])
+    subSamples <- lapply(subGroupsOut, function(x) {
+      metaFile[metaFile[, groupColumn] %in% x, "Sample"]
+    })
+    names(subSamples) <- subGroupsOut
+  } else {
+    subGroupsOut <- "All"
+    subSamples <- list("All" = metaFile[, "Sample"])
+  }
+
+  list(subGroups = subGroupsOut, subSamples = subSamples)
+}
+
+.validateCoverageDirectory <- function(object, objectName = "SampleTileObj") {
+  outDir <- object@metadata$Directory
+  if (is.na(outDir)) {
+    stop(
+      "Missing coverage file directory. ",
+      objectName,
+      "$metadata must contain 'Directory'."
+    )
+  }
+  if (!file.exists(outDir)) {
+    stop(
+      "Directory given by ",
+      objectName,
+      "@metadata$Directory does not exist."
+    )
+  }
+  outDir
+}
+
+.requireCellPopulationAssays <- function(cellNames) {
+  if (all(toupper(cellNames) == "COUNTS")) {
+    stop(
+      "The only assay in the SummarizedExperiment is Counts. The names of assays must reflect cell types,",
+      " such as those in the Summarized Experiment output of getSampleTileMatrix."
+    )
+  }
+}
+
+.readCoverageBundle <- function(outDir, cellPop) {
+  covFile <- file.path(outDir, paste0(cellPop, "_CoverageFiles.RDS"))
+  if (!file.exists(covFile)) {
+    stop(
+      "Coverage file ",
+      covFile,
+      " could not be found."
+    )
+  }
+  readRDS(covFile)
+}
+
+.selectCoverageFromBundle <- function(bundle, coverage = TRUE) {
+  if (coverage) {
+    if ("Accessibility" %in% names(bundle)) {
+      bundle[["Accessibility"]]
+    } else {
+      bundle
+    }
+  } else if ("Insertions" %in% names(bundle)) {
+    bundle[["Insertions"]]
+  } else {
+    stop("Error around reading coverage files. Check that coverage files are not corrupted.")
+  }
+}
+
+.selectAccessibilityCoverage <- function(bundle) {
+  if ("Accessibility" %in% names(bundle)) {
+    bundle$Accessibility
+  } else {
+    bundle
+  }
+}
+
+.prepSampleTileGrouping <- function(metaFile, groupColumn = NULL, subGroups = NULL) {
+  .resolveSubSamples(metaFile, groupColumn, subGroups)
+}
+
+.loadInsertionBias <- function(SampleTileObj, normTn5 = TRUE) {
+  if (!normTn5) {
+    return(list(insertBias = NULL, genome = NULL, genome_db = NULL))
+  }
+
+  if (any(grepl("InsertionBias", names(SampleTileObj@metadata)))) {
+    genome_db <- SampleTileObj@metadata$Genome
+    genome <- getAnnotationDbFromInstalledPkgname(dbName = genome_db, type = "BSgenome")
+    insertBias <- SampleTileObj@metadata$InsertionBias
+    insertBias <- insertBias[!is.na(insertBias[, "Norm"]), ]
+    list(insertBias = insertBias, genome = genome, genome_db = genome_db)
+  } else {
+    stop("Attempting to normalize by Tn5 insertion bias, but no bias calculated. Please run addInsertionBias.")
+  }
+}
+
+.callWithPackedArgs <- function(fn, packed) {
+  do.call(fn, packed)
+}
+
+# Co-accessibility internal helpers
+.normalizeTilePairs <- function(fullObj, tile1, tile2) {
+  if (length(tile1) != length(tile2)) {
+    stop("tile1 and tile2 must be the same length.")
+  }
+
+  if (is.character(tile1) && is.character(tile2)) {
+    nTile1 <- match(tile1, rownames(fullObj))
+    nTile2 <- match(tile2, rownames(fullObj))
+  } else if (is.numeric(tile1) && is.numeric(tile2)) {
+    nTile1 <- tile1
+    nTile2 <- tile2
+    tile1 <- rownames(fullObj)[nTile1]
+    tile2 <- rownames(fullObj)[nTile2]
+  } else {
+    stop("tile1 and tile 2 must both be either numbers (indices) or strings")
+  }
+
+  list(tile1 = tile1, tile2 = tile2, nTile1 = nTile1, nTile2 = nTile2)
+}
+
+.validateBackNumber <- function(backNumber, fullObj, tile1, tile2, verbose = TRUE) {
+  if (!is.null(dim(backNumber))) {
+    return(backNumber)
+  }
+
+  if (backNumber >= length(rownames(fullObj)) - length(unique(c(tile1, tile2)))) {
+    backNumber <- length(rownames(fullObj)) - length(unique(c(tile1, tile2)))
+    if (verbose) {
+      warning("backNumber too high. Reset to all background combinations.")
+    }
+  } else if (backNumber <= 10) {
+    stop("backNumber too low (<=10). We recommend 1000.")
+  }
+
+  backNumber
+}
+
+.generateRandomBackgroundPairs <- function(accMat, tile1, tile2, backNumber, verbose = TRUE) {
+  if (verbose) {
+    message("Finding background peak pairs")
+  }
+
+  backGroundTiles <- rownames(accMat)[!rownames(accMat) %in% c(tile1, tile2)]
+  backgroundCombos <- data.frame(
+    Tile1 = sample(backGroundTiles, backNumber),
+    Tile2 = sample(backGroundTiles, backNumber)
+  )
+  backgroundCombos[backgroundCombos[, 1] != backgroundCombos[, 2], , drop = FALSE]
+}
+
+.parseUserBackgroundPairs <- function(backNumber, fullObj, verbose = TRUE) {
+  if (verbose) {
+    message("Using user-defined background pairs")
+  }
+
+  backNumber <- as.data.frame(backNumber)
+  if (!all(c("Tile1", "Tile2") %in% colnames(backNumber))) {
+    stop("User-defined background pairs requires a column for Tile1 and Tile2")
+  } else if (!all(grepl(":", c(backNumber[, "Tile1"], backNumber[, "Tile2"])) &
+    grepl("-", backNumber[, "Tile1"], backNumber[, "Tile2"]))) {
+    stop("User-defined background pairs must be in the form ChrX:100-2000")
+  } else if (!all(c(backNumber[, "Tile1"], backNumber[, "Tile2"]) %in% rownames(fullObj))) {
+    stop("User-defined background pairs includes regions not found within the sample tile accessibility matrix.")
+  }
+
+  backgroundCombos <- as.data.frame(backNumber)[, c("Tile1", "Tile2")]
+
+  if (sum(backgroundCombos[, "Tile1"] != backgroundCombos[, "Tile2"]) < 10) {
+    stop("User-defined background pairs are fewer than 10. Please provide a larger background.")
+  }
+
+  backgroundCombos[backgroundCombos[, "Tile1"] != backgroundCombos[, "Tile2"], , drop = FALSE]
+}
+
+.resolveBackgroundPairs <- function(backNumber, fullObj, tile1, tile2, verbose = TRUE) {
+  if (is.null(dim(backNumber))) {
+    .generateRandomBackgroundPairs(
+      accMat = SummarizedExperiment::assays(fullObj)[[1]],
+      tile1 = tile1,
+      tile2 = tile2,
+      backNumber = backNumber,
+      verbose = verbose
+    )
+  } else if (dim(backNumber)[2] > 1) {
+    .parseUserBackgroundPairs(backNumber, fullObj, verbose = verbose)
+  } else {
+    stop(paste(
+      "Incorrect backNumber provided. Please provider either a number, or a data.frame",
+      "with columns entitled Tile1 and Tile2, describing pairs to test.",
+      "The tile names should be in the format ChrX:100-2000."
+    ))
+  }
+}
+
+.computeCoAccessibilityPValues <- function(foreGround, backGround, verbose = TRUE) {
+  if (verbose) {
+    message("Generating p-values.")
+  }
+
+  greatList <- unlist(pbapply::pblapply(
+    foreGround$Correlation[which(foreGround$Correlation > 0)],
+    function(x) {
+      sum(x > backGround$Correlation)
+    },
+    cl = 1
+  )) / length(backGround$Correlation)
+
+  lesserList <- unlist(pbapply::pblapply(
+    foreGround$Correlation[which(foreGround$Correlation < 0)],
+    function(x) {
+      sum(x < backGround$Correlation)
+    },
+    cl = 1
+  )) / length(backGround$Correlation)
+
+  foreGround$pValues <- rep(NA, length(foreGround$Correlation))
+  foreGround$pValues[which(foreGround$Correlation > 0)] <- 1 - greatList
+  foreGround$pValues[which(foreGround$Correlation < 0)] <- 1 - lesserList
+  foreGround
+}
+
+
 # Function to get sample-level metadata,
 # from an ArchR project's colData
 sampleDataFromCellColData <- function(cellColData, sampleLabel) {
   if (!(sampleLabel %in% colnames(cellColData))) {
     stop(paste(
-      "`sampleLabel` must present in your ArchR Project's cellColData",
-      "Check `names(getCellColData(ArchRProj)` for possible sample columns."
+      "`sampleLabel` must be present in cellColData",
+      "Check colnames(cellColData) for possible sample columns."
     ))
   }
 
@@ -387,32 +618,58 @@ getCellTypeTiles <- function(object, cellType) {
 #'
 #' @export
 #' @keywords utils
-getSampleCellTypeMetadata <- function(object) {
-  # Check if the object has Sample-CellType-level metadata stored in the metadata slot.
-  if (all(c("FragmentCounts", "CellCounts") %in% names(object@metadata))) {
-
-    sampleData <- SummarizedExperiment::colData(object)
-
-    fragCounts <- object@metadata$FragmentCounts
-    fragMat <- as.matrix(t(fragCounts[match(rownames(sampleData), rownames(fragCounts)), ]))
-    rownames(fragMat) <- colnames(fragCounts)
-
-    cellCounts <- object@metadata$CellCounts
-    cellMat <- as.matrix(t(cellCounts[match(rownames(sampleData), rownames(cellCounts)), ]))
-    rownames(cellMat) <- colnames(cellMat)
-
-    if (any(!dim(cellMat) %in% dim(cellCounts))) {
-      stop("Error in processing Sample-Cell type metadata. Some Samples may be missing. Please correct Sample-Cell type metadata manually or regenerate the object.")
+.get_sample_celltype_count_tables <- function(object) {
+  if (!is.null(object@metadata$summarizedData)) {
+    summarizedData <- object@metadata$summarizedData
+    assayNames <- SummarizedExperiment::assayNames(summarizedData)
+    if (all(c("CellCounts", "FragmentCounts") %in% assayNames)) {
+      return(list(
+        CellCounts = as.data.frame(SummarizedExperiment::assays(summarizedData)[["CellCounts"]]),
+        FragmentCounts = as.data.frame(SummarizedExperiment::assays(summarizedData)[["FragmentCounts"]])
+      ))
     }
-
-    metaList <- list(fragMat, cellMat)
-    names(metaList) <- c("FragmentCounts", "CellCounts")
-
-    SE <- SummarizedExperiment::SummarizedExperiment(metaList, colData = sampleData)
-    return(SE)
-  } else {
-    stop("Object does not appear to have Sample-Celltype metadata.")
   }
+
+  if (all(c("FragmentCounts", "CellCounts") %in% names(object@metadata))) {
+    return(list(
+      CellCounts = object@metadata$CellCounts,
+      FragmentCounts = object@metadata$FragmentCounts
+    ))
+  }
+
+  NULL
+}
+
+getSampleCellTypeMetadata <- function(object) {
+  countTables <- .get_sample_celltype_count_tables(object)
+  if (is.null(countTables)) {
+    stop(
+      "Object does not contain Sample-Celltype metadata. ",
+      "Expected CellCounts and FragmentCounts in metadata$summarizedData ",
+      "or legacy top-level metadata slots."
+    )
+  }
+
+  sampleData <- SummarizedExperiment::colData(object)
+  bioSamples <- rownames(sampleData)
+  cellCounts <- countTables$CellCounts
+  fragCounts <- countTables$FragmentCounts
+
+  if (!all(bioSamples %in% colnames(cellCounts)) ||
+      !all(bioSamples %in% colnames(fragCounts))) {
+    stop(
+      "Sample IDs in colData do not match columns in CellCounts/FragmentCounts. ",
+      "Regenerate the MOCHA object or align sample metadata."
+    )
+  }
+
+  # Count tables are cell population (row) by biological sample (column).
+  cellMat <- as.matrix(cellCounts[, bioSamples, drop = FALSE])
+  fragMat <- as.matrix(fragCounts[, bioSamples, drop = FALSE])
+
+  metaList <- list(FragmentCounts = fragMat, CellCounts = cellMat)
+  SE <- SummarizedExperiment::SummarizedExperiment(metaList, colData = sampleData)
+  return(SE)
 }
 
 

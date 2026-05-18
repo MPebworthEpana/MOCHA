@@ -40,19 +40,11 @@ motifFootprint <- function(SampleTileObj,
   . <- idx <- score <- width <- Group <- Sample <- Location <- Index <- NULL
   cellNames <- SummarizedExperiment::assayNames(SampleTileObj)
   metaFile <- SummarizedExperiment::colData(SampleTileObj)
-  outDir <- SampleTileObj@metadata$Directory
+  outDir <- .validateCoverageDirectory(SampleTileObj, objectName = "SampleTileObj")
 
-  if (is.na(outDir)) {
-    stop("Missing coverage file directory. SampleTileObj$metadata must contain 'Directory'.")
-  }
-    
   #Make sure the window size is evenly divisible by 2. 
   if(windowSize/2 != round(windowSize/2)){
       windowSize = round(windowSize/2)*2
-  }
-
-  if (!file.exists(outDir)) {
-    stop("Directory given by SampleTileObj@metadata$Directory does not exist.")
   }
     
   if (all(toupper(cellPopulations) == "ALL")) {
@@ -105,48 +97,17 @@ motifFootprint <- function(SampleTileObj,
       }
   }
 
-  if (all(toupper(cellNames) == "COUNTS")) {
-    stop(
-      "The only assay in the SummarizedExperiment is Counts. The names of assays must reflect cell types,",
-      " such as those in the Summarized Experiment output of getSampleTileMatrix."
-    )
-  }
-         
-  # Pull out a list of samples by group.
-  if (!is.null(subGroups) & !is.null(groupColumn)) {
-    # If the user defined a list of subgroup(s) within the groupColumn from the metadata, then it subsets to just those samples
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-    names(subSamples) <- subGroups
-  } else if (!is.null(groupColumn)) {
+  .requireCellPopulationAssays(cellNames)
 
-    # If no subGroup defined, then it'll form a list of samples across all labels within the groupColumn
-    subGroups <- unique(metaFile[, groupColumn])
+  grouping <- .prepSampleTileGrouping(metaFile, groupColumn, subGroups)
+  subGroups <- grouping$subGroups
+  subSamples <- grouping$subSamples
 
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-  } else {
+  biasContext <- .loadInsertionBias(SampleTileObj, normTn5 = normTn5)
+  genome_db <- biasContext$genome_db
+  genome <- biasContext$genome
+  insertBias <- biasContext$insertBias
 
-    # If neither groupColumn nor subGroup is defined, then it forms one list of all sample names
-    subGroups <- "All"
-    subSamples <- list("All" = metaFile[, "Sample"])
-  }
-                    
-  ### Verify that they've calculate insertion bias if they want to normalize by Insertion bias
-  ### Calculate bias. 
-  if(normTn5 & any(grepl('InsertionBias', names(SampleTileObj@metadata)))){
-      ## Pull in genome database
-      genome_db = SampleTileObj@metadata$Genome
-      
-      genome <- getAnnotationDbFromInstalledPkgname(dbName = genome_db, type = 'BSgenome')
-      insertBias = SampleTileObj@metadata$InsertionBias
-      #Remove any NAs that might be there
-      insertBias = insertBias[!is.na(insertBias[,'Norm']),]
-      
-  }else if(normTn5 & !any(grepl('InsertionBias', names(SampleTileObj@metadata)))){
-      
-      stop('Attempting to normalize by Tn5 insertion bias, but no bias calculated. Please run addInsertionBias.')
-      
-  }
-                      
   ## Create experimentList - this will be alist of matrices with insertions for each location/sample across positions.    
   experimentList1 = list()
   colData1_tmp = list()
@@ -158,14 +119,8 @@ motifFootprint <- function(SampleTileObj,
       message(stringr::str_interp("Extracting insertions from cell population '${x}'"))
     }
       
-    # Pull up insertions files
-    originalCovGRanges <- readRDS(paste(outDir, "/", x, "_CoverageFiles.RDS", sep = ""))
-    if ('Insertions' %in% names(originalCovGRanges)){
-      originalInsertions <- originalCovGRanges[['Insertions']]
-      rm(originalCovGRanges)
-    }else{
-      stop('Error around reading insertions files. Check that coverage/insertions files are not corrupted.')
-    }
+    coverageBundle <- .readCoverageBundle(outDir, x)
+    originalInsertions <- .selectCoverageFromBundle(coverageBundle, coverage = FALSE)
       
     # Edge case: One or more samples are missing coverage for this cell population,
     # e.g. if a cell population only exists in one sample.
@@ -348,14 +303,8 @@ addInsertionBias <- function(SampleTileObj, numCores = 1, verbose = TRUE){
           message(stringr::str_interp("Extracting insertions from cell population '${x}'"))
         }
 
-        # Pull up insertions files
-        originalCovGRanges <- readRDS(paste(outDir, "/", x, "_CoverageFiles.RDS", sep = ""))
-        if ('Insertions' %in% names(originalCovGRanges)){
-          originalInsertions <- originalCovGRanges[['Insertions']]
-          rm(originalCovGRanges)
-        }else{
-         stop('Error around reading insertions files. Check that coverage/insertions files are not corrupted.')
-        }
+        coverageBundle <- .readCoverageBundle(outDir, x)
+        originalInsertions <- .selectCoverageFromBundle(coverageBundle, coverage = FALSE)
         
         insertList = lapply(originalInsertions, function(XX){
                     if(!is.null(XX)){
@@ -745,15 +694,7 @@ findFootprints <- function(SampleTileObj,
   . <- idx <- score <- Group <- Sample <- Location <- pval <- pval_adj <- NULL
   cellNames <- SummarizedExperiment::assayNames(SampleTileObj)
   metaFile <- SummarizedExperiment::colData(SampleTileObj)
-  outDir <- SampleTileObj@metadata$Directory
-
-  if (is.na(outDir)) {
-    stop("Missing coverage file directory. SampleTileObj$metadata must contain 'Directory'.")
-  }
-    
-  if (!file.exists(outDir)) {
-    stop("Directory given by SampleTileObj@metadata$Directory does not exist.")
-  }
+  outDir <- .validateCoverageDirectory(SampleTileObj, objectName = "SampleTileObj")
     
   if (all(toupper(cellPopulations) == "ALL")) {
     cellPopulations <- cellNames
@@ -768,48 +709,17 @@ findFootprints <- function(SampleTileObj,
     }
   }
     
-  if (all(toupper(cellNames) == "COUNTS")) {
-    stop(
-      "The only assay in the SummarizedExperiment is Counts. The names of assays must reflect cell types,",
-      " such as those in the Summarized Experiment output of getSampleTileMatrix."
-    )
-  }
-         
-  # Pull out a list of samples by group.
-  if (!is.null(subGroups) & !is.null(groupColumn)) {
-    # If the user defined a list of subgroup(s) within the groupColumn from the metadata, then it subsets to just those samples
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-    names(subSamples) <- subGroups
-  } else if (!is.null(groupColumn)) {
+  .requireCellPopulationAssays(cellNames)
 
-    # If no subGroup defined, then it'll form a list of samples across all labels within the groupColumn
-    subGroups <- unique(metaFile[, groupColumn])
+  grouping <- .prepSampleTileGrouping(metaFile, groupColumn, subGroups)
+  subGroups <- grouping$subGroups
+  subSamples <- grouping$subSamples
 
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-  } else {
+  biasContext <- .loadInsertionBias(SampleTileObj, normTn5 = normTn5)
+  genome_db <- biasContext$genome_db
+  genome <- biasContext$genome
+  insertBias <- biasContext$insertBias
 
-    # If neither groupColumn nor subGroup is defined, then it forms one list of all sample names
-    subGroups <- "All"
-    subSamples <- list("All" = metaFile[, "Sample"])
-  }
-                    
-  ### Verify that they've calculate insertion bias if they want to normalize by Insertion bias
-  ### Calculate bias. 
-  if(normTn5 & any(grepl('InsertionBias', names(SampleTileObj@metadata)))){
-      ## Pull in genome database
-      genome_db = SampleTileObj@metadata$Genome
-      
-      genome <- getAnnotationDbFromInstalledPkgname(dbName = genome_db, type = 'BSgenome')
-      insertBias = SampleTileObj@metadata$InsertionBias
-      #Remove any NAs that might be there
-      insertBias = insertBias[!is.na(insertBias[,'Norm']),]
-      
-  }else if(normTn5 & !any(grepl('InsertionBias', names(SampleTileObj@metadata)))){
-      
-      stop('Attempting to normalize by Tn5 insertion bias, but no bias calculated. Please run addInsertionBias.')
-      
-  }
-                      
   ## Create experimentList - this will be alist of matrices with insertions for each location/sample across positions.    
   experimentList1 = list()
 
@@ -866,14 +776,8 @@ findFootprints <- function(SampleTileObj,
       message(stringr::str_interp("Extracting insertions from cell population '${x}'"))
     }
       
-    # Pull up insertions files
-    originalCovGRanges <- readRDS(paste(outDir, "/", x, "_CoverageFiles.RDS", sep = ""))
-    if ('Insertions' %in% names(originalCovGRanges)){
-      originalInsertions <- originalCovGRanges[['Insertions']]
-      rm(originalCovGRanges)
-    }else{
-      stop('Error around reading insertions files. Check that coverage/insertions files are not corrupted.')
-    }
+    coverageBundle <- .readCoverageBundle(outDir, x)
+    originalInsertions <- .selectCoverageFromBundle(coverageBundle, coverage = FALSE)
       
     # Edge case: One or more samples are missing coverage for this cell population,
     # e.g. if a cell population only exists in one sample.

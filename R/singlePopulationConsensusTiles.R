@@ -113,18 +113,13 @@ singlePopulationConsensusTiles <- function(peaksExperiment,
 #'
 
 simplifiedConsensusTiles <- function(ref) {
-  experiments <- ref[[1]]
-  sampleData <- ref[[2]]
-  threshold <- ref[[3]]
-  groupColumn <- ref[[4]]
-  verbose <- ref[[5]]
-  singlePopulationConsensusTiles(
-    experiments,
-    sampleData,
-    threshold,
-    groupColumn,
-    verbose = verbose
-  )
+  .callWithPackedArgs(singlePopulationConsensusTiles, list(
+    peaksExperiment = ref[[1]],
+    sampleData = ref[[2]],
+    threshold = ref[[3]],
+    groupColumn = ref[[4]],
+    verbose = ref[[5]]
+  ))
 }
 
 #' @title \code{extractErrorFromConsensusTiles}

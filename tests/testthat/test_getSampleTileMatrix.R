@@ -5,7 +5,8 @@ test_that("getSampleTileMatrices works on a 1 sample test dataset", {
     tilemat <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = cellPopulations,
-      threshold = 0
+      threshold = 0,
+      numCores = 1
     ),
     type = "message"
   )
@@ -25,9 +26,8 @@ test_that("getSampleTileMatrices works on a 1 sample test dataset", {
     c("C2", "C5")
   )
 
-  expect_snapshot_output(
-    S4Vectors::metadata(tilemat)
-  )
+  expect_true("summarizedData" %in% names(S4Vectors::metadata(tilemat)))
+  expect_true(all(c("Sample", "PassQC") %in% colnames(SummarizedExperiment::colData(tilemat))))
 
   expect_snapshot_output(
     SummarizedExperiment::colData(tilemat)

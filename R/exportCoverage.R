@@ -53,15 +53,7 @@ exportCoverage <- function(SampleTileObject,
 
   cellNames <- names(SummarizedExperiment::assays(SampleTileObject))
   metaFile <- SummarizedExperiment::colData(SampleTileObject)
-  outDir <- SampleTileObject@metadata$Directory
-
-  if (is.na(outDir)) {
-    stop("Missing coverage file directory. SampleTileObject$metadata must contain 'Directory'.")
-  }
-
-  if (!file.exists(outDir)) {
-    stop("Directory given by SampleTileObject@metadata$Directory does not exist.")
-  }
+  outDir <- .validateCoverageDirectory(SampleTileObject, objectName = "SampleTileObject")
 
   if (all(toupper(cellPopulations) == "ALL")) {
     cellPopulations <- cellNames
@@ -71,24 +63,9 @@ exportCoverage <- function(SampleTileObject,
   }
 
 
-  # Pull out a list of samples by group.
-
-  if (!is.null(subGroups) & !is.null(groupColumn)) {
-    # If the user defined a list of subgroup(s) within the groupColumn from the metadata, then it subsets to just those samples
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-    names(subSamples) <- subGroups
-  } else if (!is.null(groupColumn)) {
-
-    # If no subGroup defined, then it'll form a list of samples across all labels within the groupColumn
-    subGroups <- unique(metaFile[, groupColumn])
-
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-  } else {
-
-    # If neither groupColumn nor subGroup is defined, then it forms one list of all sample names
-    subGroups <- "All"
-    subSamples <- list("All" = metaFile[, "Sample"])
-  }
+  grouping <- .prepSampleTileGrouping(metaFile, groupColumn, subGroups)
+  subGroups <- grouping$subGroups
+  subSamples <- grouping$subSamples
                          
   cl <- parallel::makeCluster(numCores)
   parallel::clusterEvalQ(cl, {
@@ -100,11 +77,8 @@ exportCoverage <- function(SampleTileObject,
     # MOCHA::getCoverage outputs a single list with two named items: "Accessibility"
     # and "Insertions".
     # This is saved to *_CoverageFiles.RDS in MOCHA::callOpenTiles
-    originalCovGRanges <- readRDS(paste(outDir, "/", x, "_CoverageFiles.RDS", sep = ""))
-    # For backwards compatibility, only use "Accessibility" if it exists.
-    if ("Accessibility" %in% names(originalCovGRanges)) {
-        originalCovGRanges <- originalCovGRanges$Accessibility
-    }
+    coverageBundle <- .readCoverageBundle(outDir, x)
+    originalCovGRanges <- .selectAccessibilityCoverage(coverageBundle)
 
     if (verbose) {
       message(stringr::str_interp("Extracting coverage for cell population ${x}."))

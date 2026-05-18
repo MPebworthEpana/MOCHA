@@ -13,6 +13,7 @@ extractRegion(
   subGroups = NULL,
   sampleSpecific = FALSE,
   approxLimit = 1e+05,
+  skipEmpty = TRUE,
   binSize = 250,
   sliding = NULL,
   numCores = 1,

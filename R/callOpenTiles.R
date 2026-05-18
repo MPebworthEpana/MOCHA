@@ -6,9 +6,19 @@
 #'   files and an ArchR Project for meta-data purposes
 #'
 #'
-#' @param ATACFragments an ArchR Project, or a GRangesList of fragments. Each
-#'   GRanges in the GRanges list must have unique cell IDs in the column given
-#'   by 'cellCol'.
+#' @param ATACFragments an ArchR Project, a Seurat object with a Signac
+#'   ChromatinAssay (fragment paths in the assay), or a GRangesList of fragments.
+#'   Two input formats are supported for non-ArchR GRangesList input:
+#'   \itemize{
+#'     \item **Legacy:** each list element is named `CellPopulation#Sample`
+#'       (optional `__normalizationFactor` suffix), with mixed cell types already
+#'       split per sample.
+#'     \item **Sample-level:** each list element is named by sample ID (matching
+#'       `cellColData[[sampleColumn]]`), containing fragments from all cell types
+#'       in that sample. Cell populations are derived from `cellColData` using
+#'       `cellPopLabel` and `cellCol`.
+#'   }
+#'   Each GRanges must contain unique cell IDs in the column given by `cellCol`.
 #' @param cellPopLabel string indicating which column in the ArchRProject
 #'   metadata contains the cell population label.
 #' @param cellPopulations vector of strings. Cell subsets for which to call
@@ -91,6 +101,10 @@
 #'     numCores = 1
 #'   )
 #' }
+#' # Sample-level GRangesList (one element per sample):
+#' # sampleFragments <- GRangesList(Sample1 = frags1, Sample2 = frags2)
+#' # callOpenTiles(sampleFragments, cellColData = meta, cellPopLabel = "Clusters", ...)
+#' }
 #' }
 #'
 #' @export
@@ -119,6 +133,184 @@ setGeneric(
   },
   signature = "ATACFragments"
 )
+
+#' Parse CellPopulation and Sample from legacy ATACFragments element names.
+#' @noRd
+.parseLegacyFragmentNames <- function(fragNames) {
+  cellPopList <- vapply(fragNames, function(x) {
+    unlist(stringr::str_split(x, "#"))[1]
+  }, character(1))
+  sampleList <- vapply(fragNames, function(x) {
+    parts <- unlist(stringr::str_split(x, "#"))
+    if (length(parts) < 2) {
+      return(NA_character_)
+    }
+    unlist(stringr::str_split(parts[2], "__"))[1]
+  }, character(1))
+  list(cellPopulations = cellPopList, samples = sampleList)
+}
+
+#' Detect whether ATACFragments use legacy or sample-level naming.
+#' @noRd
+.detectATACFragmentsInputMode <- function(
+    ATACFragments,
+    cellColData,
+    cellPopLabel,
+    sampleColumn) {
+  fragNames <- names(ATACFragments)
+  if (is.null(fragNames) || any(!nzchar(fragNames))) {
+    stop("ATACFragments must be a named list or GRangesList.")
+  }
+
+  parsed <- .parseLegacyFragmentNames(fragNames)
+  metaSamples <- unique(as.character(cellColData[[sampleColumn]]))
+  metaCellPops <- unique(as.character(cellColData[[cellPopLabel]]))
+
+  legacyOk <- all(grepl("#", fragNames, fixed = TRUE)) &&
+    all(parsed$cellPopulations %in% metaCellPops, na.rm = TRUE) &&
+    all(parsed$samples %in% metaSamples, na.rm = TRUE)
+
+  sampleLevelOk <- all(fragNames %in% metaSamples) &&
+    !any(grepl("#", fragNames, fixed = TRUE))
+
+  if (legacyOk) {
+    return("legacy")
+  }
+  if (sampleLevelOk) {
+    return("sample_level")
+  }
+
+  if (all(fragNames %in% metaSamples)) {
+    stop(
+      "ATACFragments names match sample IDs in cellColData but also contain '#'. ",
+      "Use sample-level names without '#', or legacy names in format ",
+      "`CellPopulation#Sample`."
+    )
+  }
+
+  unknownSamples <- setdiff(fragNames, metaSamples)
+  if (length(unknownSamples) > 0 && !any(grepl("#", fragNames, fixed = TRUE))) {
+    stop(
+      "Sample names in ATACFragments not found in cellColData[[", sampleColumn, "]]: ",
+      paste(unknownSamples, collapse = ", ")
+    )
+  }
+
+  stop(
+    "Could not interpret ATACFragments names. Provide either sample-level names ",
+    "(matching cellColData[[sampleColumn]]) or legacy names in format ",
+    "`CellPopulation#Sample`."
+  )
+}
+
+#' Cell identifiers from cellColData (rownames or cellCol column).
+#' @noRd
+.getCellColDataCellIds <- function(cellColData, cellCol) {
+  meta <- as.data.frame(cellColData)
+  cellIds <- rownames(meta)
+  if (is.null(cellIds) || !any(nzchar(cellIds))) {
+    if (cellCol %in% colnames(meta)) {
+      cellIds <- as.character(meta[[cellCol]])
+    } else {
+      stop(
+        "cellColData must have rownames matching cell barcodes, or include ",
+        "column '", cellCol, "'."
+      )
+    }
+  }
+  cellIds
+}
+
+#' Split sample-level fragments into legacy CellPopulation#Sample GRangesList.
+#' @noRd
+.normalizeSampleLevelFragments <- function(
+    ATACFragments,
+    cellColData,
+    cellPopLabel,
+    sampleColumn,
+    cellCol,
+    cellPopulations,
+    verbose = FALSE) {
+  meta <- as.data.frame(cellColData)
+  cellIds <- .getCellColDataCellIds(cellColData, cellCol)
+  rownames(meta) <- cellIds
+
+  if (all(tolower(cellPopulations) == "all")) {
+    cellPops <- unique(as.character(meta[[cellPopLabel]]))
+    cellPops <- cellPops[!is.na(cellPops)]
+  } else {
+    cellPops <- cellPopulations
+    missingPops <- cellPops[!cellPops %in% meta[[cellPopLabel]]]
+    if (length(missingPops) > 0) {
+      stop(
+        "cellPopulations not found in cellColData column '", cellPopLabel, "': ",
+        paste(missingPops, collapse = ", ")
+      )
+    }
+  }
+
+  metaSamples <- unique(as.character(meta[[sampleColumn]]))
+  unknownSamples <- setdiff(names(ATACFragments), metaSamples)
+  if (length(unknownSamples) > 0) {
+    stop(
+      "Sample names in ATACFragments not found in cellColData[[", sampleColumn, "]]: ",
+      paste(unknownSamples, collapse = ", ")
+    )
+  }
+
+  out <- list()
+  for (sampleName in names(ATACFragments)) {
+    frags <- ATACFragments[[sampleName]]
+    if (length(frags) == 0) {
+      next
+    }
+
+    fragCells <- unique(as.character(GenomicRanges::mcols(frags)[[cellCol]]))
+    sampleCells <- cellIds[meta[[sampleColumn]] == sampleName]
+    unknownCells <- setdiff(fragCells, sampleCells)
+    if (length(unknownCells) > 0) {
+      stop(
+        "Fragments in sample '", sampleName, "' contain cell IDs not found in ",
+        "cellColData: ",
+        paste(head(unknownCells, 5), collapse = ", "),
+        if (length(unknownCells) > 5) paste0(" (and ", length(unknownCells) - 5, " more)") else ""
+      )
+    }
+
+    for (cp in cellPops) {
+      cellsInPop <- cellIds[
+        meta[[sampleColumn]] == sampleName & meta[[cellPopLabel]] == cp
+      ]
+      if (length(cellsInPop) == 0) {
+        next
+      }
+      idx <- as.character(GenomicRanges::mcols(frags)[[cellCol]]) %in% cellsInPop
+      subFrags <- frags[idx]
+      if (length(subFrags) == 0) {
+        next
+      }
+      key <- paste(cp, sampleName, sep = "#")
+      out[[key]] <- subFrags
+    }
+  }
+
+  if (length(out) == 0) {
+    stop(
+      "No fragments remained after splitting sample-level ATACFragments by ",
+      "cell population. Check cellPopLabel, cellPopulations, and cellColData."
+    )
+  }
+
+  if (verbose) {
+    message(
+      "Converted sample-level ATACFragments to ",
+      length(out),
+      " CellPopulation#Sample fragment sets."
+    )
+  }
+
+  GenomicRanges::GRangesList(out)
+}
 
 #' @rdname callOpenTiles-methods
 #' @aliases callOpenTiles, GRangesList-method
@@ -175,7 +367,7 @@ setGeneric(
     if (verbose) {
       message(stringr::str_interp("Creating directory for MOCHA at ${outDir}"))
     }
-    dir.create(outDir)
+    dir.create(outDir, recursive = TRUE, showWarnings = FALSE)
   }
 
   # Filter out fragments that are not aligned to the Genome.
@@ -201,26 +393,42 @@ setGeneric(
     )
   }
 
-  cellPopList <- sapply(names(ATACFragments), function(x) {
-    unlist(stringr::str_split(x, "#"))[1]
-  })
-  sampleList <- sapply(names(ATACFragments), function(x) {
-    sample <- unlist(stringr::str_split(x, "#"))[2]
-    unlist(stringr::str_split(sample, "__"))[1]
-  })
+  inputMode <- .detectATACFragmentsInputMode(
+    ATACFragments,
+    cellColData,
+    cellPopLabel,
+    sampleColumn
+  )
+  if (inputMode == "sample_level") {
+    ATACFragments <- .normalizeSampleLevelFragments(
+      ATACFragments,
+      cellColData,
+      cellPopLabel,
+      sampleColumn,
+      cellCol,
+      cellPopulations,
+      verbose = verbose
+    )
+  }
+
+  parsedNames <- .parseLegacyFragmentNames(names(ATACFragments))
+  cellPopList <- parsedNames$cellPopulations
+  sampleList <- parsedNames$samples
 
   # Verify that cell populations and samples in ATACFragments names match those
-  # in cellPopData
+  # in cellColData
   if (!all(cellPopList %in% cellColData[[cellPopLabel]])) {
     stop(
-      "Cell populations in names of ATACFragments do not match those in cellPopData.",
-      " Names of ATACFragments must be in format `CellPopulation#Sample`"
+      "Cell populations in names of ATACFragments do not match those in cellColData. ",
+      "Names must be in format `CellPopulation#Sample`, or use sample-level ",
+      "names matching cellColData[[", sampleColumn, "]]."
     )
   }
   if (!all(sampleList %in% cellColData[[sampleColumn]])) {
     stop(
-      "Sample names in names of ATACFragments do not match those in cellPopData.",
-      " Names of ATACFragments must be in format `CellPopulation#Sample`"
+      "Sample names in names of ATACFragments do not match those in cellColData. ",
+      "Names must be in format `CellPopulation#Sample`, or use sample-level ",
+      "names matching cellColData[[", sampleColumn, "]]."
     )
   }
 
@@ -290,7 +498,7 @@ setMethod(
     if (verbose) {
       message(stringr::str_interp("Creating directory for MOCHA at ${outDir}"))
     }
-    dir.create(outDir)
+    dir.create(outDir, recursive = TRUE, showWarnings = FALSE)
   }
 
   # Get cell metadata and blacklisted regions from ArchR Project
@@ -539,142 +747,128 @@ setMethod(
     }
 
     cl <- parallel::makeCluster(numCores)
-
-    if (useArchR) {
-      parallel::clusterEvalQ(cl, {
-        library(ArchR)
-        library(rhdf5)
-      })
-      # Get our fragments for this cellPop
-      frags <- MOCHA::getPopFrags(
-        ArchRProj = ATACFragments,
-        cellPopLabel = cellPopLabel,
-        cellSubsets = cellPop,
-        numCores = cl,
-        returnGRangesList = FALSE,
-        verbose = verbose
-      )
-    } else {
-      cellPopList <- sapply(names(ATACFragments), function(x) {
-        unlist(stringr::str_split(x, "#"))[1]
-      })
-      frags <- ATACFragments[which(cellPop == cellPopList)]
-      if (length(frags) == 0) {
-        stop(
-          "Provided ATACFragments does not contain any sample fragments ",
-          stringr::str_interp("belonging to cellPopulations: ${cellPop}. "),
-          "ATACFragments must have at least one sample GRanges for each ",
-          "cell population."
+    tryCatch({
+      if (useArchR) {
+        parallel::clusterEvalQ(cl, {
+          library(ArchR)
+          library(rhdf5)
+        })
+        # Get our fragments for this cellPop
+        frags <- MOCHA::getPopFrags(
+          ArchRProj = ATACFragments,
+          cellPopLabel = cellPopLabel,
+          cellSubsets = cellPop,
+          numCores = cl,
+          returnGRangesList = FALSE,
+          verbose = verbose
         )
+      } else {
+        cellPopList <- sapply(names(ATACFragments), function(x) {
+          unlist(stringr::str_split(x, "#"))[1]
+        })
+        frags <- ATACFragments[which(cellPop == cellPopList)]
+        if (length(frags) == 0) {
+          stop(
+            "Provided ATACFragments does not contain any sample fragments ",
+            stringr::str_interp("belonging to cellPopulations: ${cellPop}. "),
+            "ATACFragments must have at least one sample GRanges for each ",
+            "cell population."
+          )
+        }
       }
-    }
 
-    # Simplify sample names to remove celltype and normalization factor
-    # Removes everything before the first "#" and after the first "__"
-    # This is a convention from MOCHA::getPopFrags which is ArchR-dependent
-    # E.g. C1#PBMCSmall__0.527239 becomes PBMCSmall
-    sampleNames <- gsub("__.*", "", gsub(".*#", "", names(frags)))
-    names(frags) <- sampleNames
-      
-    ##Check whether fragments lists are hashed or not. 
-    ##If fragments are hashed, and the user is using ArchR, then dehash them by true sample here. 
-    ## If ArchR is not being used, the user is expected to do this themselves. 
-    if(all(!sampleNames %in% unique(cellColData[,sampleColumn])) & useArchR){
+      # Simplify sample names to remove celltype and normalization factor
+      # Removes everything before the first "#" and after the first "__"
+      # This is a convention from MOCHA::getPopFrags which is ArchR-dependent
+      # E.g. C1#PBMCSmall__0.527239 becomes PBMCSmall
+      sampleNames <- gsub("__.*", "", gsub(".*#", "", names(frags)))
+      names(frags) <- sampleNames
+
+      ##Check whether fragments lists are hashed or not.
+      ##If fragments are hashed, and the user is using ArchR, then dehash them by true sample here.
+      ## If ArchR is not being used, the user is expected to do this themselves.
+      if (all(!sampleNames %in% unique(cellColData[, sampleColumn])) & useArchR) {
         frags <- dehashArchR(frags, cellColData, sampleColumn, cl = cl)
-        
+
         ## Check if any samples are now empty of fragments for a given cell type.
         ## Remove that index from the list, and then update the sample names for this cell type.
-        if(any(lengths(frags) == 0)){
-    
-            frags <- frags[lengths(frags) != 0]
-
+        if (any(lengths(frags) == 0)) {
+          frags <- frags[lengths(frags) != 0]
         }
-        
-        sampleNames = names(frags)
-    }
-      
-    # Calculate normalization factors as the number of fragments for
-    # each celltype_sample
-    normalization_factors <- as.integer(lengths(frags))
 
-    # Assign the number of fragments into the fragment count
-    allFragmentCounts[cellPop, sampleNames] <- normalization_factors
-
-    # save coverage files to folder.
-    # This doesn't include empty samples and might break. We may need to
-    # reconsider how getCoverage works and add empty samples before this step.
-    ### yep, it broke. An attempt to fix it is included. 
-    if (!file.exists(
-      paste(outDir, "/", cellPop, "_CoverageFiles.RDS", sep = "")
-    ) || force) {
-      if (verbose) {
-        message(stringr::str_interp(
-          "Saving coverage files for cell population ${cellPop}"
-        ))
+        sampleNames <- names(frags)
       }
-      covFiles <- getCoverage(
-        popFrags = frags,
-        normFactor = normalization_factors / 10^6,
-        filterEmpty = TRUE,
-        cl = cl, TxDb = TxDb
-      )
-      saveRDS(
-        covFiles,
+
+      # Calculate normalization factors as the number of fragments for
+      # each celltype_sample
+      normalization_factors <- as.integer(lengths(frags))
+
+      # Assign the number of fragments into the fragment count
+      allFragmentCounts[cellPop, sampleNames] <- normalization_factors
+
+      # save coverage files to folder.
+      if (!file.exists(
         paste(outDir, "/", cellPop, "_CoverageFiles.RDS", sep = "")
-      )
-      rm(covFiles)
-    }
-
-    if (is.null(study_prefactor)) {
-      if (verbose) {
-        ("Calculating generalized study signal...")
-      }
-      # generalizeStudySignal = TRUE
-      # calculate this as:
-      #   training_median_nfrags / mean(median_nfrags, mean_nfrags) per cell
-      #   in this cell population, where training_median_nfrags = 3668
-      allmeans <- list()
-      allmedians <- list()
-      for (sample in names(frags)) {
-        # calculate mean or median fragments in each cell
-        fragsdf <- as.data.frame(frags[[sample]])
-        cellFragsTable <- table(fragsdf[[cellCol]]) # default cellCol is "RG"
-        allmeans <- append(allmeans, mean(cellFragsTable))
-        allmedians <- append(allmedians, stats::median(cellFragsTable))
-      }
-      # average across all samples
-      mean_nfrags <- mean(unlist(allmeans))
-      median_nfrags <- mean(unlist(allmedians))
-      combinedSignal <- mean(c(median_nfrags, mean_nfrags))
-      study_prefactor <- 3668 / combinedSignal
-
-      if (verbose) {
-        message(
-          "Mean fragments per cell: ", mean_nfrags,
-          "\nMedian fragments per cell: ", median_nfrags,
-          "\nCombined signal: ", combinedSignal
+      ) || force) {
+        if (verbose) {
+          message(stringr::str_interp(
+            "Saving coverage files for cell population ${cellPop}"
+          ))
+        }
+        covFiles <- getCoverage(
+          popFrags = frags,
+          normFactor = normalization_factors / 10^6,
+          filterEmpty = TRUE,
+          cl = cl, TxDb = TxDb
         )
+        saveRDS(
+          covFiles,
+          paste(outDir, "/", cellPop, "_CoverageFiles.RDS", sep = "")
+        )
+        rm(covFiles)
       }
-      rm(fragsdf)
-      rm(cellFragsTable)
-    }
 
-    # This pbapply will parallelize over each sample within a celltype.
-    # Each arrow is a sample so this is allowed
-    # (Arrow files are locked - one access at a time)
-    iterList <- lapply(seq_along(frags), function(x) {
-      list(blackList, frags[[x]], cellCol, verbose, study_prefactor)
+      if (is.null(study_prefactor)) {
+        if (verbose) {
+          message("Calculating generalized study signal...")
+        }
+        allmeans <- list()
+        allmedians <- list()
+        for (sample in names(frags)) {
+          fragsdf <- as.data.frame(frags[[sample]])
+          cellFragsTable <- table(fragsdf[[cellCol]])
+          allmeans <- append(allmeans, mean(cellFragsTable))
+          allmedians <- append(allmedians, stats::median(cellFragsTable))
+        }
+        mean_nfrags <- mean(unlist(allmeans))
+        median_nfrags <- mean(unlist(allmedians))
+        combinedSignal <- mean(c(median_nfrags, mean_nfrags))
+        study_prefactor <- 3668 / combinedSignal
+
+        if (verbose) {
+          message(
+            "Mean fragments per cell: ", mean_nfrags,
+            "\nMedian fragments per cell: ", median_nfrags,
+            "\nCombined signal: ", combinedSignal
+          )
+        }
+        rm(fragsdf)
+        rm(cellFragsTable)
+      }
+
+      iterList <- lapply(seq_along(frags), function(x) {
+        list(blackList, frags[[x]], cellCol, verbose, study_prefactor)
+      })
+
+      tilesGRangesList <- pbapply::pblapply(
+        cl = cl,
+        X = iterList,
+        FUN = simplifiedTilesBySample
+      )
+    }, finally = {
+      try(parallel::stopCluster(cl), silent = TRUE)
     })
-
-    # cl <- parallel::makeCluster(numCores)
-
-    tilesGRangesList <- pbapply::pblapply(
-      cl = cl,
-      X = iterList,
-      FUN = simplifiedTilesBySample
-    )
-    parallel::stopCluster(cl)
-      gc()
+    gc()
     names(tilesGRangesList) <- names(frags)
 
     # Where samples have no cells, add an empty GRanges placeholder

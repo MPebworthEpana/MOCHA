@@ -25,9 +25,9 @@ getCellPopMatrix <- function(SampleTileObj,
 
      tilesCalled = rownames(SampleTileObj)
 
-    }else if(all(cellPopulation %in% SummarizedExperiment::assayNames(SampleTileObj))){
+    }else if(!all(cellPopulation %in% SummarizedExperiment::assayNames(SampleTileObj))){
 
-      stop('Cell population not found withinthe SampleTileObj')
+      stop('Cell population not found within the SampleTileObj')
       
     }else{
       

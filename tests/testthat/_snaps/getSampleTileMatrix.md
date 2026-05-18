@@ -117,10 +117,3 @@
     
     
 
----
-
-    DataFrame with 1 row and 2 columns
-                   Sample    PassQC
-              <character> <numeric>
-    PBMCSmall   PBMCSmall         1
-

@@ -1,7 +1,8 @@
 # We can call peaks independent of ArchR
 
     Code
-      assays(metadata(tiles)$summarizedData)[["CellCounts"]]
+      SummarizedExperiment::assays(S4Vectors::metadata(tiles)$summarizedData)[[
+        "CellCounts"]]
     Output
          PBMCSmall
       C2       152

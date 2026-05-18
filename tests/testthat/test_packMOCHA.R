@@ -5,10 +5,9 @@ if (
   require("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) &&
   require("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE)
 ) {
-  # Working dir during tests is under projects/MOCHA/tests/testthat/. Assumes
-  # PBMCSmall is under 'projects'
-  ArchRProjDir <- "../../../PBMCSmall"
-  if (require("ArchR", quietly = TRUE) & dir.exists(ArchRProjDir)) {
+  if (mocha_heavy_tests_enabled() && requireNamespace("ArchR", quietly = TRUE)) {
+    ArchRProjDir <- mocha_archr_project_dir("PBMCSmall")
+    if (!is.na(ArchRProjDir)) {
     test_that("We can pack/unpack a MOCHA object", {
       capture.output(
         testProj <- ArchR::loadArchRProject(ArchRProjDir),
@@ -46,5 +45,6 @@ if (
         expect_true(grepl('metadata$Directory', diff[1], fixed = TRUE))
       }
     })
+    }
   }
 }

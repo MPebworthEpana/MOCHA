@@ -8,10 +8,9 @@ if (
     require("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
   require("TxDb.Hsapiens.UCSC.hg19.knownGene", quietly = TRUE)
 ) {
-  # Working dir during tests is under projects/MOCHA/tests/testthat/. Assumes
-  # PBMCSmall is under 'projects'
-  ArchRProjDir <- "../../../PBMCSmall"
-  if (require("ArchR", quietly = TRUE) & dir.exists(ArchRProjDir)) {
+  if (mocha_heavy_tests_enabled() && requireNamespace("ArchR", quietly = TRUE)) {
+    ArchRProjDir <- mocha_archr_project_dir("PBMCSmall")
+    if (!is.na(ArchRProjDir)) {
     test_that("We can call peaks by sample from an ArchR project", {
       capture.output(
         testProj <- ArchR::loadArchRProject(ArchRProjDir),
@@ -44,6 +43,7 @@ if (
         variant = "ArchR_metadata"
       )
     })
+    }
   }
 
   test_that("We can call peaks independent of ArchR", {
@@ -70,11 +70,11 @@ if (
       variant = "list"
     )
     expect_snapshot(
-      assays(metadata(tiles)$summarizedData)[["CellCounts"]],
+      SummarizedExperiment::assays(S4Vectors::metadata(tiles)$summarizedData)[["CellCounts"]],
       variant = "CellCounts"
     )
     expect_snapshot(
-      assays(metadata(tiles)$summarizedData)[["FragmentCounts"]],
+      SummarizedExperiment::assays(S4Vectors::metadata(tiles)$summarizedData)[["FragmentCounts"]],
       variant = "FragmentCounts"
     )
 
@@ -196,6 +196,122 @@ if (
       studySignal = 10, # manually provide or have nFrags col in cellColData
       numCores = 1, verbose = TRUE
     ))
+  })
+
+  test_that("We can call peaks from sample-level GRangesList input", {
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    OrgDb <- "org.Hs.eg.db"
+    sample1frags <- GenomicRanges::GRanges(
+      seqnames = Rle(c("chr1"), c(1)),
+      ranges = IRanges(c(760101:760110), end = c(760111:760120), names = head(letters, 10)),
+      strand = "*",
+      RG = c("c1", "c2", "c2", "c3", "c3", "c4", "c4", "c4", "c5", "c5")
+    )
+    sample2frags <- GenomicRanges::GRanges(
+      seqnames = Rle(c("chr1"), c(1)),
+      ranges = IRanges(c(760101:760110), end = c(760111:760120), names = head(letters, 10)),
+      strand = "*",
+      RG = c("c6", "c7", "c7", "c8", "c8", "c8", "c9", "c9", "c9", "c9")
+    )
+    sample_level_fragments <- GenomicRanges::GRangesList(
+      sample1 = sample1frags,
+      sample2 = sample2frags
+    )
+
+    sample_level_cellColData <- data.frame(
+      Sample = c(rep("sample1", 5), rep("sample2", 4)),
+      cellPop = rep("t_cd8_temra", 9)
+    )
+    rownames(sample_level_cellColData) <- c(
+      "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9"
+    )
+
+    expect_warning(
+      tiles <- MOCHA::callOpenTiles(
+        ATACFragments = sample_level_fragments,
+        cellColData = sample_level_cellColData,
+        blackList = MOCHA::exampleBlackList,
+        genome = "hg19",
+        TxDb = TxDb,
+        OrgDb = OrgDb,
+        outDir = tempdir(),
+        cellPopLabel = "cellPop",
+        cellPopulations = c("t_cd8_temra"),
+        studySignal = 10,
+        numCores = 1,
+        verbose = TRUE
+      )
+    )
+    expect_s4_class(tiles, "MultiAssayExperiment")
+    expect_true("t_cd8_temra" %in% names(tiles))
+  })
+
+  test_that("We error when sample-level fragment names do not match cellColData samples", {
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    OrgDb <- "org.Hs.eg.db"
+    sample1frags <- GenomicRanges::GRanges(
+      seqnames = Rle(c("chr1"), c(1)),
+      ranges = IRanges(c(760101:760110), end = c(760111:760120), names = head(letters, 10)),
+      strand = "*",
+      RG = c("c1", "c2", "c2", "c3", "c3", "c4", "c4", "c4", "c5", "c5")
+    )
+    sample_level_fragments <- GenomicRanges::GRangesList(wrong_sample = sample1frags)
+    sample_level_cellColData <- data.frame(
+      Sample = rep("sample1", 5),
+      cellPop = rep("t_cd8_temra", 5)
+    )
+    rownames(sample_level_cellColData) <- c("c1", "c2", "c3", "c4", "c5")
+
+    expect_error(
+      MOCHA::callOpenTiles(
+        ATACFragments = sample_level_fragments,
+        cellColData = sample_level_cellColData,
+        blackList = MOCHA::exampleBlackList,
+        genome = "hg19",
+        TxDb = TxDb,
+        OrgDb = OrgDb,
+        outDir = tempdir(),
+        cellPopLabel = "cellPop",
+        cellPopulations = c("t_cd8_temra"),
+        studySignal = 10,
+        numCores = 1
+      ),
+      regexp = "Sample names in ATACFragments not found"
+    )
+  })
+
+  test_that("We error when sample-level fragments contain unknown cell IDs", {
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    OrgDb <- "org.Hs.eg.db"
+    sample1frags <- GenomicRanges::GRanges(
+      seqnames = Rle(c("chr1"), c(1)),
+      ranges = IRanges(c(760101:760110), end = c(760111:760120), names = head(letters, 10)),
+      strand = "*",
+      RG = c("c1", "c2", "c2", "c3", "c3", "c4", "c4", "c4", "c5", "unknown_cell")
+    )
+    sample_level_fragments <- GenomicRanges::GRangesList(sample1 = sample1frags)
+    sample_level_cellColData <- data.frame(
+      Sample = rep("sample1", 5),
+      cellPop = rep("t_cd8_temra", 5)
+    )
+    rownames(sample_level_cellColData) <- c("c1", "c2", "c3", "c4", "c5")
+
+    expect_error(
+      MOCHA::callOpenTiles(
+        ATACFragments = sample_level_fragments,
+        cellColData = sample_level_cellColData,
+        blackList = MOCHA::exampleBlackList,
+        genome = "hg19",
+        TxDb = TxDb,
+        OrgDb = OrgDb,
+        outDir = tempdir(),
+        cellPopLabel = "cellPop",
+        cellPopulations = c("t_cd8_temra"),
+        studySignal = 10,
+        numCores = 1
+      ),
+      regexp = "contain cell IDs not found in cellColData"
+    )
   })
 
   test_that("We error informatively when cellPopLabel is not in the metadata", {
