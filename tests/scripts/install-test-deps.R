@@ -1,6 +1,7 @@
 # Install MOCHA test dependencies not available via conda (optional suggests).
 pkgs_cran <- c(
-  "wCorr", "mixtools", "zip", "uwot", "lifecycle", "tidyselect", "rlang"
+  "wCorr", "mixtools", "zip", "uwot", "lifecycle", "tidyselect", "rlang",
+  "cutpointr"
 )
 for (p in pkgs_cran) {
   if (!requireNamespace(p, quietly = TRUE)) {

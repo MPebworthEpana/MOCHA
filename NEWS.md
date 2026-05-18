@@ -1,4 +1,10 @@
 # MOCHA (development version)
+* New Functions:
+  - `trainPeakModel`: retrain the MOCHA peak-calling LRM and Youden threshold
+    at a user-chosen tile size, following the paper's Methods. Optional
+    dependencies: `cutpointr` for threshold selection and a MACS2 binary (or
+    user-supplied `groundTruthPeaks`) for training labels.
+  - `callOpenTiles` gains a `peakModel` argument; default behaviour is unchanged.
 * Internal refactor to reduce duplicated helper logic across coverage extraction,
   export, motif footprinting, and co-accessibility workflows. No intended
   user-facing behavior changes.

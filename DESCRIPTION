@@ -112,6 +112,7 @@ Suggests:
     rtracklayer,
     cowplot,
     mixtools,
+    cutpointr,
     zoo,
     Biostrings,
     ggrastr,

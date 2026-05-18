@@ -23,7 +23,9 @@
 #'
 
 
-determine_dynamic_range <- function(AllFragmentsList, blackList, binSize = 500, doBin = FALSE) {
+determine_dynamic_range <- function(AllFragmentsList, blackList,
+                                    binSize = .MOCHA_DEFAULT_TILE_SIZE,
+                                    doBin = FALSE) {
   . <- NULL
   # if(class(AllFragmentsList)!='SimpleList'){
   #   stop('AllFragmentsList must be a list of arrow files')
@@ -59,7 +61,7 @@ determine_dynamic_range <- function(AllFragmentsList, blackList, binSize = 500, 
   ) %>%
     plyranges::reduce_ranges() %>%
     plyranges::slide_ranges(width = binSize, step = binSize) %>%
-    plyranges::filter(IRanges::width(.) == binSize)
+    dplyr::filter(IRanges::width(.) == binSize)
 
   FinalBins <- IRanges::subsetByOverlaps(FinalBins, blackList, invert = T)
 

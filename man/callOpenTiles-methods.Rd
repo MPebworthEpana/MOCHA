@@ -29,7 +29,8 @@ callOpenTiles(
   outDir,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL
 )
 
 .callOpenTiles_default(
@@ -48,7 +49,8 @@ callOpenTiles(
   outDir,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL
 )
 
 \S4method{callOpenTiles}{GRangesList}(
@@ -67,7 +69,8 @@ callOpenTiles(
   outDir,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL
 )
 
 \S4method{callOpenTiles}{list}(
@@ -86,7 +89,8 @@ callOpenTiles(
   outDir,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL
 )
 
 .callOpenTiles_ArchR(
@@ -101,7 +105,8 @@ callOpenTiles(
   outDir = NULL,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL
 )
 }
 \arguments{
@@ -180,6 +185,10 @@ multiple cell populations.}
 
 \item{force}{Optional, whether to force creation of coverage files if they
 already exist. Default is FALSE.}
+
+\item{peakModel}{Optional \code{MOCHAPeakModel} from \code{\link{trainPeakModel}}.
+When \code{NULL}, the bundled 500 bp model is used. Custom models set the
+tile width and study-signal calibration (\code{trainingMedian}).}
 }
 \value{
 tileResults A MultiAssayExperiment object containing ranged data for
@@ -189,5 +198,43 @@ tileResults A MultiAssayExperiment object containing ranged data for
 \code{callOpenTiles} is the main peak-calling function in MOCHA
   that serves as a wrapper function to call peaks provided a set of fragment
   files and an ArchR Project for meta-data purposes
+}
+\examples{
+\dontrun{
+# Starting from an ArchR Project:
+tileResults <- MOCHA::callOpenTiles(
+  ArchRProj = myArchRProj,
+  cellPopLabel = "celltype_labeling",
+  cellPopulations = "CD4",
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+  OrgDb = "org.Hs.eg.db",
+  numCores = 1
+)
+}
+\donttest{
+# Starting from GRangesList:
+if (
+  requireNamespace("BSgenome.Hsapiens.UCSC.hg19") &&
+  requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene") &&
+  requireNamespace("org.Hs.eg.db")
+) {
+  tiles <- MOCHA::callOpenTiles(
+    ATACFragments = MOCHA::exampleFragments,
+    cellColData = MOCHA::exampleCellColData,
+    blackList = MOCHA::exampleBlackList,
+    genome = "BSgenome.Hsapiens.UCSC.hg19",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+    OrgDb = "org.Hs.eg.db",
+    outDir = tempdir(),
+    cellPopLabel = "Clusters",
+    cellPopulations = c("C2", "C5"),
+    numCores = 1
+  )
+}
+# Sample-level GRangesList (one element per sample):
+# sampleFragments <- GRangesList(Sample1 = frags1, Sample2 = frags2)
+# callOpenTiles(sampleFragments, cellColData = meta, cellPopLabel = "Clusters", ...)
+}
+
 }
 \keyword{core}

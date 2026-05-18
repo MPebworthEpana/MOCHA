@@ -62,10 +62,10 @@ calculateCoverage <- function(ref) {
   Num <- ref[[2]]
   filterEmpty <- ref[[3]]
 
-  counts_gr <- plyranges::compute_coverage(popFrags) %>% plyranges::mutate(score = score / Num)
+  counts_gr <- plyranges::compute_coverage(popFrags) %>% dplyr::mutate(score = score / Num)
 
   if (filterEmpty) {
-    plyranges::filter(counts_gr, score > 0)
+    dplyr::filter(counts_gr, score > 0)
   } else {
     counts_gr
   }
@@ -81,9 +81,9 @@ getSpecificCoverage <- function(covFiles, regions, numCores = 1) {
   score <- NewScore <- WeightedScore <- . <- NULL
   counts <- parallel::mclapply(covFiles, function(x) {
     x %>%
-      plyranges::mutate(NewScore = score) %>%
+      dplyr::mutate(NewScore = score) %>%
       plyranges::join_overlap_intersect(regions) %>%
-      plyranges::mutate(WeightedScore = NewScore * GenomicRanges::width(.)) %>%
+      dplyr::mutate(WeightedScore = NewScore * GenomicRanges::width(.)) %>%
       plyranges::reduce_ranges(score = mean(WeightedScore))
   }, mc.cores = numCores)
 
@@ -114,10 +114,10 @@ calculateInsertionCoverage <- function(ref) {
   )
 
   counts_gr <- plyranges::compute_coverage(plyranges::bind_ranges(cutstart, cutend))
-  counts_gr <- plyranges::mutate(counts_gr, score = score / Num)
+  counts_gr <- dplyr::mutate(counts_gr, score = score / Num)
 
   if (filterEmpty) {
-    plyranges::filter(counts_gr, score > 0)
+    dplyr::filter(counts_gr, score > 0)
   } else {
     counts_gr
   }

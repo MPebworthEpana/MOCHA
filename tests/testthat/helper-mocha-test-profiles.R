@@ -15,6 +15,22 @@ skip_unless_mocha_heavy <- function() {
   }
 }
 
+skip_unless_cutpointr <- function() {
+  if (!requireNamespace("cutpointr", quietly = TRUE)) {
+    testthat::skip(
+      "cutpointr not installed (Suggests); needed for threshMethod = 'youden'"
+    )
+  }
+}
+
+mocha_thresh_method_for_tests <- function() {
+  if (requireNamespace("cutpointr", quietly = TRUE)) {
+    "youden"
+  } else {
+    "f1"
+  }
+}
+
 mocha_testthat_dir <- function() {
   normalizePath(testthat::test_path(), winslash = "/", mustWork = TRUE)
 }

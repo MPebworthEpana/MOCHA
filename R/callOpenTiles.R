@@ -66,6 +66,9 @@
 #' @param force Optional, whether to force creation of coverage files if they
 #'   already exist. Default is FALSE.
 #' @param verbose Set TRUE to display additional messages. Default is FALSE.
+#' @param peakModel Optional \code{MOCHAPeakModel} from \code{\link{trainPeakModel}}.
+#'   When \code{NULL}, the bundled 500 bp model is used. Custom models set the
+#'   tile width and study-signal calibration (\code{trainingMedian}).
 #'
 #' @return tileResults A MultiAssayExperiment object containing ranged data for
 #'   each tile
@@ -105,7 +108,6 @@
 #' # sampleFragments <- GRangesList(Sample1 = frags1, Sample2 = frags2)
 #' # callOpenTiles(sampleFragments, cellColData = meta, cellPopLabel = "Clusters", ...)
 #' }
-#' }
 #'
 #' @export
 #' @docType methods
@@ -128,7 +130,8 @@ setGeneric(
            outDir,
            numCores = 30,
            verbose = FALSE,
-           force = FALSE) {
+           force = FALSE,
+           peakModel = NULL) {
     standardGeneric("callOpenTiles")
   },
   signature = "ATACFragments"
@@ -329,7 +332,8 @@ setGeneric(
                                    outDir,
                                    numCores = 30,
                                    verbose = FALSE,
-                                   force = FALSE) {
+                                   force = FALSE,
+                                   peakModel = NULL) {
   Sample <- seqnames <- NULL
 
   genome <- BSgenome::getBSgenome(genome)
@@ -374,7 +378,7 @@ setGeneric(
   allnames <- names(ATACFragments)
   beforeLengths <- lengths(ATACFragments)
   ATACFragments <- lapply(ATACFragments, function(x) {
-    plyranges::filter(x, seqnames %in% GenomeInfoDb::seqnames(genome))
+    dplyr::filter(x, seqnames %in% GenomeInfoDb::seqnames(genome))
   })
   names(ATACFragments) <- allnames
 
@@ -449,7 +453,8 @@ setGeneric(
     numCores,
     verbose,
     force,
-    useArchR = FALSE
+    useArchR = FALSE,
+    peakModel = peakModel
   )
 }
 #' @rdname callOpenTiles-methods
@@ -481,7 +486,8 @@ setMethod(
                                  outDir = NULL,
                                  numCores = 30,
                                  verbose = FALSE,
-                                 force = FALSE) {
+                                 force = FALSE,
+                                 peakModel = NULL) {
   Sample <- nFrags <- NULL
   # Load Genome
   genome <- ArchR::validBSgenome(ArchR::getGenome(ATACFragments))
@@ -529,7 +535,8 @@ setMethod(
     numCores,
     verbose,
     force,
-    useArchR = TRUE
+    useArchR = TRUE,
+    peakModel = peakModel
   )
 }
 setMethod(
@@ -555,8 +562,15 @@ setMethod(
                            numCores,
                            verbose,
                            force,
-                           useArchR) {
+                           useArchR,
+                           peakModel) {
   Sample <- meanValues <- NULL
+  peakModel <- if (is.null(peakModel)) {
+    .defaultPeakModel()
+  } else {
+    .validatePeakModel(peakModel)
+  }
+  trainingMedian <- peakModel$trainingMedian
   # Load databases and save names for use in metadata
   TxDbName <- TxDb
   OrgDbName <- OrgDb
@@ -718,7 +732,7 @@ setMethod(
         )
       }
       studySignal <- stats::median(cellColData$nFrags)
-      study_prefactor <- 3668 / studySignal # Training median
+      study_prefactor <- trainingMedian / studySignal
     }
   } else {
     if (generalizeStudySignal) {
@@ -732,7 +746,7 @@ setMethod(
       study_prefactor <- NULL
     } else {
       # Use user-provided studySignal
-      study_prefactor <- 3668 / studySignal # Training median
+      study_prefactor <- trainingMedian / studySignal
     }
   }
 
@@ -843,7 +857,7 @@ setMethod(
         mean_nfrags <- mean(unlist(allmeans))
         median_nfrags <- mean(unlist(allmedians))
         combinedSignal <- mean(c(median_nfrags, mean_nfrags))
-        study_prefactor <- 3668 / combinedSignal
+        study_prefactor <- trainingMedian / combinedSignal
 
         if (verbose) {
           message(
@@ -857,7 +871,7 @@ setMethod(
       }
 
       iterList <- lapply(seq_along(frags), function(x) {
-        list(blackList, frags[[x]], cellCol, verbose, study_prefactor)
+        list(blackList, frags[[x]], cellCol, verbose, study_prefactor, peakModel)
       })
 
       tilesGRangesList <- pbapply::pblapply(

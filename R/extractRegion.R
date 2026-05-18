@@ -258,12 +258,12 @@ subsetBPCoverage <- function(iterList) {
 subsetBinCoverage <- function(iterList) {
   partition <- idx <- score <- NULL
   regionGRanges_tmp <- plyranges::reduce_ranges(iterList[[1]])
-  indTiles <- plyranges::select(plyranges::tile_ranges(regionGRanges_tmp, 1), -partition)
+  indTiles <- dplyr::select(plyranges::tile_ranges(regionGRanges_tmp, 1), -partition)
 
   tmpCounts <- lapply(iterList[[2]], function(z) {
     tmpGR <- plyranges::join_overlap_intersect(z, indTiles)
     tmpGR <- plyranges::join_overlap_intersect(tmpGR, iterList[[1]])
-    tmpGR <- plyranges::group_by(tmpGR, idx)
+    tmpGR <- dplyr::group_by(tmpGR, idx)
     tmpGR <- plyranges::reduce_ranges(tmpGR, score = mean(score))
     tmpGR <- dplyr::ungroup(tmpGR)
     tmpGR
@@ -277,13 +277,13 @@ subsetBinCoverage <- function(iterList) {
 averageBinCoverage <- function(iterList) {
   idx <- score <- partition <- NULL
   regionGRanges_tmp <- plyranges::reduce_ranges(iterList[[1]])
-  indTiles <- plyranges::select(plyranges::tile_ranges(regionGRanges_tmp, 1), -partition)
+  indTiles <- dplyr::select(plyranges::tile_ranges(regionGRanges_tmp, 1), -partition)
   sampleCount <- length(iterList[[2]])
 
   filterCounts <- lapply(iterList[[2]], function(z) {
     tmpGR <- plyranges::join_overlap_intersect(z, indTiles)
     tmpGR <- plyranges::join_overlap_intersect(tmpGR, iterList[[1]])
-    tmpGR <- plyranges::group_by(tmpGR, idx)
+    tmpGR <- dplyr::group_by(tmpGR, idx)
     tmpGR <- plyranges::reduce_ranges(tmpGR, score = mean(score))
     tmpGR <- dplyr::ungroup(tmpGR)
     tmpGR
@@ -310,7 +310,7 @@ averageBinCoverage <- function(iterList) {
 #   tmpCounts <- lapply(subList, function(z) {
 #     tmpGR <- plyranges::join_overlap_intersect(z, regionGRanges) %>%
 #       tmpGR() <- plyranges::join_overlap_intersect(tmpGR, binnedData)
-#     tmpGR <- plyranges::group_by(tmpGR, idx) %>%
+#     tmpGR <- dplyr::group_by(tmpGR, idx) %>%
 #       tmpGR() <- plyranges::reduce_ranges(tmpGR, score = mean(score))
 #     tmpGR <- dplyr::ungroup(tmpGR)
 #     tmpGR

@@ -31,7 +31,8 @@ callTilesBySample <- function(blackList,
                               fragsList,
                               cellCol = "RG",
                               verbose = FALSE,
-                              StudypreFactor) {
+                              StudypreFactor,
+                              peakModel = NULL) {
   # Coefficients trained on ~ 3600 frags per cell
   # Future datasets need to be calibrated to
   # these coefficients
@@ -43,17 +44,23 @@ callTilesBySample <- function(blackList,
     return(NULL)
   }
 
-  finalModelObject <- MOCHA::finalModelObject
+  if (is.null(peakModel)) {
+    peakModel <- .defaultPeakModel()
+  } else {
+    peakModel <- .validatePeakModel(peakModel)
+  }
+  finalModelObject <- peakModel$finalModelObject
+  tileSize <- peakModel$tileSize
 
   FinalBins <- determine_dynamic_range(
     AllFragmentsList = fragsList,
     blackList = blackList,
-    binSize = 500,
+    binSize = tileSize,
     doBin = FALSE
   )
   if (length(FinalBins) == 0) {
     stop(
-      "Could not bin fragments into 500bp tiles. ",
+      "Could not bin fragments into ", tileSize, "bp tiles. ",
       "Verify that input fragments are not all in a blacklisted region."
     )
   }
@@ -89,7 +96,8 @@ callTilesBySample <- function(blackList,
   countsMatrix <- countsMatrix[countsMatrix$TotalIntensity > 0, ]
   MOCHA_tiles <- make_prediction(
     X = countsMatrix,
-    finalModelObject = finalModelObject
+    finalModelObject = finalModelObject,
+    youdenModel = peakModel$youden_threshold
   )
 
   if (!returnAllTiles) {
@@ -124,6 +132,7 @@ simplifiedTilesBySample <- function(x) {
     fragsList = x[[2]],
     cellCol = x[[3]],
     verbose = x[[4]],
-    StudypreFactor = x[[5]]
+    StudypreFactor = x[[5]],
+    peakModel = x[[6]]
   ))
 }

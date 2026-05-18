@@ -156,7 +156,7 @@ motifFootprint <- function(SampleTileObj,
             ## So we'll reduce out motifs to find these overlapping regions, and remove anything with more than
             ## windowSize/10 bps. 
         
-            subMotifs = plyranges::filter(plyranges::reduce_ranges(motifs[[YY]]), width <= windowSize/2)
+            subMotifs = dplyr::filter(plyranges::reduce_ranges(motifs[[YY]]), width <= windowSize/2)
         
             if (verbose) {
               message(stringr::str_interp("Processing motif footprint for ${YY}."))
@@ -308,9 +308,9 @@ addInsertionBias <- function(SampleTileObj, numCores = 1, verbose = TRUE){
         
         insertList = lapply(originalInsertions, function(XX){
                     if(!is.null(XX)){
-                        tmpGR = plyranges::filter(XX, score !=0)
+                        tmpGR = dplyr::filter(XX, score !=0)
                         if(length(tmpGR) > 10){
-                            list(plyranges::filter(XX, score !=0), genome_db)
+                            list(dplyr::filter(XX, score !=0), genome_db)
                         }else {NULL}
                     }else{NULL}
             })
@@ -457,14 +457,14 @@ normMotifs <- function(list1){
                 return(insertList)
         }
         
-        subInsert1 = plyranges::select(subInsert1, !partition)
+        subInsert1 = dplyr::select(subInsert1, !partition)
         subInsert1 = smoothRegions(subInsert1, windowsGR = windows2, windowSize =smoothWindow)
     }
     rm(windows2)
     ##Remove score column (if present) from motif locations. 
     if(any(colnames(GenomicRanges::mcols(windows1)) == 'score')){
     
-        windows1 <- plyranges::select(windows1, !score)
+        windows1 <- dplyr::select(windows1, !score)
     }
     
     subInsert1 = plyranges::join_overlap_left(subInsert1,  windows1)
@@ -586,7 +586,7 @@ normMotifs2 <- function(list1){
                 return(insertList)
         }
         
-        subInsert1 = plyranges::select(subInsert1, !partition)
+        subInsert1 = dplyr::select(subInsert1, !partition)
         subInsert1 = smoothRegions(subInsert1, windowsGR = windows2, windowSize =smoothWindow)
 
     }
@@ -594,7 +594,7 @@ normMotifs2 <- function(list1){
     ##Remove score column (if present) from motif locations. 
     if(any(colnames(GenomicRanges::mcols(windows1)) == 'score')){
     
-        windows1 <- plyranges::select(windows1, !score)
+        windows1 <- dplyr::select(windows1, !score)
     }
     
     subInsert1 = plyranges::join_overlap_left(subInsert1, windows1)

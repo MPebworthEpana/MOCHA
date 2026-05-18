@@ -270,7 +270,7 @@ processFile <- function(objectList){
     ##get database 
     genome <- getAnnotationDbFromInstalledPkgname(dbName = genome_db, type = 'BSgenome')
     
-    onlyIns <- plyranges::filter(chrIns, score !=0)
+    onlyIns <- dplyr::filter(chrIns, score !=0)
     ## Find windows to pay attention to:
     windowsGR <-plyranges::reduce_ranges(plyranges::stretch(onlyIns, extend = 2*windowSize))
     ##Tile those windows. 
@@ -314,7 +314,7 @@ processFile <- function(objectList){
             plyranges::anchor_center(tilesGR), windowSize)
     rm(tilesGR)
     #Convert to Data.table for processing speed. 
-    bpInsert = plyranges::select(bpInsert, !partition)
+    bpInsert = dplyr::select(bpInsert, !partition)
     insertDT = as.data.table(plyranges::join_overlap_left(bpInsert, tilesGR2))
 
     #Use data.table to run the average

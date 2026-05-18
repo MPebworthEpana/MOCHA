@@ -31,6 +31,7 @@ dependencies:
   - r-ggrepel
   - r-ggridges
   - r-zoo
+  - r-cutpointr
   - bioconductor-genomicranges
   - bioconductor-iranges
   - bioconductor-s4vectors
@@ -47,3 +48,15 @@ dependencies:
   - bioconductor-org.hs.eg.db
   - bioconductor-bsgenome.hsapiens.ucsc.hg19
   - bioconductor-plyranges
+  - bioconductor-ggbio
+  - bioconductor-ensembldb
+  - htslib
+  - zlib
+  - r-seurat
+  - r-igraph
+  - bioconductor-sparsematrixstats
+  - bioconductor-bsgenome.hsapiens.ucsc.hg38
+  - r-reticulate
+  - anndata
+  - scipy
+  - numpy
