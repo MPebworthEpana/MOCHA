@@ -79,6 +79,8 @@ runZIGLMM <- function(TSAM_Object,
 
     # Merge all together.
     newObj <- combineSampleTileMatrix(TSAM_Object)
+  } else if (length(cellPopulation) == 1L && tolower(cellPopulation) == "counts") {
+    newObj <- TSAM_Object
   } else if (all(cellPopulation %in% names(SummarizedExperiment::assays(TSAM_Object)))) {
 
     # Subset down to just those
@@ -386,6 +388,8 @@ pilotZIGLMM <- function(TSAM_Object,
 
     # Merge all together.
     newObj <- combineSampleTileMatrix(TSAM_Object)
+  } else if (length(cellPopulation) == 1L && tolower(cellPopulation) == "counts") {
+    newObj <- TSAM_Object
   } else if (all(cellPopulation %in% names(SummarizedExperiment::assays(TSAM_Object)))) {
 
     # Subset down to just those

@@ -37,6 +37,14 @@
 #'  Default is 0.8.
 #' @param techThreshold Deprecated alias for \code{bioThreshold}.
 #' @param fdrToDisplay Deprecated alias for \code{qValueThreshold}.
+#' @param method Test method. One of \code{"wilcoxon"} (default unpaired
+#'   two-part Wilcoxon), \code{"paired_wilcoxon"} (paired two-part test using
+#'   the column named in \code{pairColumn}), or \code{"polr"} (proportional-
+#'   odds cumulative-logit on ordinal-binned values; requires the
+#'   \pkg{MASS} package).
+#' @param pairColumn Column in \code{colData(SampleTileObj)} that identifies
+#'   matched pairs across the foreground/background groups. Required when
+#'   \code{method = "paired_wilcoxon"}; ignored otherwise.
 #'
 #' @return full_results The differential accessibility results as a GRanges or
 #'   matrix data.frame depending on the flag `outputGRanges`.
@@ -93,7 +101,13 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
                                            dropoutAdjustment = c("none", "biological_only", "weighted"),
                                            bioThreshold = 0.8,
                                            techThreshold = NULL,
-                                           fdrToDisplay = NULL) {
+                                           fdrToDisplay = NULL,
+                                           method = c("wilcoxon", "paired_wilcoxon", "polr"),
+                                           pairColumn = NULL) {
+  method <- match.arg(method)
+  if (method == "paired_wilcoxon" && is.null(pairColumn)) {
+    stop("`pairColumn` must be supplied when method = 'paired_wilcoxon'.")
+  }
   if (!is.null(techThreshold)) {
     lifecycle::deprecate_warn(
       when = "1.2.0",
@@ -165,8 +179,20 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
                                            c(foreground_samples, background_samples), drop = FALSE]
 
       group <- as.numeric(colnames(sampleTileMatrix) %in% foreground_samples)
-      
-      ## Check if there are at least 3 samples of each group. 
+
+      pair_id <- NULL
+      if (method == "paired_wilcoxon") {
+        if (!(pairColumn %in% colnames(metaFile))) {
+          stop(stringr::str_interp("Provided pairColumn '{pairColumn}' not found in the provided SampleTileObj"))
+        }
+        sampleToPair <- setNames(as.character(metaFile[[pairColumn]]), rownames(metaFile))
+        pair_id <- sampleToPair[colnames(sampleTileMatrix)]
+        if (anyNA(pair_id)) {
+          stop("`pairColumn` contains NAs for samples participating in this comparison.")
+        }
+      }
+
+      ## Check if there are at least 3 samples of each group.
       sumGroup = as.data.table(table(group))
       if(dim(sumGroup)[1] != 2 | any(sumGroup[,2] < 3)){
           message('Less than three samples available per group for this comparison.',
@@ -251,9 +277,11 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
 
       ## Let's create a matrix to iterate over. 
       cl <- parallel::makeCluster(numCores)
-      res_pvals <- pbapply::pbapply(cl = cl, sampleTileMatrix[idx, , drop = FALSE], 
+      res_pvals <- pbapply::pbapply(cl = cl, sampleTileMatrix[idx, , drop = FALSE],
                                 MARGIN = 1, estimate_differential_accessibility,
-                                    group = group)
+                                    group = group,
+                                    method = method,
+                                    pair_id = pair_id)
       parallel::stopCluster(cl)
       res_pvals <- do.call(rbind, res_pvals)               
       ##Add back in other untested tiles for visibility.

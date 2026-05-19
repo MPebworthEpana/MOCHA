@@ -43,7 +43,6 @@ Description: A statistical framework and analysis tool for open chromatin
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.3
 URL: https://aifimmunology.github.io/MOCHA/, https://github.com/aifimmunology/MOCHA
 BugReports: https://github.com/aifimmunology/MOCHA/issues
 BiocType: Software
@@ -101,6 +100,7 @@ Suggests:
     Rsamtools,
     AnnotationDbi,
     biomaRt,
+    MASS,
     motifmatchr,
     BiocManager,
     TxDb.Hsapiens.UCSC.hg38.knownGene,
@@ -134,3 +134,5 @@ Suggests:
     BiocCheck
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.3

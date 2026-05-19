@@ -656,17 +656,6 @@ getCellTypeTiles <- function(object, cellType) {
 }
 
 
-#' @title Extract Sample-celltype specific metadata
-#' @description \code{getSampleCellTypeMetadata} Extract Sample-celltype
-#'   specific metadata like fragment and cell counts
-#'
-#' @param object tileResults object from callOpenTiles or SummarizedExperiment
-#'   from getSampleTileMatrix
-#' @return a SummarizedExperiment where each assay is a different type of
-#'   metadata.
-#'
-#' @export
-#' @keywords utils
 .get_sample_celltype_count_tables <- function(object) {
   if (!is.null(object@metadata$summarizedData)) {
     summarizedData <- object@metadata$summarizedData
@@ -689,6 +678,17 @@ getCellTypeTiles <- function(object, cellType) {
   NULL
 }
 
+#' @title Extract Sample-celltype specific metadata
+#' @description \code{getSampleCellTypeMetadata} Extract Sample-celltype
+#'   specific metadata like fragment and cell counts
+#'
+#' @param object tileResults object from callOpenTiles or SummarizedExperiment
+#'   from getSampleTileMatrix
+#' @return a SummarizedExperiment where each assay is a different type of
+#'   metadata.
+#'
+#' @export
+#' @keywords utils
 getSampleCellTypeMetadata <- function(object) {
   countTables <- .get_sample_celltype_count_tables(object)
   if (is.null(countTables)) {

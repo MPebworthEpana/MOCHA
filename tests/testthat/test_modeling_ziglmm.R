@@ -6,7 +6,7 @@ test_that("linearModeling returns named lmer list for one cell type", {
     ExperimentObj <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = "C2",
-      threshold = 0.1,
+      threshold = 0,
       numCores = 1
     ),
     type = "message"

@@ -154,6 +154,7 @@ varZIGLMM <- function(TSAM_Object,
                                     
 
   # Make your clusters for efficient parallelization
+  cl <- NULL
   if (numCores > 1) {
     cl <- parallel::makeCluster(numCores)
     parallel::clusterEvalQ(cl, {

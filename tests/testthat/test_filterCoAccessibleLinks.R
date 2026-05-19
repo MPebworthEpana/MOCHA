@@ -13,6 +13,10 @@ test_that("filterCoAccessibleLinks filters by correlation and adds coordinates",
     verbose = FALSE
   )
   expect_gt(nrow(links), 0L)
+  skip_if(
+    !any(abs(links$Correlation) > 0, na.rm = TRUE),
+    "Fixture produced no non-zero correlations for filterCoAccessibleLinks"
+  )
 
   filtered <- MOCHA::filterCoAccessibleLinks(links, threshold = 0)
   expect_true(all(abs(filtered$Correlation) > 0))

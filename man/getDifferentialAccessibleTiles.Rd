@@ -20,7 +20,9 @@ getDifferentialAccessibleTiles(
   dropoutAdjustment = c("none", "biological_only", "weighted"),
   bioThreshold = 0.8,
   techThreshold = NULL,
-  fdrToDisplay = NULL
+  fdrToDisplay = NULL,
+  method = c("wilcoxon", "paired_wilcoxon", "polr"),
+  pairColumn = NULL
 )
 }
 \arguments{
@@ -72,6 +74,16 @@ Default is 0.8.}
 \item{techThreshold}{Deprecated alias for \code{bioThreshold}.}
 
 \item{fdrToDisplay}{Deprecated alias for \code{qValueThreshold}.}
+
+\item{method}{Test method. One of \code{"wilcoxon"} (default unpaired
+two-part Wilcoxon), \code{"paired_wilcoxon"} (paired two-part test using
+the column named in \code{pairColumn}), or \code{"polr"} (proportional-
+odds cumulative-logit on ordinal-binned values; requires the
+\pkg{MASS} package).}
+
+\item{pairColumn}{Column in \code{colData(SampleTileObj)} that identifies
+matched pairs across the foreground/background groups. Required when
+\code{method = "paired_wilcoxon"}; ignored otherwise.}
 }
 \value{
 full_results The differential accessibility results as a GRanges or

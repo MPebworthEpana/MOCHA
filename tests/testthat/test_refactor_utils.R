@@ -7,7 +7,7 @@ test_that(".resolveSubSamples returns all samples when ungrouped", {
   resolved <- MOCHA:::.resolveSubSamples(metaFile)
 
   expect_equal(resolved$subGroups, "All")
-  expect_equal(unlist(resolved$subSamples), metaFile$Sample)
+  expect_equal(unname(unlist(resolved$subSamples)), metaFile$Sample)
 })
 
 test_that(".resolveSubSamples respects groupColumn", {

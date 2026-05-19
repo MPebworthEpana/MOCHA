@@ -4,6 +4,8 @@ test_that("Mocha coercion and validity work on bundled tileResults", {
   expect_s4_class(mtr, "MochaTileResults")
   expect_s4_class(mtr, "MultiAssayExperiment")
   expect_true(MOCHA::isMOCHAObject(mtr))
+  expect_equal(MOCHA::cellTypes(mtr), MOCHA::getCellTypes(mtr))
+  expect_s4_class(MOCHA::openTiles(mtr, returnType = "GRangesList"), "GRangesList")
 
   capture.output(
     stm <- MOCHA::getSampleTileMatrix(
@@ -17,6 +19,9 @@ test_that("Mocha coercion and validity work on bundled tileResults", {
   )
   expect_s4_class(stm, "MochaSampleTileMatrix")
   expect_s4_class(stm, "RangedSummarizedExperiment")
+  expect_equal(MOCHA::cellTypes(stm), c("C2", "C5"))
+  mstm <- MOCHA::asMochaSTM(stm)
+  expect_s4_class(mstm, "MochaSampleTileMatrix")
 
   tmp <- tempfile(fileext = ".rds")
   saveRDS(mtr, tmp)

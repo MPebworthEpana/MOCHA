@@ -21,10 +21,15 @@ This document lists open GitHub issues that are **not yet fully addressed** in t
 
 ## #85 adding automated thresholding for consensus tiles
 
-- **Status:** Open
-- **Summary:** Consensus plotting exists, but no automated derivative/changepoint threshold recommendation found.
-- **Code evidence:** `plotConsensus()` exists.
-- **Gap:** No automated threshold-selection algorithm matching issue request.
+- **Status:** Addressed (Phase 3)
+- **Summary:** `suggestConsensusThreshold()` added in `R/plotConsensus.R`.
+  Supports a kneedle elbow method (default) and a second-derivative
+  inflection method on the `log10(PeakNumber)` vs reproducibility curve.
+  `plotConsensus()` gains a `showSuggested = TRUE` flag that overlays the
+  recommendation as a dashed vertical line.
+- **Code evidence:** `R/plotConsensus.R` —
+  `suggestConsensusThreshold()`, `.suggest_threshold_from_curve()`,
+  `.kneedle_index()`, `.second_derivative_index()`.
 
 ---
 
@@ -64,9 +69,23 @@ This document lists open GitHub issues that are **not yet fully addressed** in t
 
 ## #30 Extend non-parametric functionality
 
-- **Status:** Open
-- **Summary:** Requested paired 2-part tests / proportional-odds extensions were not found.
-- **Gap:** No direct implementation of the issue's specific proposed methods.
+- **Status:** Addressed (Phase 3)
+- **Summary:** Two new statistical paths added.
+  - `TwoPartPaired()` (in `R/two_part.R`) combines McNemar on the
+    zero / non-zero component with a paired Wilcoxon (or paired t-test)
+    on the non-zero pairs, combined into a chi-square in the same shape
+    as the existing `TwoPart()`.
+  - `.twoPart_polr()` (in `R/estimate_differential_accessibility.R`)
+    fits a proportional-odds cumulative-logit model on zero / low /
+    high-binned values via `MASS::polr`, returning the Wald χ² on the
+    group coefficient.
+  - Both are wired into `getDifferentialAccessibleTiles()` via new
+    `method =` and `pairColumn =` arguments (default behaviour
+    unchanged).
+- **Code evidence:** `R/two_part.R` (TwoPartPaired),
+  `R/estimate_differential_accessibility.R` (method dispatcher +
+  `.twoPart_polr`), `R/getDifferentialAccessibleTiles.R` (argument
+  plumbing). `MASS` is now in `Suggests`.
 
 ---
 

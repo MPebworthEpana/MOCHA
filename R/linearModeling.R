@@ -34,7 +34,7 @@ linearModeling <- function(Obj, formula, CellType, threshold = 0, NAtoZero = FAL
         meta <- meta1[meta1$Sample %in% colnames(mat1),]
         rowsToKeep <- rowSums(!is.na(mat1))/dim(mat1)[2] > threshold
 
-        mat1 <- mat1[rowsToKeep,]
+        mat1 <- mat1[rowsToKeep, , drop = FALSE]
 
     }else{
 
@@ -62,11 +62,15 @@ linearModeling <- function(Obj, formula, CellType, threshold = 0, NAtoZero = FAL
 
         rowsToKeep <- rowSums(is.na(mat1))/dim(mat1)[2] > threshold
 
-        mat1 <- mat1[rowsToKeep,]
+        mat1 <- mat1[rowsToKeep, , drop = FALSE]
 
     }
 
-    suppressMessages(lmem_res <- pbapply::pblapply(c(1:nrow(mat1)),
+    if (nrow(mat1) == 0L) {
+      stop("No tiles remain after applying the non-zero measurement threshold.")
+    }
+
+    suppressMessages(lmem_res <- pbapply::pblapply(seq_len(nrow(mat1)),
         function(x) {
             df <- data.frame(exp = as.numeric(mat1[x, ]), 
                 meta, stringsAsFactors = FALSE)

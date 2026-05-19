@@ -62,6 +62,20 @@
     `Mart` connection is passed. Existing `annotateTiles()`, `getAltTSS()`,
     and `plotRegion()` calls work unchanged for users with an OrgDb
     installed.
+* Consensus thresholding (issue #85):
+  - `suggestConsensusThreshold()` returns an automated reproducibility
+    threshold per cell population using either a kneedle elbow or a
+    second-derivative inflection on the `log10(PeakNumber)` curve.
+  - `plotConsensus()` gains `showSuggested = TRUE` to overlay the
+    recommendation as a dashed vertical line.
+* Non-parametric extensions (issue #30):
+  - New paired two-part test (`TwoPartPaired()`) combining McNemar on the
+    binary component with a paired Wilcoxon (or paired t) on the
+    non-zero pairs.
+  - `getDifferentialAccessibleTiles()` gains `method =` and `pairColumn =`
+    arguments. Choose `"wilcoxon"` (default, unpaired), `"paired_wilcoxon"`
+    (paired via `pairColumn`), or `"polr"` (proportional-odds cumulative
+    logit; requires the `MASS` package, added to `Suggests`).
 * Internal refactor to reduce duplicated helper logic across coverage extraction,
   export, motif footprinting, and co-accessibility workflows. No intended
   user-facing behavior changes.
