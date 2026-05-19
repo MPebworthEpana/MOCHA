@@ -10,18 +10,9 @@
 #' @param numCores Number of threads to parallelize modeling over. Default is 1. 
 #'
 #' @return A list of lmer model objects
-#' 
-#' 
-#' @examples
-#' \dontrun{
-#'      vd_mat <- varDecomp(SampleTileObj, Donor_col = 'PTID', Time_col = 'Days')
-#' )
-#' }
 #'
 #' @export
-#' 
-#' 
-
+#' @keywords downstream
 linearModeling <- function(Obj, formula, CellType, threshold = 0, NAtoZero = FALSE, numCores = 1){
 
     . <- Sample <- Sample2 <- NULL

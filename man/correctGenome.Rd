@@ -20,3 +20,4 @@ chromVAR object
 \details{
 This is a wrapper for basic SummarizedExperiment-based subsetting.
 }
+\keyword{utils}

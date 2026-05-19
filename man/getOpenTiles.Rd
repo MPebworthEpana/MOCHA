@@ -31,28 +31,4 @@ A \code{GRangesList} or \code{data.frame} of open tiles per cell
   "data.frame"} they are flattened into a single data frame with a
   \code{CellPopulation} column.
 }
-\examples{
-\donttest{
-if (
-  requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
-    requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
-    requireNamespace("org.Hs.eg.db", quietly = TRUE)
-) {
-  tiles <- MOCHA::callOpenTiles(
-    ATACFragments = MOCHA::exampleFragments,
-    cellColData = MOCHA::exampleCellColData,
-    blackList = MOCHA::exampleBlackList,
-    genome = "BSgenome.Hsapiens.UCSC.hg19",
-    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-    OrgDb = "org.Hs.eg.db",
-    outDir = tempdir(),
-    cellPopLabel = "Clusters",
-    cellPopulations = "C2",
-    numCores = 1
-  )
-  openTiles <- MOCHA::getOpenTiles(tiles, cellPopulations = "C2")
-}
-}
-
-}
 \keyword{utils}

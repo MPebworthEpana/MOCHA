@@ -43,36 +43,8 @@
 #'   \item \pkg{rtracklayer} and a \code{macs2} binary when \code{callPeaks = TRUE}
 #' }
 #'
-#' @examples
-#' \dontrun{
-#' if (requireNamespace("cutpointr", quietly = TRUE)) {
-#'   model <- MOCHA::trainPeakModel(
-#'     ATACFragments = MOCHA::exampleFragments[[1]],
-#'     cellColData = MOCHA::exampleCellColData,
-#'     blackList = MOCHA::exampleBlackList,
-#'     groundTruthPeaks = myPeaks,
-#'     tileSize = 250L,
-#'     cellSubsetSizes = c(50, 100, 500),
-#'     replicatesFn = function(n) 2L,
-#'     numCores = 2
-#'   )
-#'   tiles <- MOCHA::callOpenTiles(
-#'     ATACFragments = MOCHA::exampleFragments,
-#'     cellColData = MOCHA::exampleCellColData,
-#'     blackList = MOCHA::exampleBlackList,
-#'     genome = "hg19",
-#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-#'     OrgDb = "org.Hs.eg.db",
-#'     outDir = tempdir(),
-#'     cellPopLabel = "Clusters",
-#'     cellPopulations = "C2",
-#'     peakModel = model,
-#'     numCores = 1
-#'   )
-#' }
-#' }
-#'
 #' @export
+#' @keywords core
 trainPeakModel <- function(ATACFragments,
                            cellColData,
                            blackList,

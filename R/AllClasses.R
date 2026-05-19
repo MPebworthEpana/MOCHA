@@ -1,6 +1,5 @@
 #' @import MultiAssayExperiment
 #' @import SummarizedExperiment
-#' MOCHA S4 subclasses for tileResults and SampleTileMatrix objects.
 #'
 #' @name MochaTileResults-class
 #' @aliases MochaTileResults MochaTileResults-class
