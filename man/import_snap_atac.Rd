@@ -63,26 +63,4 @@ cells, columns = global genomic start positions, values = fragment length).
 Decode offsets use `uns['reference_sequences']`. See SnapATAC2 documentation:
 \url{https://scverse.org/SnapATAC2/}.
 }
-\examples{
-\dontrun{
-library(reticulate)
-ad <- import("anndata")$read_h5ad("my_data.h5ad")
-inputs <- MOCHA::import_snap_atac(
-  ad,
-  cellPopLabel = "leiden",
-  sampleColumn = "Sample"
-)
-tiles <- MOCHA::callOpenTiles(
-  ATACFragments = inputs$ATACFragments,
-  cellColData = inputs$cellColData,
-  blackList = my_blacklist,
-  genome = "BSgenome.Hsapiens.UCSC.hg38",
-  cellPopLabel = "leiden",
-  cellCol = inputs$cellCol,
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-  OrgDb = "org.Hs.eg.db",
-  outDir = tempdir()
-)
-}
-
-}
+\keyword{core}

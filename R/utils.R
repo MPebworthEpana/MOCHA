@@ -656,6 +656,8 @@ getCellTypeTiles <- function(object, cellType) {
 }
 
 
+#' @keywords internal
+#' @noRd
 .get_sample_celltype_count_tables <- function(object) {
   if (!is.null(object@metadata$summarizedData)) {
     summarizedData <- object@metadata$summarizedData
@@ -860,29 +862,6 @@ addCellColData <- function(object, name, value, samples = NULL, force = FALSE) {
 #'
 #' @return A \code{GRangesList} or \code{data.frame} of open tiles per cell
 #'   population.
-#'
-#' @examples
-#' \donttest{
-#' if (
-#'   requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
-#'     requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
-#'     requireNamespace("org.Hs.eg.db", quietly = TRUE)
-#' ) {
-#'   tiles <- MOCHA::callOpenTiles(
-#'     ATACFragments = MOCHA::exampleFragments,
-#'     cellColData = MOCHA::exampleCellColData,
-#'     blackList = MOCHA::exampleBlackList,
-#'     genome = "BSgenome.Hsapiens.UCSC.hg19",
-#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-#'     OrgDb = "org.Hs.eg.db",
-#'     outDir = tempdir(),
-#'     cellPopLabel = "Clusters",
-#'     cellPopulations = "C2",
-#'     numCores = 1
-#'   )
-#'   openTiles <- MOCHA::getOpenTiles(tiles, cellPopulations = "C2")
-#' }
-#' }
 #'
 #' @export
 #' @keywords utils

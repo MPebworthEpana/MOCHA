@@ -1,0 +1,34 @@
+# Doc coverage baseline (pkgdown branch, pre-site-rebuild)
+exports=70
+man_aliases_covered=70
+man_missing=0
+rendered_reference_covered=46
+rendered_missing=24
+
+## Missing from man/*.Rd
+
+## Missing from docs/reference (rendered)
+addCellColData
+addInsertionBias
+asMochaSTM
+asMochaTileResults
+assessDropout
+cellTypes
+classifyZeros
+correctGenome
+estimateDropoutModel
+exportLocalFootprints
+getCellTypeMotifs
+getDropoutProb
+getOpenTiles
+import_snap_atac
+isMOCHAObject
+linearModeling
+motifFootprint
+openTiles
+plotDropoutDiagnostics
+plotMotifs
+seuratToMOCHAInputs
+suggestConsensusThreshold
+trainPeakModel
+updateDirectoryPath

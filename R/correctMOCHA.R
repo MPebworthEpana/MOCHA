@@ -12,10 +12,7 @@
 #'
 #'
 #' @export
-#' 
-#' 
-
-
+#' @keywords utils
 correctGenome<- function(TSAM, genome){
 
     S4Vectors::metadata(TSAM)$Genome <- genome

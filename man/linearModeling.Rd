@@ -32,10 +32,4 @@ A list of lmer model objects
 \description{
 \code{linearModeling} Runs linearModeling on MOCHA TSAM
 }
-\examples{
-\dontrun{
-     vd_mat <- varDecomp(SampleTileObj, Donor_col = 'PTID', Time_col = 'Days')
-)
-}
-
-}
+\keyword{downstream}
