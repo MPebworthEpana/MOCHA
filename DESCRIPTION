@@ -1,7 +1,7 @@
 Package: MOCHA
 Type: Package
 Title: Modeling for Single-Cell Open Chromatin Analysis
-Version: 1.2.0
+Version: 2.0.0
 Authors@R: 
     c(person(given = "Samir",
            family = "Rachid Zaim",
@@ -14,7 +14,7 @@ Authors@R:
     person(given = "Imran",
            family = "McGrath",
            role = c("aut", "cre"),
-           email = "aifi.compbio.support@alleninstitute.org"),
+           email = "imran.mcgrath@alleninstitute.org"),
     person(given = "Lauren",
            family = "Okada",
            role = c("aut", "ctb"),
@@ -25,7 +25,7 @@ Authors@R:
            email = "xiaojun.li@alleninstitute.org")
     )
 Maintainer: 
-        Imran McGrath <aifi.compbio.support@alleninstitute.org>
+        Imran McGrath <imran.mcgrath@alleninstitute.org>
 Description: A statistical framework and analysis tool for open chromatin 
   analysis designed specifically for single cell ATAC-seq (Assay for 
   Transposase-Accessible Chromatin) data, after cell type/cluster 
@@ -43,11 +43,23 @@ Description: A statistical framework and analysis tool for open chromatin
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.2
 URL: https://aifimmunology.github.io/MOCHA/, https://github.com/aifimmunology/MOCHA
 BugReports: https://github.com/aifimmunology/MOCHA/issues
+BiocType: Software
 Depends: R (>= 4.1.0)
 biocViews:
+    Software,
+    ATACSeq,
+    SingleCell,
+    ChromatinAccessibility,
+    Epigenetics,
+    DifferentialPeakCalling,
+    PeakDetection,
+    Coverage,
+    Annotation,
+    Sequencing,
+    Transcription,
+    GeneRegulation
 Imports:
     data.table,
     plyranges (>= 1.14.0),
@@ -61,7 +73,6 @@ Imports:
     wCorr,
     magrittr,
     rlang,
-    AnnotationDbi,
     BiocGenerics,
     GenomeInfoDb,
     GenomicFeatures,
@@ -82,17 +93,24 @@ Imports:
     tidyselect,
     lifecycle
 Suggests: 
+    reticulate,
     ArchR,
-    RMariaDB,
+    Seurat,
+    Signac,
+    Rsamtools,
+    AnnotationDbi,
+    biomaRt,
+    MASS,
     motifmatchr,
     BiocManager,
-    TxDb.Hsapiens.UCSC.hg38.refGene,
+    TxDb.Hsapiens.UCSC.hg38.knownGene,
     TxDb.Hsapiens.UCSC.hg19.knownGene,
     org.Hs.eg.db,
     BSgenome.Hsapiens.UCSC.hg19,
     withr,
     knitr,
     rmarkdown,
+    BiocStyle,
     chromVAR,
     testthat (>= 3.0.0),
     uwot,
@@ -108,9 +126,13 @@ Suggests:
     rtracklayer,
     cowplot,
     mixtools,
+    cutpointr,
     zoo,
     Biostrings,
-    ggrastr
-Additional_repositories: https://imran-aifi.github.io/drat
+    ggrastr,
+    BSgenome.Hsapiens.UCSC.hg38,
+    BiocCheck
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.3

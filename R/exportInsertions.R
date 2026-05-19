@@ -99,63 +99,24 @@ exportLocalFootprints <- function(SampleTileObj,
         dir.create(outDir)
     }
     
-    ### Pull out Tn5 insert bias, if necessary.
-    if(normTn5 & any(grepl('InsertionBias', names(SampleTileObj@metadata)))){
-          ## Pull in genome database
-          genome_db = SampleTileObj@metadata$Genome
-          genome = getAnnotationDbFromInstalledPkgname(dbName = genome_db, type = 'BSgenome')
-          insertBias = SampleTileObj@metadata$InsertionBias
-
-      }else if(normTn5 & !any(grepl('InsertionBias', names(SampleTileObj@metadata)))){
-
-          stop('Attempting to normalize by Tn5 insertion bias, but no bias calculated. Please run addInsertionBias.')
-
-      }else{
-        
-         insertBias = NULL
-        
-      }
+    biasContext <- .loadInsertionBias(SampleTileObj, normTn5 = normTn5)
+    genome_db <- biasContext$genome_db
+    genome <- biasContext$genome
+    insertBias <- biasContext$insertBias
     
-    covFile <- file.path(sourcedir, paste0(cellPopulation, "_CoverageFiles.RDS"))
-    if (!file.exists(covFile)){
-        stop("Coverage file ", covFile, " for could not be found. ",
-            "Please ensure that the directory given by `SampleTileObj@metadata$Directory` exists and contains coverage files.", 
-            " To preserved linked files when sharing MOCHA objects, ", 
-            " use `packMOCHA()` and `unpackMOCHA()`.")
-    }
-    insertionsList <- readRDS(covFile)
-    if (!"Insertions" %in% names(insertionsList)) {
+    coverageBundle <- .readCoverageBundle(sourcedir, cellPopulation)
+    if (!"Insertions" %in% names(coverageBundle)) {
+        covFile <- file.path(sourcedir, paste0(cellPopulation, "_CoverageFiles.RDS"))
         stop("No insertions found in the file `", covFile, "`.",
-             " Please run peak calling with the latest MOCHA version,", 
+             " Please run peak calling with the latest MOCHA version,",
              " 1.0.1 or greater.")
     }
+    insertionsGRangesList <- coverageBundle$Insertions
     
-    insertionsGRangesList <- insertionsList$Insertions
-    rm(insertionsList)
-    
-    # Pull out a list of samples by group.
-    if (!is.null(subGroups) & !is.null(groupColumn)) {
-        # If the user defined a list of subgroup(s) within the groupColumn from the metadata, 
-        # then it subsets to just those samples
-        
-        subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-        names(subSamples) <- subGroups
-                             
-    } else if (!is.null(groupColumn)) {
+    grouping <- .prepSampleTileGrouping(metaFile, groupColumn, subGroups)
+    subGroups <- grouping$subGroups
+    subSamples <- grouping$subSamples
 
-        # If no subGroup defined, then it'll form a list of samples across all labels within the groupColumn
-        subGroups <- unique(metaFile[, groupColumn])
-        subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-        names(subSamples) = subGroups
-                             
-    } else {
-
-        # If neither groupColumn nor subGroup is defined, then it forms one list of all sample names
-        subGroups <- "All"
-        subSamples <- list("All" = metaFile[, "Sample"])
-        
-    }
-    
     ## Filter to specific samples of interest from the SampleTileObject
     for(y in seq_along(subSamples)) {
       if (!all(subSamples[[y]] %in% names(insertionsGRangesList))) {
@@ -164,9 +125,9 @@ exportLocalFootprints <- function(SampleTileObj,
           
         if(!force){
             stop(stringr::str_interp(c(
-              "There is no insertion coverage for cell population '${x}' in the ",
+              "There is no insertion coverage for cell population '${cellPopulation}' in the ",
               "following samples in sample grouping '${names(subSamples)[y]}': ",
-              "${missingSamples}"
+              "${missingSamples}. Set force = TRUE to bypass error."
             )))
         }else{
             
@@ -190,7 +151,7 @@ exportLocalFootprints <- function(SampleTileObj,
     for (sampleName in names(insertionsGRangesList)) {
         
         ##Print out the name of the insertion file. 
-        type <- paste0("window", windowSize)
+        type <- paste0("Insertions_window", windowSize)
         outfile <- file.path(outDir, paste0(
             cellPopulation, "__", sampleName, "__", type, ".bw"
         ))
@@ -266,8 +227,7 @@ exportLocalFootprints <- function(SampleTileObj,
             if (verbose) { message("Output file already exists: ", outfile) }
             next # Skip this one!
         }
-          
-          
+
         result <- tryCatch({
                     plyranges::write_bigwig(cellPopSubsampleCov[[one_group]], outfile)
                 }, warning = function(w) {
@@ -310,7 +270,7 @@ processFile <- function(objectList){
     ##get database 
     genome <- getAnnotationDbFromInstalledPkgname(dbName = genome_db, type = 'BSgenome')
     
-    onlyIns <- plyranges::filter(chrIns, score !=0)
+    onlyIns <- dplyr::filter(chrIns, score !=0)
     ## Find windows to pay attention to:
     windowsGR <-plyranges::reduce_ranges(plyranges::stretch(onlyIns, extend = 2*windowSize))
     ##Tile those windows. 
@@ -354,7 +314,7 @@ processFile <- function(objectList){
             plyranges::anchor_center(tilesGR), windowSize)
     rm(tilesGR)
     #Convert to Data.table for processing speed. 
-    bpInsert = plyranges::select(bpInsert, !partition)
+    bpInsert = dplyr::select(bpInsert, !partition)
     insertDT = as.data.table(plyranges::join_overlap_left(bpInsert, tilesGR2))
 
     #Use data.table to run the average

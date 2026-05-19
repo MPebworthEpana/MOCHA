@@ -29,7 +29,9 @@ callOpenTiles(
   outDir,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 
 .callOpenTiles_default(
@@ -48,7 +50,9 @@ callOpenTiles(
   outDir,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 
 \S4method{callOpenTiles}{GRangesList}(
@@ -67,7 +71,9 @@ callOpenTiles(
   outDir,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 
 \S4method{callOpenTiles}{list}(
@@ -86,7 +92,9 @@ callOpenTiles(
   outDir,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 
 .callOpenTiles_ArchR(
@@ -101,13 +109,25 @@ callOpenTiles(
   outDir = NULL,
   numCores = 30,
   verbose = FALSE,
-  force = FALSE
+  force = FALSE,
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 }
 \arguments{
-\item{ATACFragments}{an ArchR Project, or a GRangesList of fragments. Each
-GRanges in the GRanges list must have unique cell IDs in the column given
-by 'cellCol'.}
+\item{ATACFragments}{an ArchR Project, a Seurat object with a Signac
+ChromatinAssay (fragment paths in the assay), or a GRangesList of fragments.
+Two input formats are supported for non-ArchR GRangesList input:
+\itemize{
+  \item **Legacy:** each list element is named `CellPopulation#Sample`
+    (optional `__normalizationFactor` suffix), with mixed cell types already
+    split per sample.
+  \item **Sample-level:** each list element is named by sample ID (matching
+    `cellColData[[sampleColumn]]`), containing fragments from all cell types
+    in that sample. Cell populations are derived from `cellColData` using
+    `cellPopLabel` and `cellCol`.
+}
+Each GRanges must contain unique cell IDs in the column given by `cellCol`.}
 
 \item{cellColData}{A DataFrame containing cell-level metadata. This must
 contain both a column 'Sample' with unique sample IDs and the column
@@ -148,7 +168,7 @@ the median number of fragments.}
 barcodes. Default is "RG", the unique cell identifier used by ArchR.}
 
 \item{TxDb}{The exact package name of a TxDb-class transcript annotation
-package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.refGene"). This
+package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.knownGene"). This
 must be installed. See
 \href{https://bioconductor.org/packages/release/data/annotation/}{
 Bioconductor AnnotationData Packages}.}
@@ -170,6 +190,13 @@ multiple cell populations.}
 
 \item{force}{Optional, whether to force creation of coverage files if they
 already exist. Default is FALSE.}
+
+\item{peakModel}{Optional \code{MOCHAPeakModel} from \code{\link{trainPeakModel}}.
+When \code{NULL}, the bundled 500 bp model is used. Custom models set the
+tile width and study-signal calibration (\code{trainingMedian}).}
+
+\item{returnClass}{Return type: \code{"legacy"} (default,
+\code{MultiAssayExperiment}) or \code{"mocha"} (\code{MochaTileResults}).}
 }
 \value{
 tileResults A MultiAssayExperiment object containing ranged data for
@@ -181,22 +208,13 @@ tileResults A MultiAssayExperiment object containing ranged data for
   files and an ArchR Project for meta-data purposes
 }
 \examples{
-\dontrun{
-# Starting from an ArchR Project:
-tileResults <- MOCHA::callOpenTiles(
-  ArchRProj = myArchRProj,
-  cellPopLabel = "celltype_labeling",
-  cellPopulations = "CD4",
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
-  OrgDb = "org.Hs.eg.db",
-  numCores = 1
-)
-}
 \donttest{
+# ArchR Project input requires the ArchR package (not run here).
+# Starting from GRangesList with bundled example data:
 # Starting from GRangesList:
 if (
   requireNamespace("BSgenome.Hsapiens.UCSC.hg19") &&
-  requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene") &&
+  requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene") &&
   requireNamespace("org.Hs.eg.db")
 ) {
   tiles <- MOCHA::callOpenTiles(
@@ -204,7 +222,7 @@ if (
     cellColData = MOCHA::exampleCellColData,
     blackList = MOCHA::exampleBlackList,
     genome = "BSgenome.Hsapiens.UCSC.hg19",
-    TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
     OrgDb = "org.Hs.eg.db",
     outDir = tempdir(),
     cellPopLabel = "Clusters",
@@ -212,6 +230,9 @@ if (
     numCores = 1
   )
 }
+# Sample-level GRangesList (one element per sample):
+# sampleFragments <- GRangesList(Sample1 = frags1, Sample2 = frags2)
+# callOpenTiles(sampleFragments, cellColData = meta, cellPopLabel = "Clusters", ...)
 }
 
 }

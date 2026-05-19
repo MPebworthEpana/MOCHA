@@ -49,3 +49,9 @@ rsconnect/
 /*_files/
 # End of https://www.toptal.com/developers/gitignore/api/r,jupyternotebooks
 inst/doc
+# Files generated from pkgdown::build* functions
+^docs$
+
+# Local issue triage and agent notes (not for version control)
+ISSUE_REVIEW_SUMMARY.md
+CLAUDE.md

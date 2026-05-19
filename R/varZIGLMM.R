@@ -52,13 +52,13 @@ varZIGLMM <- function(TSAM_Object,
                       verbose = FALSE,
                       numCores = 1) {
 
- # lifecycle::deprecate_warn(
- #   when="1.1.0", 
- #   what="varZIGLMM()", 
- #   details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
-  # )
+  lifecycle::deprecate_warn(
+    when = "1.1.0",
+    what = "varZIGLMM()",
+    details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
+  )
   Sample <- NULL
-  
+
   if (length(cellPopulation) > 1) {
     stop(
       "More than one cell population was provided. ",
@@ -75,8 +75,6 @@ varZIGLMM <- function(TSAM_Object,
   } else {
     newObj <- combineSampleTileMatrix(subsetMOCHAObject(TSAM_Object, subsetBy = "celltype", groupList = cellPopulation, subsetPeaks = TRUE))
   }
-
-    browser()
 
   modelingData <- log2(SummarizedExperiment::assays(newObj)[["counts"]] + 1)
   MetaDF <- as.data.frame(SummarizedExperiment::colData(newObj))
@@ -102,7 +100,7 @@ varZIGLMM <- function(TSAM_Object,
   ziformula <- paste("~ ", zi_form)
 
   MetaDF <- dplyr::filter(MetaDF, Sample %in% colnames(modelingData))
-  modelingData <- modelingData[, match(colnames(modelingData), MetaDF$Sample)]
+  modelingData <- modelingData[, match(colnames(modelingData), MetaDF$Sample), drop = FALSE]
 
   # Subset metadata to just the variables needed. This minimizes overhead for parallelization
   MetaDF <- MetaDF[, colnames(MetaDF) %in% c("Sample", variableList)]
@@ -156,6 +154,7 @@ varZIGLMM <- function(TSAM_Object,
                                     
 
   # Make your clusters for efficient parallelization
+  cl <- NULL
   if (numCores > 1) {
     cl <- parallel::makeCluster(numCores)
     parallel::clusterEvalQ(cl, {

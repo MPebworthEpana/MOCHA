@@ -296,17 +296,17 @@ get_gene_plot <- function(regionGRanges,  TxDb, OrgDb,
       geneTrackDF$tx_name = unlist(lapply(geneTrackDF$tx_name, function(ZZ) paste0(ZZ, collapse = ', ')))
       geneTrackDF <- tidyr::separate_longer_delim(geneTrackDF, 
                           cols = c('tx_name'), delim = ", ")
-      geneTrackDF$GeneName <- AnnotationDbi::mapIds(
+      geneTrackDF$GeneName <- .map_gene_ids(
                     OrgDb,
                     keys = unlist(geneTrackDF$tx_name),
                     column = "SYMBOL",
                     keytype = db_id_col)
 
   }else{
-      #Just choose the first one. You only need one to get the gene symbol. 
+      #Just choose the first one. You only need one to get the gene symbol.
 
       geneTrackDF$tx_name = unlist(lapply(geneTrackDF$tx_name, function(ZZ) ZZ[[1]]))
-      geneTrackDF$GeneName <- AnnotationDbi::mapIds(
+      geneTrackDF$GeneName <- .map_gene_ids(
                     OrgDb,
                     keys = unlist(geneTrackDF$tx_name),
                     column = "SYMBOL",
@@ -334,12 +334,12 @@ get_gene_plot <- function(regionGRanges,  TxDb, OrgDb,
   tx_name <- NULL
   geneTrackGRanges <- .getSpacing(geneTrackGRanges, overlapFeat = tx_name)    
   ## Identify introns that are too small for arrows, as measured by 1/100 of the region size
-  geneTrackGRanges <- plyranges::mutate(geneTrackGRanges,
+  geneTrackGRanges <- dplyr::mutate(geneTrackGRanges,
                                     TinyIntron = is.na(exonic_part) & 
                                     GenomicRanges::width(geneTrackGRanges) < totalLength/100)
  
   ## Generate additional arrows for long introns. 
-  dupIntrons <- plyranges::filter(geneTrackGRanges,  is.na(exonic_part))
+  dupIntrons <- dplyr::filter(geneTrackGRanges,  is.na(exonic_part))
   dupIntrons <- plyranges::join_overlap_intersect(
       plyranges::tile_ranges(dupIntrons, totalLength/20),dupIntrons)
 
@@ -718,14 +718,14 @@ get_motifs_in_region <- function(motifsList, countdf) {
   )
 
   specMotifs <- unlist(motifsList) %>%
-    plyranges::mutate(name = gsub("_.*", "", names(.))) %>%
+    dplyr::mutate(name = gsub("_.*", "", names(.))) %>%
     plyranges::join_overlap_intersect(regionGRanges)
 
   if (length(specMotifs) > 0) {
     specMotifs <- specMotifs %>%
-      plyranges::mutate(type = "exon") %>%
-      plyranges::mutate(index = seq(1, length(.), by = 1)) %>%
-      plyranges::mutate(labels = paste(name, index, sep = "_"))
+      dplyr::mutate(type = "exon") %>%
+      dplyr::mutate(index = seq(1, length(.), by = 1)) %>%
+      dplyr::mutate(labels = paste(name, index, sep = "_"))
   } else {
     specMotifs <- NULL
   }

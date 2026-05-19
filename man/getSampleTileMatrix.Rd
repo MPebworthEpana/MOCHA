@@ -10,7 +10,8 @@ getSampleTileMatrix(
   groupColumn = NULL,
   threshold = 0.2,
   numCores = 1,
-  verbose = FALSE
+  verbose = FALSE,
+  returnClass = c("legacy", "mocha")
 )
 }
 \arguments{
@@ -37,6 +38,10 @@ tune this parameter to omit potentially spurious peaks.}
 Default is 1.}
 
 \item{verbose}{Set TRUE to display additional messages. Default is FALSE.}
+
+\item{returnClass}{Return type: \code{"legacy"} (default,
+\code{RangedSummarizedExperiment}) or \code{"mocha"}
+(\code{MochaSampleTileMatrix}).}
 }
 \value{
 SampleTileMatrices a MultiAssayExperiment containing a sample-tile
@@ -52,7 +57,7 @@ SampleTileMatrices a MultiAssayExperiment containing a sample-tile
 # Starting from GRangesList
 if (
   require(BSgenome.Hsapiens.UCSC.hg19) &&
-    require(TxDb.Hsapiens.UCSC.hg38.refGene) &&
+    require(TxDb.Hsapiens.UCSC.hg38.knownGene) &&
     require(org.Hs.eg.db)
 ) {
   tiles <- MOCHA::callOpenTiles(
@@ -60,8 +65,8 @@ if (
     cellColData = MOCHA::exampleCellColData,
     blackList = MOCHA::exampleBlackList,
     genome = "BSgenome.Hsapiens.UCSC.hg19",
-    TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
-    Org = "org.Hs.eg.db",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    OrgDb = "org.Hs.eg.db",
     outDir = tempdir(),
     cellPopLabel = "Clusters",
     cellPopulations = c("C2", "C5"),

@@ -22,7 +22,7 @@
 #' @export
 #' @keywords downstream
 filterCoAccessibleLinks <- function(TileCorr, threshold = 0.5) {
-  if (!any(abs(TileCorr$Correlation) > threshold)) {
+  if (!any(abs(TileCorr$Correlation) > threshold, na.rm = TRUE)) {
     stop("Error: There are no values above the threshold.")
   }
 

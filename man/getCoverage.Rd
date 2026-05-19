@@ -19,7 +19,7 @@ getCoverage(
 \item{normFactor}{Normalization factor. Can be either be one, in which case all coverage files will be normalized by the same value, or the same length as the GRangesList}
 
 \item{TxDb}{The TxDb-class transcript annotation
-package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.refGene"). This
+package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.knownGene"). This
 must be installed. See
 \href{https://bioconductor.org/packages/release/data/annotation/}{
 Bioconductor AnnotationData Packages}.}

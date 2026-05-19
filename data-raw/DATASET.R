@@ -2,7 +2,7 @@
 
 library(ArchR)
 library(MOCHA)
-library(TxDb.Hsapiens.UCSC.hg38.refGene)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(org.Hs.eg.db)
 
 ArchR::getTestProject()

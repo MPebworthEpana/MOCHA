@@ -10,6 +10,8 @@ plotConsensus(
   groupColumn = NULL,
   returnPlotList = FALSE,
   returnDFs = FALSE,
+  showSuggested = FALSE,
+  suggestMethod = c("kneedle", "second_derivative"),
   numCores = 1
 )
 }
@@ -25,6 +27,15 @@ want to plot reproducibility within each}
 
 \item{returnDFs}{Instead of a plot, returns a data.frame of the reproducibility across samples.
 If set to false, then it plots the data.frame instead of returning it.}
+
+\item{showSuggested}{Logical. If \code{TRUE}, overlay a dashed vertical
+line at the threshold recommended by
+\code{suggestConsensusThreshold()} for each cell population. Default
+\code{FALSE}.}
+
+\item{suggestMethod}{Method passed to
+\code{suggestConsensusThreshold()} when \code{showSuggested = TRUE}.
+One of \code{"kneedle"} (default) or \code{"second_derivative"}.}
 
 \item{numCores}{Number of cores to multithread over.}
 }

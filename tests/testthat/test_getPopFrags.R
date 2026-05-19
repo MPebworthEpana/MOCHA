@@ -11,11 +11,12 @@ test_that(
 )
 
 skip_on_cran()
-# Working dir during tests is under structure:
-# parent_dir/MOCHA/tests/testthat/. Assumes PBMCSmall is under 'parent_dir'
-ArchRProjDir <- "../../../PBMCSmall"
-if (dir.exists(ArchRProjDir) &&
-    require("purrr", quietly = TRUE)) {
+if (
+  mocha_heavy_tests_enabled() &&
+    requireNamespace("purrr", quietly = TRUE)
+) {
+  ArchRProjDir <- mocha_archr_project_dir("PBMCSmall")
+  if (!is.na(ArchRProjDir)) {
   # Load ArchR project
   capture.output(testProj <- ArchR::loadArchRProject(ArchRProjDir), type = "message")
   cellPopLabel <- "Clusters" # Column with cell population groups
@@ -258,4 +259,5 @@ if (dir.exists(ArchRProjDir) &&
       )
     }
   )
+  }
 }

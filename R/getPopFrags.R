@@ -27,6 +27,13 @@ getPopFrags <- function(ArchRProj,
                         numCores = 1,
                         returnGRangesList = TRUE,
                         verbose = FALSE) {
+  if (!requireNamespace("ArchR", quietly = TRUE)) {
+    stop(
+      "Package 'ArchR' is required for getPopFrags(). ",
+      "Install ArchR separately.",
+      call. = FALSE
+    )
+  }
   nFrags <- NULL
   # Turn off ArchR logging messages
   suppressMessages(ArchR::addArchRVerbose(verbose = FALSE))
@@ -209,27 +216,21 @@ getPopFrags <- function(ArchRProj,
 #' @noRd
 
 simplifiedFragments <- function(ref) {
-  arrows <- ref[[1]]
-  cellNames <- ref[[2]]
-
   if (length(ref) > 2) {
-    regionGRanges <- ref[[4]]
-    chrom <- ref[[3]]
-    frags <- ArchR::getFragmentsFromArrow(
-      ArrowFile = arrows,
-      cellNames = cellNames,
-      chr = chrom,
+    frags <- .callWithPackedArgs(ArchR::getFragmentsFromArrow, list(
+      ArrowFile = ref[[1]],
+      cellNames = ref[[2]],
+      chr = ref[[3]],
       verbose = FALSE
-    )
-    frags <- plyranges::filter_by_overlaps(frags, regionGRanges)
+    ))
+    plyranges::filter_by_overlaps(frags, ref[[4]])
   } else {
-    frags <- ArchR::getFragmentsFromArrow(
-      ArrowFile = arrows,
-      cellNames = cellNames,
+    .callWithPackedArgs(ArchR::getFragmentsFromArrow, list(
+      ArrowFile = ref[[1]],
+      cellNames = ref[[2]],
       verbose = FALSE
-    )
+    ))
   }
-  return(frags)
 }
 
 #' subsets fragments out by cellnames.

@@ -39,4 +39,32 @@ Object the input Object, filtered down to either the cell type or
   callOpenTiles), or a SummarizedExperiment-type object (from
   getSampleTileMatrix), either by cell type or sample metadata.
 }
+\examples{
+\donttest{
+if (
+  requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+    requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+    requireNamespace("org.Hs.eg.db", quietly = TRUE)
+) {
+  tiles <- MOCHA::callOpenTiles(
+    ATACFragments = MOCHA::exampleFragments,
+    cellColData = MOCHA::exampleCellColData,
+    blackList = MOCHA::exampleBlackList,
+    genome = "BSgenome.Hsapiens.UCSC.hg19",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    OrgDb = "org.Hs.eg.db",
+    outDir = tempdir(),
+    cellPopLabel = "Clusters",
+    cellPopulations = c("C2", "C5"),
+    numCores = 1
+  )
+  subsetTiles <- MOCHA::subsetMOCHAObject(
+    tiles,
+    subsetBy = "celltype",
+    groupList = "C2"
+  )
+}
+}
+
+}
 \keyword{utils}

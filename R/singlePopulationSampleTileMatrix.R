@@ -73,11 +73,9 @@ singlePopulationSampleTileMatrix <- function(peaksExperiment,
 #' @keywords internal
 #' @noRd
 simplifiedSampleTile <- function(ref) {
-  experiments <- ref[[1]]
-  allTiles <- ref[[2]]
-  singlePopulationSampleTileMatrix(
-    experiments,
-    allTiles,
+  .callWithPackedArgs(singlePopulationSampleTileMatrix, list(
+    peaksExperiment = ref[[1]],
+    consensusTiles = ref[[2]],
     NAtoZero = FALSE
-  )
+  ))
 }

@@ -17,6 +17,43 @@ knitr::opts_chunk$set(
 
 MOCHA is intended for use after clustering and cell labeling, since all functions of MOCHA operate on per-sample basis within each cell population. MOCHA can be used with an ArchR Project as input, as well as with a generic input. This tutorial has two sections: demonstrating MOCHA with generic inputs - [Importing from Signac](#signac) and [Importing from SnapATAC](#snapatac).
 
+## Direct Seurat/Signac input (recommended) {#seurat-direct}
+
+If your Seurat object already has a labeled `ChromatinAssay` with fragment paths (standard Signac workflow), you can call MOCHA directly without manually building a `GRangesList`:
+
+```{r}
+library(MOCHA)
+library(Signac)
+
+# seurat_obj: clustered, labeled Seurat object with ATAC assay + Fragment paths
+# Ensure metadata includes Sample and your cell type column (e.g. predicted.id)
+
+tileResults <- MOCHA::callOpenTiles(
+  ATACFragments = seurat_obj,
+  blackList = blacklist_hg38_unified,
+  genome = "BSgenome.Hsapiens.UCSC.hg38",
+  cellPopLabel = "predicted.id",
+  cellPopulations = "ALL",
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+  Org = "org.Hs.eg.db",
+  outDir = file.path(getwd(), "MOCHA_Out"),
+  numCores = 4
+)
+```
+
+To inspect or debug the converted inputs before peak calling:
+
+```{r}
+inputs <- MOCHA::seuratToMOCHAInputs(
+  seuratObj = seurat_obj,
+  cellPopLabel = "predicted.id"
+)
+# inputs$ATACFragments  # sample-level GRangesList
+# inputs$cellColData    # cell metadata
+```
+
+The manual fragment extraction workflow below remains available for advanced use cases.
+
 ## Importing from Signac {#signac}
 
 This vignette will follow the [Signac tutorial](https://stuartlab.org/signac/articles/pbmc_multiomic.html) to generate an Signac object and label cell types within it. If you already have a Signac object with cell types labelled, skip to section [Extract Fragments from Signac](#extract-frags-signac)
@@ -216,14 +253,46 @@ tileResults <- MOCHA::callOpenTiles(ATACFragments = CellType_GRanges,
                              cellPopulations = fullMeta$predicted.id,
                              studySignal = studySignal,
                              cellCol = 'barcode',
-                             TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+                             TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
                              Org = "org.Hs.eg.db", 
                             outDir = paste(getwd(),'/MOCHA_Out', sep = ''), numCores= 35)
 
 TSAM <- MOCHA::getSampleTileMatrix(tileResults, threshold = 0.2, numCores = 3, verbose = TRUE)
 ```
 
-## Importing from SnapATAC {#snapatac}
+## Importing from SnapATAC2 (recommended) {#snapatac2}
+
+If you have a SnapATAC2 `AnnData` or `AnnDataSet` object (or an `.h5ad` file) with cell type labels in `obs`, use `import_snap_atac()` to convert to MOCHA inputs. This requires optional R package **reticulate** and Python package **anndata** (or **snapatac2** for `AnnDataSet`).
+
+```{r}
+library(MOCHA)
+
+# adata: SnapATAC2 AnnData after clustering and labeling (obs must include Sample + cell type)
+# Or: inputs <- MOCHA::import_snap_atac("my_study.h5ad", cellPopLabel = "leiden", sampleColumn = "Sample")
+
+inputs <- MOCHA::import_snap_atac(
+  adata,
+  cellPopLabel = "leiden",
+  sampleColumn = "Sample"
+)
+
+tileResults <- MOCHA::callOpenTiles(
+  ATACFragments = inputs$ATACFragments,
+  cellColData = inputs$cellColData,
+  blackList = black_list.gr,
+  genome = "BSgenome.Hsapiens.UCSC.hg38",
+  cellPopLabel = "leiden",
+  cellCol = inputs$cellCol,
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+  OrgDb = "org.Hs.eg.db",
+  outDir = file.path(getwd(), "MOCHA_Out"),
+  numCores = 4
+)
+```
+
+You must provide `genome` and `blackList` to `callOpenTiles()`; `import_snap_atac()` does not infer them. Ensure chromosome names in your SnapATAC2 object match your BSgenome (use `chromPrefix = "add"` if needed).
+
+## Importing from legacy SnapATAC (v1) {#snapatac}
 
 In this example, we follow the [SnapATAC 10X PBMC tutorial](https://github.com/r3fang/SnapATAC/tree/master/examples/10X_PBMC_15K#data_download) through the clustering step before extracting the fragments and cell metadata necessary for MOCHA.
 
@@ -494,7 +563,7 @@ tileResults <- MOCHA::callOpenTiles(
   cellPopulations = cellPopulations,
   studySignal = studySignal,
   cellCol = cellCol,
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
   Org = "org.Hs.eg.db", 
   outDir = paste(getwd(),'/MOCHA_Out', sep = ''), 
   numCores = 5

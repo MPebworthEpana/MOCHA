@@ -57,13 +57,13 @@ runZIGLMM <- function(TSAM_Object,
                       initialSampling = 5,
                       verbose = FALSE,
                       numCores = 1) {
-  
-#  lifecycle::deprecate_warn(
- #   when="1.1.0", 
- #   what="runZIGLMM()", 
-#    details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
- # )
-  
+
+  lifecycle::deprecate_warn(
+    when = "1.1.0",
+    what = "runZIGLMM()",
+    details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
+  )
+
   Sample <- NULL
   if (any(c(class(continuousFormula), class(ziformula)) != "formula")) {
     stop("continuousFormula and/or ziformula was not provided as a formula.")
@@ -79,6 +79,8 @@ runZIGLMM <- function(TSAM_Object,
 
     # Merge all together.
     newObj <- combineSampleTileMatrix(TSAM_Object)
+  } else if (length(cellPopulation) == 1L && tolower(cellPopulation) == "counts") {
+    newObj <- TSAM_Object
   } else if (all(cellPopulation %in% names(SummarizedExperiment::assays(TSAM_Object)))) {
 
     # Subset down to just those
@@ -101,7 +103,7 @@ runZIGLMM <- function(TSAM_Object,
   variableList <- c(all.vars(continuousFormula)[all.vars(continuousFormula) != "exp"], all.vars(ziformula))
 
   MetaDF <- dplyr::filter(MetaDF, Sample %in% colnames(modelingData))
-  modelingData <- modelingData[, match(colnames(modelingData), MetaDF$Sample)]
+  modelingData <- modelingData[, match(colnames(modelingData), MetaDF$Sample), drop = FALSE]
 
 
   # Subset metadata to just the variables needed. This minimizes overhead for parallelization
@@ -264,11 +266,11 @@ extractVariable <- function(varList, varType, variable, nullDF) {
 #'
 individualZIGLMM <- function(iterList) {
 
-#  lifecycle::deprecate_soft(
- #   when="1.1.0", 
- #   what="individualZIGLMM()", 
- #   details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
-  #)
+  lifecycle::deprecate_soft(
+    when = "1.1.0",
+    what = "individualZIGLMM()",
+    details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
+  )
 
   x <- iterList[[1]]
   continuousFormula <- iterList[[2]]
@@ -366,11 +368,11 @@ pilotZIGLMM <- function(TSAM_Object,
                         zi_threshold = 0,
                         verbose = FALSE,
                         pilotIndices = 1:10) {
-#  lifecycle::deprecate_warn(
-#    when="1.1.0", 
-#    what="pilotZIGLMM()", 
-#    details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
- # )
+  lifecycle::deprecate_warn(
+    when = "1.1.0",
+    what = "pilotZIGLMM()",
+    details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
+  )
   Sample <- NULL
   if (any(c(class(continuousFormula), class(ziformula)) != "formula")) {
     stop("continuousFormula and/or ziformula was not provided as a formula.")
@@ -386,6 +388,8 @@ pilotZIGLMM <- function(TSAM_Object,
 
     # Merge all together.
     newObj <- combineSampleTileMatrix(TSAM_Object)
+  } else if (length(cellPopulation) == 1L && tolower(cellPopulation) == "counts") {
+    newObj <- TSAM_Object
   } else if (all(cellPopulation %in% names(SummarizedExperiment::assays(TSAM_Object)))) {
 
     # Subset down to just those
@@ -409,7 +413,7 @@ pilotZIGLMM <- function(TSAM_Object,
   variableList <- c(all.vars(continuousFormula)[all.vars(continuousFormula) != "exp"], all.vars(ziformula))
 
   MetaDF <- dplyr::filter(MetaDF, Sample %in% colnames(modelingData))
-  modelingData <- modelingData[pilotIndices, match(colnames(modelingData), MetaDF$Sample)]
+  modelingData <- modelingData[pilotIndices, match(colnames(modelingData), MetaDF$Sample), drop = FALSE]
 
   # Subset metadata to just the variables needed. This minimizes overhead for parallelization
   MetaDF <- MetaDF[, colnames(MetaDF) %in% c("Sample", variableList)]
@@ -486,11 +490,11 @@ pilotZIGLMM <- function(TSAM_Object,
 #' @export
 #' @keywords utils
 getModelValues <- function(object, specificVariable) {
- # lifecycle::deprecate_warn(
- #   when="1.1.0", 
- #   what="getModelValues()", 
- #   details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
- # )
+  lifecycle::deprecate_warn(
+    when = "1.1.0",
+    what = "getModelValues()",
+    details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
+  )
   slopes <- SummarizedExperiment::assays(object)[["Slopes"]]
   significance <- SummarizedExperiment::assays(object)[["Significance"]]
   if (length(specificVariable) > 1) {

@@ -6,7 +6,7 @@
 #' @param popFrags GRangesList of fragments for all sample/cell populations
 #' @param normFactor Normalization factor. Can be either be one, in which case all coverage files will be normalized by the same value, or the same length as the GRangesList
 #' @param TxDb The TxDb-class transcript annotation
-#'   package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.refGene"). This
+#'   package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.knownGene"). This
 #'   must be installed. See
 #'   \href{https://bioconductor.org/packages/release/data/annotation/}{
 #'   Bioconductor AnnotationData Packages}.
@@ -62,10 +62,10 @@ calculateCoverage <- function(ref) {
   Num <- ref[[2]]
   filterEmpty <- ref[[3]]
 
-  counts_gr <- plyranges::compute_coverage(popFrags) %>% plyranges::mutate(score = score / Num)
+  counts_gr <- plyranges::compute_coverage(popFrags) %>% dplyr::mutate(score = score / Num)
 
   if (filterEmpty) {
-    plyranges::filter(counts_gr, score > 0)
+    dplyr::filter(counts_gr, score > 0)
   } else {
     counts_gr
   }
@@ -81,9 +81,9 @@ getSpecificCoverage <- function(covFiles, regions, numCores = 1) {
   score <- NewScore <- WeightedScore <- . <- NULL
   counts <- parallel::mclapply(covFiles, function(x) {
     x %>%
-      plyranges::mutate(NewScore = score) %>%
+      dplyr::mutate(NewScore = score) %>%
       plyranges::join_overlap_intersect(regions) %>%
-      plyranges::mutate(WeightedScore = NewScore * GenomicRanges::width(.)) %>%
+      dplyr::mutate(WeightedScore = NewScore * GenomicRanges::width(.)) %>%
       plyranges::reduce_ranges(score = mean(WeightedScore))
   }, mc.cores = numCores)
 
@@ -114,10 +114,10 @@ calculateInsertionCoverage <- function(ref) {
   )
 
   counts_gr <- plyranges::compute_coverage(plyranges::bind_ranges(cutstart, cutend))
-  counts_gr <- plyranges::mutate(counts_gr, score = score / Num)
+  counts_gr <- dplyr::mutate(counts_gr, score = score / Num)
 
   if (filterEmpty) {
-    plyranges::filter(counts_gr, score > 0)
+    dplyr::filter(counts_gr, score > 0)
   } else {
     counts_gr
   }

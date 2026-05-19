@@ -24,11 +24,25 @@
 #' @references XX
 #'
 #' @noRd
-estimate_differential_accessibility <- function(tile_values, group) {
+estimate_differential_accessibility <- function(tile_values,
+                                                group,
+                                                method = c("wilcoxon", "paired_wilcoxon", "polr"),
+                                                pair_id = NULL) {
+  method <- match.arg(method)
   data_vec <- as.numeric(tile_values)
 
-  ## conduct two part test
-  two_part_results <- TwoPart(data_vec, group = group, test = "wilcoxon", point.mass = 0)
+  ## conduct the chosen test
+  two_part_results <- switch(
+    method,
+    "wilcoxon" = TwoPart(data_vec, group = group, test = "wilcoxon", point.mass = 0),
+    "paired_wilcoxon" = {
+      if (is.null(pair_id)) {
+        stop("`pair_id` is required when method = 'paired_wilcoxon'.")
+      }
+      TwoPartPaired(data_vec, group = group, pair_id = pair_id, test = "wilcoxon", point.mass = 0)
+    },
+    "polr" = .twoPart_polr(data_vec, group = group)
+  )
 
   ## filter non-zero values for group1
   nonzero_dx <- data_vec[group == 1]
@@ -71,4 +85,48 @@ calculateMeanDiff <- function(tile_values, group) {
 
   mean_diff <- mean(a) - mean(b)
   mean_diff
+}
+
+# Proportional-odds (cumulative-logit) test for the two-group comparison.
+# Bins the response into ordered tertiles (zero, low-nonzero, high-nonzero)
+# and fits MASS::polr; returns the Wald chi-square on the group coefficient.
+.twoPart_polr <- function(data_vec, group) {
+  if (!requireNamespace("MASS", quietly = TRUE)) {
+    stop("Package 'MASS' is required for method = 'polr'. Install MASS or pick a different method.")
+  }
+  if (length(unique(group)) < 2L) {
+    return(list(statistic = 0, pvalue = 1))
+  }
+  zeros <- data_vec == 0
+  non_zero_vals <- data_vec[!zeros]
+  if (length(non_zero_vals) < 2L) {
+    return(list(statistic = 0, pvalue = 1))
+  }
+  split_at <- stats::median(non_zero_vals)
+  bins <- factor(
+    ifelse(zeros, "zero",
+           ifelse(data_vec <= split_at, "low", "high")),
+    levels = c("zero", "low", "high"),
+    ordered = TRUE
+  )
+  if (length(unique(bins)) < 2L) {
+    return(list(statistic = 0, pvalue = 1))
+  }
+  df <- data.frame(Y = bins, G = factor(group))
+  fit <- tryCatch(
+    suppressWarnings(MASS::polr(Y ~ G, data = df, Hess = TRUE)),
+    error = function(e) NULL
+  )
+  if (is.null(fit)) {
+    return(list(statistic = 0, pvalue = 1))
+  }
+  co <- summary(fit)$coefficients
+  # First row is the group coefficient
+  est <- co[1L, "Value"]
+  se <- co[1L, "Std. Error"]
+  if (!is.finite(se) || se <= 0) {
+    return(list(statistic = 0, pvalue = 1))
+  }
+  z2 <- (est / se)^2
+  list(statistic = z2, pvalue = 1 - stats::pchisq(z2, df = 1))
 }

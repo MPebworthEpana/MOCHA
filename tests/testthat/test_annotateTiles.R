@@ -1,5 +1,5 @@
 if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
-  requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE) &&
+  requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
   requireNamespace("TxDb.Hsapiens.UCSC.hg19.knownGene", quietly = TRUE)) {
   test_that("annotateTiles works on a 1 sample test dataset", {
     cellPopulations <- c("C2", "C5")
@@ -50,7 +50,7 @@ if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
 
 
   test_that("annotateTiles works on a GRanges", {
-    require(TxDb.Hsapiens.UCSC.hg38.refGene)
+    require(TxDb.Hsapiens.UCSC.hg38.knownGene)
     require(org.Hs.eg.db)
     cellPopulations <- c("C2", "C3")
     capture.output(
@@ -63,7 +63,7 @@ if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
     )
     capture.output(
       ranges <- MOCHA::annotateTiles(SummarizedExperiment::rowRanges(SampleTileMatrix),
-        TxDb = TxDb.Hsapiens.UCSC.hg38.refGene,
+        TxDb = TxDb.Hsapiens.UCSC.hg38.knownGene,
         Org = org.Hs.eg.db,
         promoterRegion = c(2000, 100)
       ),

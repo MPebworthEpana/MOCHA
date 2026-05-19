@@ -1,10 +1,290 @@
+# Internal helpers for SampleTileObject coverage workflows
+
+# Map gene identifiers using either a Bioconductor OrgDb (via AnnotationDbi)
+# or a biomaRt::Mart connection. Routes by class so callers can transparently
+# pass either, supporting offline (AnnotationDbi) and online (biomaRt) workflows.
+.map_gene_ids <- function(db, keys, column = "SYMBOL", keytype = "ENTREZID") {
+  if (methods::is(db, "Mart")) {
+    if (!requireNamespace("biomaRt", quietly = TRUE)) {
+      stop("Package 'biomaRt' is required when passing a Mart connection.")
+    }
+    attr_col <- .biomart_attribute(column)
+    attr_key <- .biomart_attribute(keytype)
+    res <- biomaRt::getBM(
+      attributes = unique(c(attr_key, attr_col)),
+      filters = attr_key,
+      values = as.character(keys),
+      mart = db
+    )
+    out <- res[[attr_col]][match(as.character(keys), as.character(res[[attr_key]]))]
+    out[!nzchar(out)] <- NA_character_
+    return(out)
+  }
+  if (!requireNamespace("AnnotationDbi", quietly = TRUE)) {
+    stop(
+      "Gene-id mapping requires either AnnotationDbi (with an OrgDb) ",
+      "or a biomaRt::useEnsembl() Mart passed in place of the OrgDb. ",
+      "Install AnnotationDbi or provide a Mart."
+    )
+  }
+  suppressWarnings(AnnotationDbi::mapIds(db, keys, column, keytype))
+}
+
+# biomaRt attribute names for the OrgDb-style labels used across MOCHA.
+.biomart_attribute <- function(label) {
+  switch(
+    toupper(label),
+    "ENTREZID" = "entrezgene_id",
+    "ENSEMBL" = "ensembl_gene_id",
+    "ENSEMBLTRANS" = "ensembl_transcript_id",
+    "TXNAME" = "ensembl_transcript_id",
+    "SYMBOL" = "external_gene_name",
+    "GENENAME" = "external_gene_name",
+    "REFSEQ" = "refseq_mrna",
+    stop(sprintf(
+      "No biomaRt attribute is configured for OrgDb label '%s'. Pass an OrgDb (AnnotationDbi) or extend .biomart_attribute().",
+      label
+    ))
+  )
+}
+
+.resolveSubSamples <- function(metaFile, groupColumn = NULL, subGroups = NULL) {
+  if (!is.null(subGroups) & !is.null(groupColumn)) {
+    subSamples <- lapply(subGroups, function(x) {
+      metaFile[metaFile[, groupColumn] %in% x, "Sample"]
+    })
+    names(subSamples) <- subGroups
+    subGroupsOut <- subGroups
+  } else if (!is.null(groupColumn)) {
+    subGroupsOut <- unique(metaFile[, groupColumn])
+    subSamples <- lapply(subGroupsOut, function(x) {
+      metaFile[metaFile[, groupColumn] %in% x, "Sample"]
+    })
+    names(subSamples) <- subGroupsOut
+  } else {
+    subGroupsOut <- "All"
+    subSamples <- list("All" = metaFile[, "Sample"])
+  }
+
+  list(subGroups = subGroupsOut, subSamples = subSamples)
+}
+
+.validateCoverageDirectory <- function(object, objectName = "SampleTileObj") {
+  outDir <- object@metadata$Directory
+  if (is.na(outDir)) {
+    stop(
+      "Missing coverage file directory. ",
+      objectName,
+      "$metadata must contain 'Directory'."
+    )
+  }
+  if (!file.exists(outDir)) {
+    stop(
+      "Directory given by ",
+      objectName,
+      "@metadata$Directory does not exist."
+    )
+  }
+  outDir
+}
+
+.requireCellPopulationAssays <- function(cellNames) {
+  if (all(toupper(cellNames) == "COUNTS")) {
+    stop(
+      "The only assay in the SummarizedExperiment is Counts. The names of assays must reflect cell types,",
+      " such as those in the Summarized Experiment output of getSampleTileMatrix."
+    )
+  }
+}
+
+.readCoverageBundle <- function(outDir, cellPop) {
+  covFile <- file.path(outDir, paste0(cellPop, "_CoverageFiles.RDS"))
+  if (!file.exists(covFile)) {
+    stop(
+      "Coverage file ",
+      covFile,
+      " could not be found."
+    )
+  }
+  readRDS(covFile)
+}
+
+.selectCoverageFromBundle <- function(bundle, coverage = TRUE) {
+  if (coverage) {
+    if ("Accessibility" %in% names(bundle)) {
+      bundle[["Accessibility"]]
+    } else {
+      bundle
+    }
+  } else if ("Insertions" %in% names(bundle)) {
+    bundle[["Insertions"]]
+  } else {
+    stop("Error around reading coverage files. Check that coverage files are not corrupted.")
+  }
+}
+
+.selectAccessibilityCoverage <- function(bundle) {
+  if ("Accessibility" %in% names(bundle)) {
+    bundle$Accessibility
+  } else {
+    bundle
+  }
+}
+
+.prepSampleTileGrouping <- function(metaFile, groupColumn = NULL, subGroups = NULL) {
+  .resolveSubSamples(metaFile, groupColumn, subGroups)
+}
+
+.loadInsertionBias <- function(SampleTileObj, normTn5 = TRUE) {
+  if (!normTn5) {
+    return(list(insertBias = NULL, genome = NULL, genome_db = NULL))
+  }
+
+  if (any(grepl("InsertionBias", names(SampleTileObj@metadata)))) {
+    genome_db <- SampleTileObj@metadata$Genome
+    genome <- getAnnotationDbFromInstalledPkgname(dbName = genome_db, type = "BSgenome")
+    insertBias <- SampleTileObj@metadata$InsertionBias
+    insertBias <- insertBias[!is.na(insertBias[, "Norm"]), ]
+    list(insertBias = insertBias, genome = genome, genome_db = genome_db)
+  } else {
+    stop("Attempting to normalize by Tn5 insertion bias, but no bias calculated. Please run addInsertionBias.")
+  }
+}
+
+.callWithPackedArgs <- function(fn, packed) {
+  do.call(fn, packed)
+}
+
+# Co-accessibility internal helpers
+.normalizeTilePairs <- function(fullObj, tile1, tile2) {
+  if (length(tile1) != length(tile2)) {
+    stop("tile1 and tile2 must be the same length.")
+  }
+
+  if (is.character(tile1) && is.character(tile2)) {
+    nTile1 <- match(tile1, rownames(fullObj))
+    nTile2 <- match(tile2, rownames(fullObj))
+  } else if (is.numeric(tile1) && is.numeric(tile2)) {
+    nTile1 <- tile1
+    nTile2 <- tile2
+    tile1 <- rownames(fullObj)[nTile1]
+    tile2 <- rownames(fullObj)[nTile2]
+  } else {
+    stop("tile1 and tile 2 must both be either numbers (indices) or strings")
+  }
+
+  list(tile1 = tile1, tile2 = tile2, nTile1 = nTile1, nTile2 = nTile2)
+}
+
+.validateBackNumber <- function(backNumber, fullObj, tile1, tile2, verbose = TRUE) {
+  if (!is.null(dim(backNumber))) {
+    return(backNumber)
+  }
+
+  if (backNumber >= length(rownames(fullObj)) - length(unique(c(tile1, tile2)))) {
+    backNumber <- length(rownames(fullObj)) - length(unique(c(tile1, tile2)))
+    if (verbose) {
+      warning("backNumber too high. Reset to all background combinations.")
+    }
+  } else if (backNumber <= 10) {
+    stop("backNumber too low (<=10). We recommend 1000.")
+  }
+
+  backNumber
+}
+
+.generateRandomBackgroundPairs <- function(accMat, tile1, tile2, backNumber, verbose = TRUE) {
+  if (verbose) {
+    message("Finding background peak pairs")
+  }
+
+  backGroundTiles <- rownames(accMat)[!rownames(accMat) %in% c(tile1, tile2)]
+  backgroundCombos <- data.frame(
+    Tile1 = sample(backGroundTiles, backNumber),
+    Tile2 = sample(backGroundTiles, backNumber)
+  )
+  backgroundCombos[backgroundCombos[, 1] != backgroundCombos[, 2], , drop = FALSE]
+}
+
+.parseUserBackgroundPairs <- function(backNumber, fullObj, verbose = TRUE) {
+  if (verbose) {
+    message("Using user-defined background pairs")
+  }
+
+  backNumber <- as.data.frame(backNumber)
+  if (!all(c("Tile1", "Tile2") %in% colnames(backNumber))) {
+    stop("User-defined background pairs requires a column for Tile1 and Tile2")
+  } else if (!all(grepl(":", c(backNumber[, "Tile1"], backNumber[, "Tile2"])) &
+    grepl("-", backNumber[, "Tile1"], backNumber[, "Tile2"]))) {
+    stop("User-defined background pairs must be in the form ChrX:100-2000")
+  } else if (!all(c(backNumber[, "Tile1"], backNumber[, "Tile2"]) %in% rownames(fullObj))) {
+    stop("User-defined background pairs includes regions not found within the sample tile accessibility matrix.")
+  }
+
+  backgroundCombos <- as.data.frame(backNumber)[, c("Tile1", "Tile2")]
+
+  if (sum(backgroundCombos[, "Tile1"] != backgroundCombos[, "Tile2"]) < 10) {
+    stop("User-defined background pairs are fewer than 10. Please provide a larger background.")
+  }
+
+  backgroundCombos[backgroundCombos[, "Tile1"] != backgroundCombos[, "Tile2"], , drop = FALSE]
+}
+
+.resolveBackgroundPairs <- function(backNumber, fullObj, tile1, tile2, verbose = TRUE) {
+  if (is.null(dim(backNumber))) {
+    .generateRandomBackgroundPairs(
+      accMat = SummarizedExperiment::assays(fullObj)[[1]],
+      tile1 = tile1,
+      tile2 = tile2,
+      backNumber = backNumber,
+      verbose = verbose
+    )
+  } else if (dim(backNumber)[2] > 1) {
+    .parseUserBackgroundPairs(backNumber, fullObj, verbose = verbose)
+  } else {
+    stop(paste(
+      "Incorrect backNumber provided. Please provider either a number, or a data.frame",
+      "with columns entitled Tile1 and Tile2, describing pairs to test.",
+      "The tile names should be in the format ChrX:100-2000."
+    ))
+  }
+}
+
+.computeCoAccessibilityPValues <- function(foreGround, backGround, verbose = TRUE) {
+  if (verbose) {
+    message("Generating p-values.")
+  }
+
+  greatList <- unlist(pbapply::pblapply(
+    foreGround$Correlation[which(foreGround$Correlation > 0)],
+    function(x) {
+      sum(x > backGround$Correlation)
+    },
+    cl = 1
+  )) / length(backGround$Correlation)
+
+  lesserList <- unlist(pbapply::pblapply(
+    foreGround$Correlation[which(foreGround$Correlation < 0)],
+    function(x) {
+      sum(x < backGround$Correlation)
+    },
+    cl = 1
+  )) / length(backGround$Correlation)
+
+  foreGround$pValues <- rep(NA, length(foreGround$Correlation))
+  foreGround$pValues[which(foreGround$Correlation > 0)] <- 1 - greatList
+  foreGround$pValues[which(foreGround$Correlation < 0)] <- 1 - lesserList
+  foreGround
+}
+
+
 # Function to get sample-level metadata,
 # from an ArchR project's colData
 sampleDataFromCellColData <- function(cellColData, sampleLabel) {
   if (!(sampleLabel %in% colnames(cellColData))) {
     stop(paste(
-      "`sampleLabel` must present in your ArchR Project's cellColData",
-      "Check `names(getCellColData(ArchRProj)` for possible sample columns."
+      "`sampleLabel` must be present in cellColData",
+      "Check colnames(cellColData) for possible sample columns."
     ))
   }
 
@@ -59,7 +339,7 @@ dehashIter <- function(cellIDs, oldfrags){
     RG <- NULL
     newFrags <- lapply(oldfrags, function(ZZ){
           
-                  plyranges::filter(ZZ, RG %in% cellIDs)
+                  dplyr::filter(ZZ, RG %in% cellIDs)
           
           })
     
@@ -335,9 +615,9 @@ getAnnotationDbFromInstalledPkgname <- function(dbName, type) {
 #' @export
 #' @keywords utils
 getCellTypes <- function(object) {
-  if (class(object)[1] == "MultiAssayExperiment") {
+  if (methods::is(object, "MultiAssayExperiment")) {
     return(names(object))
-  } else if (class(object)[1] == "RangedSummarizedExperiment") {
+  } else if (methods::is(object, "RangedSummarizedExperiment")) {
     return(names(SummarizedExperiment::assays(object)))
   } else {
     stop("Object not recognized. Please provide an object from callOpenTiles or getSampleTileMatrix.")
@@ -356,9 +636,9 @@ getCellTypes <- function(object) {
 #' @export
 #' @keywords utils
 getCellTypeTiles <- function(object, cellType) {
-  if (class(object)[1] == "MultiAssayExperiment") {
+  if (methods::is(object, "MultiAssayExperiment")) {
     stop("This is a MultiAssayExperiment, and thus like a tileResults object. Please provide a SampleTileMatrix object.")
-  } else if (class(object)[1] == "RangedSummarizedExperiment") {
+  } else if (methods::is(object, "RangedSummarizedExperiment")) {
     all_ranges <- SummarizedExperiment::rowRanges(object)
 
     if (!all(cellType %in% SummarizedExperiment::assayNames(object))) {
@@ -376,6 +656,28 @@ getCellTypeTiles <- function(object, cellType) {
 }
 
 
+.get_sample_celltype_count_tables <- function(object) {
+  if (!is.null(object@metadata$summarizedData)) {
+    summarizedData <- object@metadata$summarizedData
+    assayNames <- SummarizedExperiment::assayNames(summarizedData)
+    if (all(c("CellCounts", "FragmentCounts") %in% assayNames)) {
+      return(list(
+        CellCounts = as.data.frame(SummarizedExperiment::assays(summarizedData)[["CellCounts"]]),
+        FragmentCounts = as.data.frame(SummarizedExperiment::assays(summarizedData)[["FragmentCounts"]])
+      ))
+    }
+  }
+
+  if (all(c("FragmentCounts", "CellCounts") %in% names(object@metadata))) {
+    return(list(
+      CellCounts = object@metadata$CellCounts,
+      FragmentCounts = object@metadata$FragmentCounts
+    ))
+  }
+
+  NULL
+}
+
 #' @title Extract Sample-celltype specific metadata
 #' @description \code{getSampleCellTypeMetadata} Extract Sample-celltype
 #'   specific metadata like fragment and cell counts
@@ -388,31 +690,35 @@ getCellTypeTiles <- function(object, cellType) {
 #' @export
 #' @keywords utils
 getSampleCellTypeMetadata <- function(object) {
-  # Check if the object has Sample-CellType-level metadata stored in the metadata slot.
-  if (all(c("FragmentCounts", "CellCounts") %in% names(object@metadata))) {
-
-    sampleData <- SummarizedExperiment::colData(object)
-
-    fragCounts <- object@metadata$FragmentCounts
-    fragMat <- as.matrix(t(fragCounts[match(rownames(sampleData), rownames(fragCounts)), ]))
-    rownames(fragMat) <- colnames(fragCounts)
-
-    cellCounts <- object@metadata$CellCounts
-    cellMat <- as.matrix(t(cellCounts[match(rownames(sampleData), rownames(cellCounts)), ]))
-    rownames(cellMat) <- colnames(cellMat)
-
-    if (any(!dim(cellMat) %in% dim(cellCounts))) {
-      stop("Error in processing Sample-Cell type metadata. Some Samples may be missing. Please correct Sample-Cell type metadata manually or regenerate the object.")
-    }
-
-    metaList <- list(fragMat, cellMat)
-    names(metaList) <- c("FragmentCounts", "CellCounts")
-
-    SE <- SummarizedExperiment::SummarizedExperiment(metaList, colData = sampleData)
-    return(SE)
-  } else {
-    stop("Object does not appear to have Sample-Celltype metadata.")
+  countTables <- .get_sample_celltype_count_tables(object)
+  if (is.null(countTables)) {
+    stop(
+      "Object does not contain Sample-Celltype metadata. ",
+      "Expected CellCounts and FragmentCounts in metadata$summarizedData ",
+      "or legacy top-level metadata slots."
+    )
   }
+
+  sampleData <- SummarizedExperiment::colData(object)
+  bioSamples <- rownames(sampleData)
+  cellCounts <- countTables$CellCounts
+  fragCounts <- countTables$FragmentCounts
+
+  if (!all(bioSamples %in% colnames(cellCounts)) ||
+      !all(bioSamples %in% colnames(fragCounts))) {
+    stop(
+      "Sample IDs in colData do not match columns in CellCounts/FragmentCounts. ",
+      "Regenerate the MOCHA object or align sample metadata."
+    )
+  }
+
+  # Count tables are cell population (row) by biological sample (column).
+  cellMat <- as.matrix(cellCounts[, bioSamples, drop = FALSE])
+  fragMat <- as.matrix(fragCounts[, bioSamples, drop = FALSE])
+
+  metaList <- list(FragmentCounts = fragMat, CellCounts = cellMat)
+  SE <- SummarizedExperiment::SummarizedExperiment(metaList, colData = sampleData)
+  return(SE)
 }
 
 
@@ -453,4 +759,181 @@ plotIntensityDistribution <- function(TSAM_object, cellPopulation, returnDF = FA
   }
 
   return(p1)
+}
+
+
+#' @title Add a column to the sample-level colData of a MOCHA object
+#'
+#' @description \code{addCellColData} adds a new column to the sample-level
+#'   colData of a MOCHA tileResults (\code{MultiAssayExperiment} from
+#'   \code{callOpenTiles}) or SampleTileMatrix
+#'   (\code{RangedSummarizedExperiment} from \code{getSampleTileMatrix}).
+#'   MOCHA pseudobulks by sample x cell-population, so colData rows are
+#'   biological samples; the name mirrors \code{ArchR::addCellColData} for
+#'   API familiarity.
+#'
+#' @param object A MOCHA tileResults or SampleTileMatrix object.
+#' @param name Character scalar. Name of the column to add.
+#' @param value Vector of values to add. Either length \code{nrow(colData)} (in
+#'   which case it is assumed aligned with \code{samples}) or a named vector
+#'   with names matching sample identifiers.
+#' @param samples Optional character vector of sample identifiers that
+#'   \code{value} corresponds to. Defaults to \code{rownames(colData(object))}.
+#'   Missing samples will receive \code{NA}.
+#' @param force Logical. If \code{TRUE}, an existing column with the same
+#'   \code{name} is overwritten. Default \code{FALSE}.
+#'
+#' @return The input object with the new colData column attached.
+#'
+#' @export
+#' @keywords utils
+addCellColData <- function(object, name, value, samples = NULL, force = FALSE) {
+  if (!is.character(name) || length(name) != 1L || !nzchar(name)) {
+    stop("`name` must be a single non-empty character string.")
+  }
+
+  isMAE <- methods::is(object, "MultiAssayExperiment")
+  isSE <- methods::is(object, "SummarizedExperiment")
+  if (!isMAE && !isSE) {
+    stop("`object` must be a MOCHA tileResults (MultiAssayExperiment) or SampleTileMatrix (SummarizedExperiment).")
+  }
+
+  cd <- if (isMAE) {
+    MultiAssayExperiment::colData(object)
+  } else {
+    SummarizedExperiment::colData(object)
+  }
+
+  if (name %in% colnames(cd) && !force) {
+    stop(sprintf("Column '%s' already exists in colData. Use force = TRUE to overwrite.", name))
+  }
+
+  rn <- rownames(cd)
+  if (is.null(samples)) {
+    if (length(value) != nrow(cd)) {
+      stop(sprintf(
+        "`value` has length %d but colData has %d rows. Provide `samples` to specify alignment or match the colData row count.",
+        length(value), nrow(cd)
+      ))
+    }
+    aligned <- value
+  } else {
+    if (length(samples) != length(value)) {
+      stop("`samples` and `value` must have the same length.")
+    }
+    aligned <- rep(NA, nrow(cd))
+    storage.mode(aligned) <- storage.mode(value)
+    idx <- match(samples, rn)
+    if (any(is.na(idx))) {
+      stop(sprintf(
+        "These samples were not found in colData: %s",
+        paste(samples[is.na(idx)], collapse = ", ")
+      ))
+    }
+    aligned[idx] <- value
+  }
+
+  cd[[name]] <- aligned
+  if (isMAE) {
+    MultiAssayExperiment::colData(object) <- cd
+  } else {
+    SummarizedExperiment::colData(object) <- cd
+  }
+  return(object)
+}
+
+
+#' @title Get per-cell-population open tiles from a MOCHA tileResults object
+#'
+#' @description \code{getOpenTiles} extracts the called open tiles (peaks) for
+#'   one or more cell populations from a \code{MultiAssayExperiment} returned
+#'   by \code{callOpenTiles}. By default tiles are returned as a
+#'   \code{GRangesList} keyed by cell population; with \code{returnType =
+#'   "data.frame"} they are flattened into a single data frame with a
+#'   \code{CellPopulation} column.
+#'
+#' @param tileResults A \code{MultiAssayExperiment} from \code{callOpenTiles}.
+#' @param cellPopulations Character vector of cell population names, or
+#'   \code{"all"} (default) to return all populations.
+#' @param returnType One of \code{"GRangesList"} (default) or
+#'   \code{"data.frame"}.
+#'
+#' @return A \code{GRangesList} or \code{data.frame} of open tiles per cell
+#'   population.
+#'
+#' @examples
+#' \donttest{
+#' if (
+#'   requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+#'     requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+#'     requireNamespace("org.Hs.eg.db", quietly = TRUE)
+#' ) {
+#'   tiles <- MOCHA::callOpenTiles(
+#'     ATACFragments = MOCHA::exampleFragments,
+#'     cellColData = MOCHA::exampleCellColData,
+#'     blackList = MOCHA::exampleBlackList,
+#'     genome = "BSgenome.Hsapiens.UCSC.hg19",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'     OrgDb = "org.Hs.eg.db",
+#'     outDir = tempdir(),
+#'     cellPopLabel = "Clusters",
+#'     cellPopulations = "C2",
+#'     numCores = 1
+#'   )
+#'   openTiles <- MOCHA::getOpenTiles(tiles, cellPopulations = "C2")
+#' }
+#' }
+#'
+#' @export
+#' @keywords utils
+getOpenTiles <- function(tileResults,
+                         cellPopulations = "all",
+                         returnType = c("GRangesList", "data.frame")) {
+  if (!methods::is(tileResults, "MultiAssayExperiment")) {
+    stop("`tileResults` must be a MultiAssayExperiment from callOpenTiles().")
+  }
+  returnType <- match.arg(returnType)
+
+  available <- names(tileResults)
+  if (length(cellPopulations) == 1L && tolower(cellPopulations) == "all") {
+    cellPopulations <- available
+  } else if (!all(cellPopulations %in% available)) {
+    missing <- setdiff(cellPopulations, available)
+    stop(sprintf(
+      "These cell populations were not found in tileResults: %s",
+      paste(missing, collapse = ", ")
+    ))
+  }
+
+  grList <- lapply(cellPopulations, function(pop) {
+    re <- tileResults[[pop]]
+    peakMat <- RaggedExperiment::compactAssay(re, i = "peak")
+    isPeak <- rowSums(peakMat == TRUE, na.rm = TRUE) > 0
+    tiles <- SummarizedExperiment::rowRanges(re)
+    if (length(tiles) != length(isPeak)) {
+      keep <- seq_len(min(length(tiles), length(isPeak)))
+      tiles <- tiles[keep]
+      isPeak <- isPeak[keep]
+    }
+    tiles[isPeak]
+  })
+  names(grList) <- cellPopulations
+  grList <- GenomicRanges::GRangesList(grList)
+
+  if (returnType == "GRangesList") {
+    return(grList)
+  }
+
+  dfs <- lapply(cellPopulations, function(pop) {
+    gr <- grList[[pop]]
+    if (length(gr) == 0L) {
+      return(NULL)
+    }
+    data.frame(
+      CellPopulation = pop,
+      as.data.frame(gr),
+      stringsAsFactors = FALSE
+    )
+  })
+  do.call(rbind, dfs)
 }

@@ -21,14 +21,27 @@
 #' @importFrom rlang .data
 #'
 #' @examples
-#' \dontrun{
-#' library(TxDb.Hsapiens.UCSC.hg38.refGene)
-#' library(org.Hs.eg.db)
-#' SampleTileMatricesAnnotated <- MOCHA::annotateTiles(
-#'   SampleTileMatrices,
-#'   TxDb = TxDb.Hsapiens.UCSC.hg38.refGene,
-#'   Org = org.Hs.eg.db
-#' )
+#' \donttest{
+#' if (
+#'   requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+#'     requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+#'     requireNamespace("org.Hs.eg.db", quietly = TRUE)
+#' ) {
+#'   tiles <- MOCHA::callOpenTiles(
+#'     ATACFragments = MOCHA::exampleFragments,
+#'     cellColData = MOCHA::exampleCellColData,
+#'     blackList = MOCHA::exampleBlackList,
+#'     genome = "BSgenome.Hsapiens.UCSC.hg19",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'     OrgDb = "org.Hs.eg.db",
+#'     outDir = tempdir(),
+#'     cellPopLabel = "Clusters",
+#'     cellPopulations = "C2",
+#'     numCores = 1
+#'   )
+#'   stm <- MOCHA::getSampleTileMatrix(tiles, cellPopulations = "C2", threshold = 0)
+#'   annotated <- MOCHA::annotateTiles(stm)
+#' }
 #' }
 #'
 #' @export
@@ -39,23 +52,23 @@ annotateTiles <- function(Obj,
                           promoterRegion = c(2000, 100)) {
   . <- Type <- NULL
   objMeta <- S4Vectors::metadata(Obj)
-  if (class(Obj)[1] == "RangedSummarizedExperiment" & is.null(TxDb) & is.null(Org)) {
+  if (methods::is(Obj, "RangedSummarizedExperiment") & is.null(TxDb) & is.null(Org)) {
     if (!all(c("TxDb", "OrgDb") %in% names(objMeta))) {
       stop("Error: SampleTileObj as a RangedSummarizedExperiment does not contain a TxDb and/or OrgDb in the metadata. Please provide these as input.")
     }
     tileGRanges <- SummarizedExperiment::rowRanges(Obj)
     TxDb <- getAnnotationDbFromInstalledPkgname(objMeta$TxDb$pkgname, "TxDb")
     Org <- getAnnotationDbFromInstalledPkgname(objMeta$OrgDb$pkgname, "OrgDb")
-  } else if (class(Obj)[[1]] == "GRanges" & !is.null(TxDb) & !is.null(Org)) {
+  } else if (methods::is(Obj, "GRanges") & !is.null(TxDb) & !is.null(Org)) {
     tileGRanges <- Obj
-  } else if( class(Obj)[1] == "RangedSummarizedExperiment"){
+  } else if (methods::is(Obj, "RangedSummarizedExperiment")) {
     tileGRanges <- SummarizedExperiment::rowRanges(Obj)
   } else {
     stop("Error: Invalid inputs. Verify Obj is a RangedSummarizedExperiment and tiles were called from an ArchR project. If Obj is a GRanges, TxDb and Org must be provided.")
   }
 
   txList <- suppressWarnings(GenomicFeatures::transcriptsBy(TxDb, by = ("gene")))
-  names(txList) <- suppressWarnings(AnnotationDbi::mapIds(Org, names(txList), "SYMBOL", "ENTREZID"))
+  names(txList) <- .map_gene_ids(Org, names(txList), column = "SYMBOL", keytype = "ENTREZID")
 
   txs <- IRanges::stack(txList) %>%
     GenomicRanges::trim() %>%
@@ -98,7 +111,7 @@ annotateTiles <- function(Obj,
 
   # If input was as Ranged SE, then edit the rowRanges for the SE and return it.
   # Else, return the annotated tile GRanges SampleTileObject.
-  if (class(Obj)[1] == "RangedSummarizedExperiment") {
+  if (methods::is(Obj, "RangedSummarizedExperiment")) {
     SummarizedExperiment::rowRanges(Obj) <- tileGRanges
     return(Obj)
   } else {
@@ -120,7 +133,7 @@ annotateTiles <- function(Obj,
 #' @keywords utils
 getPromoterGenes <- function(GRangesObj) {
   tileType <- NULL
-  if (class(GRangesObj)[1] != "GRanges") {
+  if (!methods::is(GRangesObj, "GRanges")) {
     stop("Object provided is not a GRanges object.")
   }
 
@@ -128,7 +141,7 @@ getPromoterGenes <- function(GRangesObj) {
     stop("GRanges object does not contain tileType or Gene column. Run annotateTiles on this GRanges object and try again.")
   }
 
-  promoterTiles <- plyranges::filter(GRangesObj, tileType == "Promoter")
+  promoterTiles <- dplyr::filter(GRangesObj, tileType == "Promoter")
   geneString <- paste0(unlist(GenomicRanges::mcols(promoterTiles)$Gene), collapse = ", ")
   genes <- unique(unlist(stringr::str_split(geneString, pattern = ", "), recursive = TRUE))
 

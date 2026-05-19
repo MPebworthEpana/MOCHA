@@ -18,7 +18,7 @@
 #' @noRd
 #'
 
-make_prediction <- function(X, finalModelObject) {
+make_prediction <- function(X, finalModelObject, youdenModel = MOCHA::youden_threshold) {
 
   ### Model was trained on varying
   ### cell abundances. Identify
@@ -122,7 +122,7 @@ make_prediction <- function(X, finalModelObject) {
   ### Identify cutoff based on
   ### different abundances
   newdata <- data.frame(Ncells = cell_model)
-  adaptiveThreshold <- as.numeric(stats::predict(MOCHA::youden_threshold, newdata = newdata))
+  adaptiveThreshold <- as.numeric(stats::predict(youdenModel, newdata = newdata))
 
 
   ### Boolean indicating whether

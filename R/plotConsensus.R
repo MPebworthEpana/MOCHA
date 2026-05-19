@@ -10,6 +10,13 @@
 #' @param returnPlotList Instead of one plot with all celltypes/conditions, it returns a list of plots for each cell types
 #' @param returnDFs Instead of a plot, returns a data.frame of the reproducibility across samples.
 #' 						If set to false, then it plots the data.frame instead of returning it.
+#' @param showSuggested Logical. If \code{TRUE}, overlay a dashed vertical
+#'   line at the threshold recommended by
+#'   \code{suggestConsensusThreshold()} for each cell population. Default
+#'   \code{FALSE}.
+#' @param suggestMethod Method passed to
+#'   \code{suggestConsensusThreshold()} when \code{showSuggested = TRUE}.
+#'   One of \code{"kneedle"} (default) or \code{"second_derivative"}.
 #' @param numCores Number of cores to multithread over.
 #'
 #' @return A data.frame of reproducibility, or plots
@@ -23,8 +30,11 @@ plotConsensus <- function(tileObject,
                           groupColumn = NULL,
                           returnPlotList = FALSE,
                           returnDFs = FALSE,
+                          showSuggested = FALSE,
+                          suggestMethod = c("kneedle", "second_derivative"),
                           numCores = 1) {
   Reproducibility <- PeakNumber <- groups <- GroupName <- NULL
+  suggestMethod <- match.arg(suggestMethod)
 
   if (all(tolower(cellPopulations) == "all")) {
     subTileResults <- tileObject
@@ -58,26 +68,47 @@ plotConsensus <- function(tileObject,
     return(alldf)
   }
 
+  suggestionsByPop <- if (showSuggested) {
+    lapply(alldf, function(df) .suggest_threshold_from_curve(df, method = suggestMethod, groupColumn = groupColumn))
+  } else {
+    NULL
+  }
+
   if (returnPlotList) {
     if (!is.null(groupColumn)) {
       allPlots2 <- lapply(seq_along(alldf), function(x) {
-        ggplot2::ggplot(alldf[[x]], ggplot2::aes(x = Reproducibility, y = PeakNumber, group = GroupName, color = GroupName)) +
+        p <- ggplot2::ggplot(alldf[[x]], ggplot2::aes(x = Reproducibility, y = PeakNumber, group = GroupName, color = GroupName)) +
           ggplot2::geom_point() +
           ggplot2::ggtitle(names(alldf)[x]) +
           ggplot2::scale_y_continuous(trans = "log2") +
           ggplot2::ylab("Peak Number") +
           ggplot2::theme_bw()
+        if (showSuggested) {
+          p <- p + ggplot2::geom_vline(
+            data = suggestionsByPop[[x]],
+            mapping = ggplot2::aes(xintercept = Reproducibility, color = GroupName),
+            linetype = "dashed"
+          )
+        }
+        p
       })
 
       return(allPlots2)
     } else {
       allPlots <- lapply(seq_along(alldf), function(x) {
-        ggplot2::ggplot(alldf[[x]], ggplot2::aes(x = Reproducibility, y = PeakNumber)) +
+        p <- ggplot2::ggplot(alldf[[x]], ggplot2::aes(x = Reproducibility, y = PeakNumber)) +
           ggplot2::geom_point() +
           ggplot2::ggtitle(names(alldf)[x]) +
           ggplot2::scale_y_continuous(trans = "log2") +
           ggplot2::ylab("Peak Number") +
           ggplot2::theme_bw()
+        if (showSuggested && !is.null(suggestionsByPop[[x]])) {
+          p <- p + ggplot2::geom_vline(
+            xintercept = suggestionsByPop[[x]]$Reproducibility,
+            linetype = "dashed"
+          )
+        }
+        p
       })
       return(allPlots)
     }
@@ -97,8 +128,157 @@ plotConsensus <- function(tileObject,
       ggplot2::ylab("Peak Number") +
       ggplot2::theme_bw()
 
+    if (showSuggested) {
+      sugDF <- do.call(rbind, lapply(seq_along(suggestionsByPop), function(i) {
+        s <- suggestionsByPop[[i]]
+        if (is.null(s)) return(NULL)
+        s$CellPop <- names(alldf)[i]
+        s$groups <- if (!is.null(groupColumn)) paste(s$CellPop, s$GroupName, sep = "_") else s$CellPop
+        s
+      }))
+      if (!is.null(sugDF) && nrow(sugDF) > 0) {
+        p1 <- p1 + ggplot2::geom_vline(
+          data = sugDF,
+          mapping = ggplot2::aes(xintercept = Reproducibility, color = groups),
+          linetype = "dashed"
+        )
+      }
+    }
+
     return(p1)
   }
+}
+
+
+#' @title Suggest a reproducibility threshold for consensus tile selection
+#'
+#' @description \code{suggestConsensusThreshold} examines the
+#'   reproducibility-vs-peak-number curve produced internally by
+#'   \code{plotConsensus()} and returns a recommended threshold per cell
+#'   population (and optionally per group within population). Two automated
+#'   methods are available: \code{"kneedle"} finds the point farthest from the
+#'   secant joining the endpoints (the classic knee detection algorithm);
+#'   \code{"second_derivative"} returns the reproducibility value at which the
+#'   numerical second difference of \code{log10(PeakNumber)} is maximised in
+#'   magnitude (the inflection in steepness).
+#'
+#' @param tileObject A MultiAssayExperiment object from \code{callOpenTiles()}.
+#' @param cellPopulations Cell populations to evaluate (default \code{"all"}).
+#' @param groupColumn Optional grouping column from \code{colData(tileObject)}.
+#'   If supplied, one threshold is returned per (population, group).
+#' @param method One of \code{"kneedle"} (default) or \code{"second_derivative"}.
+#' @param numCores Cores passed through to \code{plotConsensus()}.
+#'
+#' @return A \code{data.frame} with columns \code{CellPopulation},
+#'   \code{Reproducibility} (suggested threshold), \code{PeakNumber} (peaks
+#'   retained at that threshold), \code{Method}, and \code{GroupName} when a
+#'   grouping is requested.
+#'
+#' @export
+#' @keywords plotting
+suggestConsensusThreshold <- function(tileObject,
+                                      cellPopulations = "all",
+                                      groupColumn = NULL,
+                                      method = c("kneedle", "second_derivative"),
+                                      numCores = 1) {
+  method <- match.arg(method)
+  dfs <- plotConsensus(
+    tileObject,
+    cellPopulations = cellPopulations,
+    groupColumn = groupColumn,
+    returnDFs = TRUE,
+    numCores = numCores
+  )
+  out <- do.call(rbind, lapply(names(dfs), function(pop) {
+    rec <- .suggest_threshold_from_curve(dfs[[pop]], method = method, groupColumn = groupColumn)
+    if (is.null(rec) || nrow(rec) == 0) {
+      return(NULL)
+    }
+    rec$CellPopulation <- pop
+    rec$Method <- method
+    rec
+  }))
+  if (is.null(out)) {
+    return(data.frame(
+      CellPopulation = character(),
+      Reproducibility = numeric(),
+      PeakNumber = numeric(),
+      Method = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  rownames(out) <- NULL
+  cols <- c("CellPopulation", "Reproducibility", "PeakNumber", "Method")
+  if ("GroupName" %in% colnames(out)) {
+    cols <- c("CellPopulation", "GroupName", "Reproducibility", "PeakNumber", "Method")
+  }
+  out[, cols, drop = FALSE]
+}
+
+# Suggest a single (or per-group) reproducibility threshold from one cell
+# population's curve. Returns a data.frame with Reproducibility and PeakNumber
+# (plus GroupName when grouped). Returns NULL when the curve is too short.
+.suggest_threshold_from_curve <- function(df, method = "kneedle", groupColumn = NULL) {
+  if (is.null(df) || !nrow(df)) {
+    return(NULL)
+  }
+  pick <- function(sub) {
+    if (nrow(sub) < 3L) {
+      return(NULL)
+    }
+    x <- sub$Reproducibility
+    y <- log10(pmax(sub$PeakNumber, 1))
+    idx <- switch(
+      method,
+      "kneedle" = .kneedle_index(x, y),
+      "second_derivative" = .second_derivative_index(y)
+    )
+    if (is.null(idx) || is.na(idx)) {
+      return(NULL)
+    }
+    data.frame(
+      Reproducibility = sub$Reproducibility[idx],
+      PeakNumber = sub$PeakNumber[idx],
+      stringsAsFactors = FALSE
+    )
+  }
+  if (!is.null(groupColumn) && "GroupName" %in% colnames(df)) {
+    do.call(rbind, lapply(split(df, df$GroupName), function(sub) {
+      rec <- pick(sub)
+      if (is.null(rec)) return(NULL)
+      rec$GroupName <- unique(sub$GroupName)
+      rec
+    }))
+  } else {
+    pick(df)
+  }
+}
+
+# Kneedle: normalise x and y to [0,1], find the point of max perpendicular
+# distance from the line joining the first and last points. Works on
+# monotone-decreasing curves (more reproducibility → fewer peaks).
+.kneedle_index <- function(x, y) {
+  n <- length(x)
+  if (n < 3L) return(NA_integer_)
+  rng_x <- range(x); rng_y <- range(y)
+  if (diff(rng_x) == 0 || diff(rng_y) == 0) return(NA_integer_)
+  xn <- (x - rng_x[1]) / diff(rng_x)
+  yn <- (y - rng_y[1]) / diff(rng_y)
+  # Secant between endpoints: y = m*x + b
+  m <- (yn[n] - yn[1]) / (xn[n] - xn[1])
+  b <- yn[1] - m * xn[1]
+  # Perpendicular distance from point to line ax + by + c = 0 → m*x - y + b = 0
+  d <- abs(m * xn - yn + b) / sqrt(m^2 + 1)
+  which.max(d)
+}
+
+# Numerical second-difference index. Returns the position of the maximum |d²y|.
+.second_derivative_index <- function(y) {
+  n <- length(y)
+  if (n < 3L) return(NA_integer_)
+  d2 <- diff(y, differences = 2L)
+  # d2 is aligned with y[2 : (n-1)]; offset by 1 to map back to original index.
+  which.max(abs(d2)) + 1L
 }
 
 
@@ -118,11 +298,13 @@ cellTypeDF <- function(list1 = NULL, peaksExperiment, sampleData, groupColumn, r
   emptySamples <- apply(samplePeakMat, 2, function(x) all(is.na(x) | !x))
 
   # Now we'll filter out those samples, and replace all NAs with zeros.
-  samplePeakMat <- samplePeakMat[, !emptySamples]
+  samplePeakMat <- samplePeakMat[, !emptySamples, drop = FALSE]
   samplePeakMat[is.na(samplePeakMat)] <- FALSE
   sampleData <- sampleData[rownames(sampleData) %in% names(which(!emptySamples)), ]
 
-
+  if (ncol(samplePeakMat) == 0L) {
+    return(data.frame(Reproducibility = numeric(), PeakNumber = numeric()))
+  }
 
   if (is.null(groupColumn)) {
 
@@ -143,7 +325,7 @@ cellTypeDF <- function(list1 = NULL, peaksExperiment, sampleData, groupColumn, r
       # Filter sample-peak matrix to samples in this group
       samplesInGroupDF <- sampleData[sampleData[[groupColumn]] == group, ]
       samplesInGroup <- rownames(samplesInGroupDF)
-      groupSamplePeakMat <- samplePeakMat[, samplesInGroup]
+      groupSamplePeakMat <- samplePeakMat[, samplesInGroup, drop = FALSE]
 
       reproducibility_perc <- seq(0, 1, by = 1 / length(samplesInGroup))
 

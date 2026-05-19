@@ -56,6 +56,7 @@ extractRegion <- function(SampleTileObj,
                           subGroups = NULL,
                           sampleSpecific = FALSE,
                           approxLimit = 100000,
+                          skipEmpty = TRUE,
                           binSize = 250,
                           sliding = NULL,
                           numCores = 1,
@@ -64,15 +65,7 @@ extractRegion <- function(SampleTileObj,
 
   cellNames <- names(SummarizedExperiment::assays(SampleTileObj))
   metaFile <- SummarizedExperiment::colData(SampleTileObj)
-  outDir <- SampleTileObj@metadata$Directory
-
-  if (is.na(outDir)) {
-    stop("Missing coverage file directory. SampleTileObj$metadata must contain 'Directory'.")
-  }
-
-  if (!file.exists(outDir)) {
-    stop("Directory given by SampleTileObj@metadata$Directory does not exist.")
-  }
+  outDir <- .validateCoverageDirectory(SampleTileObj, objectName = "SampleTileObj")
 
   if (is.character(region)) {
 
@@ -86,12 +79,7 @@ extractRegion <- function(SampleTileObj,
 
     
     
-  if (all(toupper(cellNames) == "COUNTS")) {
-    stop(
-      "The only assay in the SummarizedExperiment is Counts. The names of assays must reflect cell types,",
-      " such as those in the Summarized Experiment output of getSampleTileMatrix."
-    )
-  }
+  .requireCellPopulationAssays(cellNames)
 
   if (all(toupper(cellPopulations) == "ALL")) {
     cellPopulations <- cellNames
@@ -100,24 +88,9 @@ extractRegion <- function(SampleTileObj,
     stop("Some or all cell populations provided are not found.")
   }
 
-  # Pull out a list of samples by group.
-
-  if (!is.null(subGroups) & !is.null(groupColumn)) {
-    # If the user defined a list of subgroup(s) within the groupColumn from the metadata, then it subsets to just those samples
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-    names(subSamples) <- subGroups
-  } else if (!is.null(groupColumn)) {
-
-    # If no subGroup defined, then it'll form a list of samples across all labels within the groupColumn
-    subGroups <- unique(metaFile[, groupColumn])
-
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-  } else {
-
-    # If neither groupColumn nor subGroup is defined, then it forms one list of all sample names
-    subGroups <- "All"
-    subSamples <- list("All" = metaFile[, "Sample"])
-  }
+  grouping <- .prepSampleTileGrouping(metaFile, groupColumn, subGroups)
+  subGroups <- grouping$subGroups
+  subSamples <- grouping$subSamples
 
   # Determine if binning is needed to simplify things
   if (GenomicRanges::end(regionGRanges) - GenomicRanges::start(regionGRanges) > approxLimit) {
@@ -141,36 +114,35 @@ extractRegion <- function(SampleTileObj,
   # Pull up the cell types of interest, and filter for samples and subset down to region of interest
   cellPopulation_Files <- lapply(cellPopulations, function(x) {
 
-    # Pull up coverage files
-    originalCovGRanges <- readRDS(paste(outDir, "/", x, "_CoverageFiles.RDS", sep = ""))
-    if(type & 'Accessibility' %in% names(originalCovGRanges)){
-     originalCovGRanges <- originalCovGRanges[['Accessibility']]
-    }else if (type & !'Accessibility' %in% names(originalCovGRanges)){
-      originalCovGRanges <- originalCovGRanges
-    }else if (!type & 'Accessibility' %in% names(originalCovGRanges)){
-      originalCovGRanges <- originalCovGRanges[['Insertions']]
-    }else{
-        stop('Error around reading coverage files. Check that coverage files are not corrupted.')
-    }
+    coverageBundle <- .readCoverageBundle(outDir, x)
+    originalCovGRanges <- .selectCoverageFromBundle(coverageBundle, coverage = type)
     
     
     # Edge case: One or more samples are missing coverage for this cell population,
     # e.g. if a cell population only exists in one sample.
-    lapply(seq_along(subSamples), function(y) {
-      if (!all(subSamples[[y]] %in% names(originalCovGRanges))) {
+    for(y in seq_along(subSamples)){
+      if (!all(subSamples[[y]] %in% names(originalCovGRanges)) & !skipEmpty) {
         missingSamples <- paste(subSamples[[y]][!subSamples[[y]] %in% names(originalCovGRanges)], collapse = ", ")
         stop(stringr::str_interp(c(
           "There is no fragment coverage for cell population '${x}' in the ",
           "following samples in sample grouping '${names(subSamples)[y]}': ",
           "${missingSamples}"
         )))
+      }else if (!all(subSamples[[y]] %in% names(originalCovGRanges)) & skipEmpty) {
+        missingSamples <- paste(subSamples[[y]][!subSamples[[y]] %in% names(originalCovGRanges)], collapse = ", ")
+        warning(stringr::str_interp(c(
+          "There is no fragment coverage for cell population '${x}' in the ",
+          "following samples in sample grouping '${names(subSamples)[y]}': ",
+          "${missingSamples}"
+        )))
+        subSamples[[y]] = subSamples[[y]][subSamples[[y]] %in% names(originalCovGRanges)] # Remove the samples that are missing coverage
       }
-    })
+    }
 
     if (verbose) {
       message(stringr::str_interp("Extracting coverage from cell population '${x}'"))
     }
-
+   
     # If the region is too large, bin the data.
     if (GenomicRanges::end(regionGRanges) - GenomicRanges::start(regionGRanges) > approxLimit) {
       iterList <- lapply(seq_along(subSamples), function(y) {
@@ -221,6 +193,12 @@ extractRegion <- function(SampleTileObj,
   }
   parallel::stopCluster(cl)
 
+  #Check if there's a different number of rows in each index of allGroupsDF
+  if(length(unique(sapply(allGroupsDF, nrow))) > 1){
+    #Identify unique values 
+  }
+  
+
   names(allGroupsDF) <- names(allGroups)
 
   newMetadata <- SampleTileObj@metadata
@@ -232,6 +210,7 @@ extractRegion <- function(SampleTileObj,
   }
   newMetadata$Type <- Type1
 
+  # 
   countSE <- SummarizedExperiment::SummarizedExperiment(allGroupsDF,
     metadata = newMetadata
   )
@@ -275,33 +254,16 @@ subsetBPCoverage <- function(iterList) {
   return(mergedCounts)
 }
 
-# Generates average single basepair coverage for a given region
-averageBPCoverage <- function(iterList) {
-  regionGRanges <- iterList[[1]]
-  sampleCount <- length(iterList[[2]])
-  
-  filterCounts <- lapply(1:sampleCount, function(z) {
-    plyranges::join_overlap_intersect(iterList[[2]][[z]], regionGRanges)
-  })
-  
-  mergedCounts <- IRanges::stack(methods::as(filterCounts, "GRangesList"))
-  mergedCounts <- plyranges::join_overlap_intersect(mergedCounts, regionGRanges)
-  mergedCounts <- plyranges::compute_coverage(mergedCounts, weight = mergedCounts$score / sampleCount)
-  mergedCounts <- plyranges::join_overlap_intersect(mergedCounts, regionGRanges)
-  
-  return(mergedCounts)
-}
-
 ## Efficiently subsets and bins coverage for a given region across samples
 subsetBinCoverage <- function(iterList) {
   partition <- idx <- score <- NULL
   regionGRanges_tmp <- plyranges::reduce_ranges(iterList[[1]])
-  indTiles <- plyranges::select(plyranges::tile_ranges(regionGRanges_tmp, 1), -partition)
+  indTiles <- dplyr::select(plyranges::tile_ranges(regionGRanges_tmp, 1), -partition)
 
   tmpCounts <- lapply(iterList[[2]], function(z) {
     tmpGR <- plyranges::join_overlap_intersect(z, indTiles)
     tmpGR <- plyranges::join_overlap_intersect(tmpGR, iterList[[1]])
-    tmpGR <- plyranges::group_by(tmpGR, idx)
+    tmpGR <- dplyr::group_by(tmpGR, idx)
     tmpGR <- plyranges::reduce_ranges(tmpGR, score = mean(score))
     tmpGR <- dplyr::ungroup(tmpGR)
     tmpGR
@@ -315,13 +277,13 @@ subsetBinCoverage <- function(iterList) {
 averageBinCoverage <- function(iterList) {
   idx <- score <- partition <- NULL
   regionGRanges_tmp <- plyranges::reduce_ranges(iterList[[1]])
-  indTiles <- plyranges::select(plyranges::tile_ranges(regionGRanges_tmp, 1), -partition)
+  indTiles <- dplyr::select(plyranges::tile_ranges(regionGRanges_tmp, 1), -partition)
   sampleCount <- length(iterList[[2]])
 
   filterCounts <- lapply(iterList[[2]], function(z) {
     tmpGR <- plyranges::join_overlap_intersect(z, indTiles)
     tmpGR <- plyranges::join_overlap_intersect(tmpGR, iterList[[1]])
-    tmpGR <- plyranges::group_by(tmpGR, idx)
+    tmpGR <- dplyr::group_by(tmpGR, idx)
     tmpGR <- plyranges::reduce_ranges(tmpGR, score = mean(score))
     tmpGR <- dplyr::ungroup(tmpGR)
     tmpGR
@@ -348,7 +310,7 @@ averageBinCoverage <- function(iterList) {
 #   tmpCounts <- lapply(subList, function(z) {
 #     tmpGR <- plyranges::join_overlap_intersect(z, regionGRanges) %>%
 #       tmpGR() <- plyranges::join_overlap_intersect(tmpGR, binnedData)
-#     tmpGR <- plyranges::group_by(tmpGR, idx) %>%
+#     tmpGR <- dplyr::group_by(tmpGR, idx) %>%
 #       tmpGR() <- plyranges::reduce_ranges(tmpGR, score = mean(score))
 #     tmpGR <- dplyr::ungroup(tmpGR)
 #     tmpGR
@@ -381,7 +343,15 @@ averageSlidingBinCoverage <- function(iterList) {
 cleanDataFrame1 <- function(iterList) {
   group1 <- iterList[[1]]
   subGroupdf <- as.data.frame(group1)
-  subGroupdf$Groups <- rep(iterList[[2]], length(group1))
+  #Group by idx and take the weighted mean of each score
+  subGroupdf <- dplyr::group_by(subGroupdf, idx)
+  subGroupdf <- dplyr::summarize(subGroupdf, 
+                  seqnames = unique(seqnames),
+                  start= mean(min(start), max(end), na.rm = TRUE),
+                  score = weighted.mean(score, width, na.rm = TRUE))
+  subGroupdf <- dplyr::ungroup(subGroupdf)
+  subGroupdf <- dplyr::select(subGroupdf, -idx)
+  subGroupdf$Groups <- rep(iterList[[2]], nrow(subGroupdf))
 
   covdf <- subGroupdf[, c("seqnames", "start", "score", "Groups")]
   colnames(covdf) <- c("chr", "Locus", "Counts", "Groups")
@@ -394,7 +364,6 @@ cleanDataFrame2 <- function(iterList) {
   tmp <- plyranges::tile_ranges(group1, width = 1)
   tmp$score <- group1$score[tmp$partition]
   tmp$Groups <- rep(iterList[[2]], length(tmp))
-
 
   covdf <- as.data.frame(tmp)[, c("seqnames", "start", "score", "Groups")]
   colnames(covdf) <- c("chr", "Locus", "Counts", "Groups")

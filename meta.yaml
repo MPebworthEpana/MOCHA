@@ -1,0 +1,111 @@
+{% set version = "2.0.0" %}
+
+# Pinning guidance:
+# - This recipe is intentionally light on upper pins for a first pass.
+# - If CI reports Bioconductor solver conflicts, pin `r-base` to one Bioconductor
+#   release line in BOTH host/run (example: >=4.3,<4.4).
+# - Keep Bioconductor deps from the same channel/release family (typically bioconda).
+
+package:
+  name: r-mocha
+  version: {{ version|replace("-", "_") }}
+
+source:
+  url: https://cran.r-project.org/src/contrib/MOCHA_{{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: generic
+  # Bioconda does not target win-64; keep this selector unless Windows support is needed.
+  skip: true  # [win]
+  script: "{{ R }} CMD INSTALL --build ."
+
+requirements:
+  host:
+    # Mirror this r-base pin in `run` when tightening version bounds.
+    - r-base >=4.1.0
+    - r-data.table
+    - r-dplyr
+    - r-stringr
+    - r-wcorr
+    - r-magrittr
+    - r-rlang
+    - r-assertthat
+    - r-ggplot2
+    - r-ggrepel
+    - r-matrixstats
+    - r-scales
+    - r-tidyr
+    - r-ggridges
+    - r-pbapply
+    - r-tidyselect
+    - r-lifecycle
+    - bioconductor-plyranges >=1.14.0
+    - bioconductor-genomicranges
+    - bioconductor-raggedexperiment
+    - bioconductor-multiassayexperiment
+    - bioconductor-summarizedexperiment
+    - bioconductor-ggbio
+    - bioconductor-annotationdbi
+    - bioconductor-biocgenerics
+    - bioconductor-genomeinfodb
+    - bioconductor-genomicfeatures
+    - bioconductor-iranges
+    - bioconductor-s4vectors
+    - bioconductor-ensembldb
+    - bioconductor-qvalue
+    - bioconductor-bsgenome
+  run:
+    # Mirror any future `r-base` upper bound from `host` here.
+    - r-base >=4.1.0
+    - r-data.table
+    - r-dplyr
+    - r-stringr
+    - r-wcorr
+    - r-magrittr
+    - r-rlang
+    - r-assertthat
+    - r-ggplot2
+    - r-ggrepel
+    - r-matrixstats
+    - r-scales
+    - r-tidyr
+    - r-ggridges
+    - r-pbapply
+    - r-tidyselect
+    - r-lifecycle
+    - bioconductor-plyranges >=1.14.0
+    - bioconductor-genomicranges
+    - bioconductor-raggedexperiment
+    - bioconductor-multiassayexperiment
+    - bioconductor-summarizedexperiment
+    - bioconductor-ggbio
+    - bioconductor-annotationdbi
+    - bioconductor-biocgenerics
+    - bioconductor-genomeinfodb
+    - bioconductor-genomicfeatures
+    - bioconductor-iranges
+    - bioconductor-s4vectors
+    - bioconductor-ensembldb
+    - bioconductor-qvalue
+    - bioconductor-bsgenome
+
+test:
+  # Keep tests lightweight for feedstock CI; avoid network/data-heavy examples.
+  commands:
+    - $R -q -e "library('MOCHA')"
+    - $R -q -e "packageVersion('MOCHA')"
+
+about:
+  home: https://github.com/aifimmunology/MOCHA
+  license: GPL-3.0-or-later
+  license_file: LICENSE.md
+  summary: Modeling for single-cell open chromatin analysis.
+  description: >
+    MOCHA is an R package providing model-based methods for open chromatin
+    analysis in single-cell ATAC-seq data, including tile calling,
+    differential accessibility, and co-accessibility analyses.
+
+extra:
+  recipe-maintainers:
+    - your-github-id

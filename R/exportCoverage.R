@@ -12,8 +12,6 @@
 #'   peaks. This list of group names must be identical to names that appear in
 #'   the SampleTileObject.  Optional, if cellPopulations='ALL', then peak
 #'   calling is done on all cell populations. Default is 'ALL'.
-#' @param type Boolean. Default is TRUE, and exports Coverage. If set to FALSE,
-#'   exports Insertions.
 #' @param groupColumn Optional, the column containing sample group labels for
 #'   returning coverage within sample groups. Default is NULL, all samples will
 #'   be used.
@@ -24,12 +22,10 @@
 #'   combination.
 #' @param saveFile Boolean. If TRUE, it will save to a BigWig. If FALSE, it will
 #'   return the GRangesList without writing a BigWig.
-#' @param numCores integer. Number of cores to parallelize peak-calling across
-#'   multiple cell populations
+#' @param numCores integer. Number of cores to parallelize over
 #' @param verbose Set TRUE to display additional messages. Default is FALSE.
 #'
-#' @return countSE a SummarizedExperiment containing coverage for the given
-#'   input cell populations.
+#' @return A list of GRanges objects, or a list of paths to where the BigWigs are saved
 #'
 #' @examples
 #' \dontrun{
@@ -46,10 +42,9 @@
 
 exportCoverage <- function(SampleTileObject,
                            dir = getwd(),
-                           type = TRUE,
                            cellPopulations = "ALL",
                            groupColumn = NULL,
-                           subGroups = NULL,
+                           subGroups = NULL, 
                            sampleSpecific = FALSE,
                            saveFile = TRUE,
                            numCores = 1,
@@ -58,15 +53,7 @@ exportCoverage <- function(SampleTileObject,
 
   cellNames <- names(SummarizedExperiment::assays(SampleTileObject))
   metaFile <- SummarizedExperiment::colData(SampleTileObject)
-  outDir <- SampleTileObject@metadata$Directory
-
-  if (is.na(outDir)) {
-    stop("Missing coverage file directory. SampleTileObject$metadata must contain 'Directory'.")
-  }
-
-  if (!file.exists(outDir)) {
-    stop("Directory given by SampleTileObject@metadata$Directory does not exist.")
-  }
+  outDir <- .validateCoverageDirectory(SampleTileObject, objectName = "SampleTileObject")
 
   if (all(toupper(cellPopulations) == "ALL")) {
     cellPopulations <- cellNames
@@ -76,26 +63,10 @@ exportCoverage <- function(SampleTileObject,
   }
 
 
-  # Pull out a list of samples by group.
-
-  if (!is.null(subGroups) & !is.null(groupColumn)) {
-    # If the user defined a list of subgroup(s) within the groupColumn from the metadata, then it subsets to just those samples
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-    names(subSamples) <- subGroups
-  } else if (!is.null(groupColumn)) {
-
-    # If no subGroup defined, then it'll form a list of samples across all labels within the groupColumn
-    subGroups <- unique(metaFile[, groupColumn])
-
-    subSamples <- lapply(subGroups, function(x) metaFile[metaFile[, groupColumn] %in% x, "Sample"])
-  } else {
-
-    # If neither groupColumn nor subGroup is defined, then it forms one list of all sample names
-    subGroups <- "All"
-    subSamples <- list("All" = metaFile[, "Sample"])
-  }
-
-
+  grouping <- .prepSampleTileGrouping(metaFile, groupColumn, subGroups)
+  subGroups <- grouping$subGroups
+  subSamples <- grouping$subSamples
+                         
   cl <- parallel::makeCluster(numCores)
   parallel::clusterEvalQ(cl, {
     library(GenomicRanges)
@@ -106,22 +77,8 @@ exportCoverage <- function(SampleTileObject,
     # MOCHA::getCoverage outputs a single list with two named items: "Accessibility"
     # and "Insertions".
     # This is saved to *_CoverageFiles.RDS in MOCHA::callOpenTiles
-    if (type) { # Accessibility
-      originalCovGRanges <- readRDS(paste(outDir, "/", x, "_CoverageFiles.RDS", sep = ""))
-      # For backwards compatibility, only use "Accessibility" if it exists.
-      if ("Accessibility" %in% names(originalCovGRanges)) {
-        originalCovGRanges <- originalCovGRanges$Accessibility
-      }
-    } else { # Insertions
-      originalCovGRanges <- readRDS(paste(outDir, "/", x, "_CoverageFiles.RDS", sep = ""))
-      # For backwards compatibility, only use "Insertions" if it exists.
-      if ("Insertions" %in% names(originalCovGRanges)) {
-        originalCovGRanges <- originalCovGRanges$Insertions
-      } else {
-        # Check for a separate "Insertions" file
-        originalCovGRanges <- readRDS(paste(outDir, "/", x, "_InsertionFiles.RDS", sep = ""))
-      }
-    }
+    coverageBundle <- .readCoverageBundle(outDir, x)
+    originalCovGRanges <- .selectAccessibilityCoverage(coverageBundle)
 
     if (verbose) {
       message(stringr::str_interp("Extracting coverage for cell population ${x}."))
@@ -166,9 +123,10 @@ exportCoverage <- function(SampleTileObject,
     if (saveFile) {
       # Export bigwig
       for (i in 1:length(cellPopSubsampleCov)) {
-        fileName <- gsub(" ", "__", paste(x, groupColumn, names(cellPopSubsampleCov)[i], sep = "__"))
-        if (!type) {
-          fileName <- paste(fileName, "__Insertions", sep = "")
+        if(!is.null(groupColumn)){
+            fileName <- gsub(" ", "__", paste(x, groupColumn, names(cellPopSubsampleCov)[i], sep = "__"))
+        }else{
+            fileName <- gsub(" ", "__", paste(x, names(cellPopSubsampleCov)[i], sep = "__"))
         }
         # Edge case where there was only 1 sample to be averaged if !sampleSpecific
         if (methods::is(cellPopSubsampleCov[[i]], "list")){
@@ -177,13 +135,13 @@ exportCoverage <- function(SampleTileObject,
           }
         }
         if (verbose) {
-          message("Exporting: ", paste(dir, "/", fileName, ".bw", sep = ""))
+          message("Exporting: ", paste(dir, "/", fileName, "_Coverage.bw", sep = ""))
         }
-        plyranges::write_bigwig(cellPopSubsampleCov[[i]], paste(dir, "/", fileName, ".bw", sep = ""))
+        plyranges::write_bigwig(cellPopSubsampleCov[[i]], paste(dir, "/", fileName, "_Coverage.bw", sep = ""))
       }
     }
 
-    names(cellPopSubsampleCov) <- x
+    names(cellPopSubsampleCov) <- paste(x, names(cellPopSubsampleCov), sep = "__")
     allCellPopCoverage <- append(allCellPopCoverage, cellPopSubsampleCov)
 
   }

@@ -2,9 +2,15 @@
 ^renv\.lock$
 ^LICENSE\.md$
 ^\.github$
-^cran-comments\.md$
+^bioc-comments\.md$
+^BIOC_SUBMISSION\.md$
 ^data-raw$
-^CRAN-SUBMISSION$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^vignettes/.*\.html$
+^inst/notebooks/
+^ISSUE_REVIEW_SUMMARY\.md$
+^recipes/
+^environment-mocha-test\.yml$
+^meta\.yaml$

@@ -18,7 +18,7 @@
       
       $TxDb
       $TxDb$pkgname
-      [1] "TxDb.Hsapiens.UCSC.hg38.refGene"
+      [1] "TxDb.Hsapiens.UCSC.hg38.knownGene"
       
       $TxDb$metadata
                                              name

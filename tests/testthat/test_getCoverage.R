@@ -1,12 +1,12 @@
 skip_on_cran()
-if (requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE)) {
+if (requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE)) {
   test_that("getCoverage works on a 1 sample test dataset", {
     capture.output(
       covFiles <- MOCHA::getCoverage(
         popFrags = MOCHA::exampleFragments,
         normFactor = c(1, 1),
         filterEmpty = FALSE,
-        cl = 1, TxDb = TxDb.Hsapiens.UCSC.hg38.refGene
+        cl = 1, TxDb = TxDb.Hsapiens.UCSC.hg38.knownGene
       )
     )
     expect_snapshot(covFiles)
@@ -18,7 +18,7 @@ if (requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE)) {
         popFrags = MOCHA::exampleFragments,
         normFactor = c(1, 1),
         filterEmpty = TRUE,
-        cl = 1, TxDb = TxDb.Hsapiens.UCSC.hg38.refGene
+        cl = 1, TxDb = TxDb.Hsapiens.UCSC.hg38.knownGene
       )
     )
     expect_snapshot(covFiles)
@@ -30,7 +30,7 @@ if (requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE)) {
         popFrags = MOCHA::exampleFragments,
         normFactor = c(1, 1),
         filterEmpty = TRUE,
-        cl = 1, TxDb = TxDb.Hsapiens.UCSC.hg38.refGene
+        cl = 1, TxDb = TxDb.Hsapiens.UCSC.hg38.knownGene
       )
     )
     regions <- StringsToGRanges(c("chr1:565291-569412", "chr2:243031253-243034339"))
