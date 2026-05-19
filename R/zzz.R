@@ -2,12 +2,20 @@
 #' @noRd
 .onLoad <- function(libname, pkgname) {
   if (requireNamespace("Seurat", quietly = TRUE)) {
-    methods::setOldClass("Seurat")
-    methods::setMethod(
-      "callOpenTiles",
-      signature(ATACFragments = "Seurat"),
-      .callOpenTiles_Seurat
+    meth <- tryCatch(
+      methods::getMethod(
+        "callOpenTiles",
+        signature = c(ATACFragments = "Seurat")
+      ),
+      error = function(e) NULL
     )
+    if (is.null(meth)) {
+      methods::setMethod(
+        "callOpenTiles",
+        signature(ATACFragments = "Seurat"),
+        .callOpenTiles_Seurat
+      )
+    }
   }
   invisible()
 }

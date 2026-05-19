@@ -66,11 +66,16 @@ Rscript -e 'library(ggbio); library(ensembldb); devtools::document()'
 # Seurat ingest tests
 NOT_CRAN=true Rscript -e 'devtools::load_all(); testthat::test_file("tests/testthat/test_seurat_fragments.R")'
 
-# End-to-end smoke (synthetic Seurat or MOCHA_SEURAT_RDS=/path/to/obj.rds)
+# End-to-end smoke: seuratToMOCHAInputs + callOpenTiles(Seurat)
+# Uses MOCHA::exampleBlackList when available, else chr1:1-750100 mini blacklist
 NOT_CRAN=true Rscript tests/scripts/smoke_seurat_ingest.R
 ```
 
 Indexed fragment fixture: `tests/testthat/fixtures/seurat/mini_fragments.tsv.gz` (+ `.tbi`).
+
+Smoke helpers: `tests/scripts/smoke_seurat_helpers.R` (`smoke_load_blacklist`, dependency checks).
+Requires `BSgenome.Hsapiens.UCSC.hg19`, `TxDb.Hsapiens.UCSC.hg38.knownGene`, and `org.Hs.eg.db`.
+The synthetic object has &lt;5 cells per sample; MOCHA may warn that samples are ignored while still returning a `MultiAssayExperiment`.
 
 ## Coverage guard
 

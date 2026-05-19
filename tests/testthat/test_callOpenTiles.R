@@ -1,8 +1,8 @@
 # This test should only be used for local testing
-# with TxDb.Hsapiens.UCSC.hg38.refGene and org.Hs.eg.db installed/
+# with TxDb.Hsapiens.UCSC.hg38.knownGene and org.Hs.eg.db installed/
 skip_on_cran()
 if (
-  require("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE) &&
+  require("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
     require("org.Hs.eg.db", quietly = TRUE) &&
     require("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) &&
     require("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
@@ -17,7 +17,7 @@ if (
         type = "message"
       )
 
-      TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+      TxDb <- "TxDb.Hsapiens.UCSC.hg38.knownGene"
       OrgDb <- "org.Hs.eg.db"
       capture.output(
         tiles <- MOCHA::callOpenTiles(
@@ -47,7 +47,7 @@ if (
   }
 
   test_that("We can call peaks independent of ArchR", {
-    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.knownGene"
     OrgDb <- "org.Hs.eg.db"
     capture.output(
       tiles <- MOCHA::callOpenTiles(
@@ -79,6 +79,14 @@ if (
     )
 
     tiles@metadata$Directory <- NULL # Directory uses tempdir()
+    # Annotation package metadata fields (dates/URLs/versions) change over time
+    # and are unrelated to MOCHA logic; omit them to keep this snapshot stable.
+    if (!is.null(tiles@metadata$TxDb) && !is.null(tiles@metadata$TxDb$metadata)) {
+      tiles@metadata$TxDb$metadata <- NULL
+    }
+    if (!is.null(tiles@metadata$OrgDb) && !is.null(tiles@metadata$OrgDb$metadata)) {
+      tiles@metadata$OrgDb$metadata <- NULL
+    }
     expect_snapshot(
       tiles@metadata,
       variant = "list_metadata"
@@ -86,7 +94,7 @@ if (
   })
 
   test_that("We throw a warning when a sample has less than 5 cells", {
-    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.knownGene"
     OrgDb <- "org.Hs.eg.db"
     sample1frags <- GenomicRanges::GRanges(
       seqnames = Rle(c("chr1"), c(1)),
@@ -199,7 +207,7 @@ if (
   })
 
   test_that("We can call peaks from sample-level GRangesList input", {
-    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.knownGene"
     OrgDb <- "org.Hs.eg.db"
     sample1frags <- GenomicRanges::GRanges(
       seqnames = Rle(c("chr1"), c(1)),
@@ -247,7 +255,7 @@ if (
   })
 
   test_that("We error when sample-level fragment names do not match cellColData samples", {
-    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.knownGene"
     OrgDb <- "org.Hs.eg.db"
     sample1frags <- GenomicRanges::GRanges(
       seqnames = Rle(c("chr1"), c(1)),
@@ -281,7 +289,7 @@ if (
   })
 
   test_that("We error when sample-level fragments contain unknown cell IDs", {
-    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.knownGene"
     OrgDb <- "org.Hs.eg.db"
     sample1frags <- GenomicRanges::GRanges(
       seqnames = Rle(c("chr1"), c(1)),
@@ -315,7 +323,7 @@ if (
   })
 
   test_that("We error informatively when cellPopLabel is not in the metadata", {
-    TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+    TxDb <- "TxDb.Hsapiens.UCSC.hg38.knownGene"
     OrgDb <- "org.Hs.eg.db"
     expect_error(
       tiles <- MOCHA::callOpenTiles(

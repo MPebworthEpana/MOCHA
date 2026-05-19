@@ -22,6 +22,9 @@
 #' @param numCores Optional, the number of cores to use with multiprocessing.
 #'   Default is 1.
 #' @param verbose Set TRUE to display additional messages. Default is FALSE.
+#' @param returnClass Return type: \code{"legacy"} (default,
+#'   \code{RangedSummarizedExperiment}) or \code{"mocha"}
+#'   (\code{MochaSampleTileMatrix}).
 #'
 #' @return SampleTileMatrices a MultiAssayExperiment containing a sample-tile
 #'   intensity matrix for each cell population
@@ -31,7 +34,7 @@
 #' # Starting from GRangesList
 #' if (
 #'   require(BSgenome.Hsapiens.UCSC.hg19) &&
-#'     require(TxDb.Hsapiens.UCSC.hg38.refGene) &&
+#'     require(TxDb.Hsapiens.UCSC.hg38.knownGene) &&
 #'     require(org.Hs.eg.db)
 #' ) {
 #'   tiles <- MOCHA::callOpenTiles(
@@ -39,8 +42,8 @@
 #'     cellColData = MOCHA::exampleCellColData,
 #'     blackList = MOCHA::exampleBlackList,
 #'     genome = "BSgenome.Hsapiens.UCSC.hg19",
-#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
-#'     Org = "org.Hs.eg.db",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'     OrgDb = "org.Hs.eg.db",
 #'     outDir = tempdir(),
 #'     cellPopLabel = "Clusters",
 #'     cellPopulations = c("C2", "C5"),
@@ -62,8 +65,10 @@ getSampleTileMatrix <- function(tileResults,
                                 groupColumn = NULL,
                                 threshold = 0.2,
                                 numCores = 1,
-                                verbose = FALSE) {
-  if (class(tileResults)[1] != "MultiAssayExperiment") {
+                                verbose = FALSE,
+                                returnClass = c("legacy", "mocha")) {
+  returnClass <- match.arg(returnClass)
+  if (!methods::is(tileResults, "MultiAssayExperiment")) {
     stop("tileResults is not a MultiAssayExperiment")
   }
   # Any column can be used to group samples
@@ -149,5 +154,5 @@ getSampleTileMatrix <- function(tileResults,
     colData = sampleData,
     metadata = newMetadata
   )
-  return(results)
+  .mocha_promote_return(results, returnClass)
 }

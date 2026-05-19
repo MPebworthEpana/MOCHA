@@ -1,0 +1,58 @@
+# Bioconductor submission checks (devel)
+on:
+  push:
+    branches: [bioc/submission, main, updates]
+  pull_request:
+    branches: [bioc/submission, main, updates]
+  schedule:
+    - cron: "0 6 * * 1"
+
+name: Bioc-check
+
+jobs:
+  bioc-check:
+    runs-on: ubuntu-latest
+    container:
+      image: bioconductor/bioconductor_docker:devel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - name: Install BiocManager, BiocCheck, BiocStyle
+        run: |
+          R -q -e 'install.packages("BiocManager", repos="https://cloud.r-project.org")'
+          R -q -e 'BiocManager::install(c("BiocCheck", "BiocStyle"), update=FALSE, ask=FALSE)'
+
+      - name: Install MOCHA dependencies
+        run: |
+          R -q -e 'install.packages("remotes", repos="https://cloud.r-project.org")'
+          R -q -e 'remotes::install_deps(dependencies=TRUE, upgrade=FALSE)'
+
+      - name: Build tarball
+        run: R CMD build .
+
+      - name: Check package
+        run: |
+          R CMD check --no-manual --timings MOCHA_*.tar.gz 2>&1 | tee check.log
+          if grep -q "^\\* ERROR" check.log; then exit 1; fi
+          if grep -q "^\\* WARNING" check.log; then exit 1; fi
+
+      - name: BiocCheck
+        run: |
+          R -q -e 'BiocCheck::BiocCheck(Sys.glob("MOCHA_*.tar.gz")[1], verbose=TRUE)' 2>&1 | tee biock.log
+          if grep -qE "ERRORS: [1-9]" biock.log; then exit 1; fi
+
+      - name: Upload check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bioc-check-logs
+          path: |
+            check.log
+            biock.log

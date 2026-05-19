@@ -18,6 +18,32 @@
 #' @return Object the input Object, filtered down to either the cell type or
 #'   samples desired.
 #'
+#' @examples
+#' \donttest{
+#' if (
+#'   requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+#'     requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+#'     requireNamespace("org.Hs.eg.db", quietly = TRUE)
+#' ) {
+#'   tiles <- MOCHA::callOpenTiles(
+#'     ATACFragments = MOCHA::exampleFragments,
+#'     cellColData = MOCHA::exampleCellColData,
+#'     blackList = MOCHA::exampleBlackList,
+#'     genome = "BSgenome.Hsapiens.UCSC.hg19",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'     OrgDb = "org.Hs.eg.db",
+#'     outDir = tempdir(),
+#'     cellPopLabel = "Clusters",
+#'     cellPopulations = c("C2", "C5"),
+#'     numCores = 1
+#'   )
+#'   subsetTiles <- MOCHA::subsetMOCHAObject(
+#'     tiles,
+#'     subsetBy = "celltype",
+#'     groupList = "C2"
+#'   )
+#' }
+#' }
 #'
 #' @export
 #' @keywords utils
@@ -27,93 +53,14 @@ subsetMOCHAObject <- function(Object,
                               removeNA = TRUE,
                               subsetPeaks = TRUE,
                               verbose = FALSE) {
-  summarizedData <- S4Vectors::metadata(Object)$summarizedData
-  sampleData <- SummarizedExperiment::colData(Object)
-
-  if (!(subsetBy %in% colnames(sampleData)) & !grepl("celltype", tolower(subsetBy))) {
-    stop(
-      "Variable given in subsetBy is not in the colData of the input Object.",
-      "subsetBy must either be 'celltype', or a column name within colData(Object)."
-    )
-  }
-
-  # Subset cell populations (assays)
-  if (grepl("celltype", tolower(subsetBy))) {
-    if (class(Object)[1] == "MultiAssayExperiment") {
-      # Input is tileResults, output of callOpenTiles
-
-      if ((subsetBy %in% colnames(sampleData)) & grepl("celltype", tolower(subsetBy))) {
-        if (verbose) {
-          warning(
-            "subsetBy is set to 'celltype', but that is also a column name ",
-            "within the colData of the input Object. The object will be filtered",
-            " by cell type annotation, not by colData of the input Object."
-          )
-        }
-      }
-
-      if (grepl("celltype", tolower(subsetBy))) {
-        if (!all(groupList %in% names(Object))) {
-          stop("groupList includes celltypes not found within Object.")
-        }
-
-        newObject <- MultiAssayExperiment::subsetByAssay(Object, groupList)
-        newObject@metadata$summarizedData <- summarizedData[groupList, ]
-        return(newObject)
-      }
-    } else if (class(Object)[1] == "RangedSummarizedExperiment") {
-      # Input is a TSAM, output of getSampleTileMatrix
-
-      # To subset by cell type, first we have to verify that all cell type
-      # names were found within the  object.
-      # then we simply do a simple subsetting process, like you would with a list.
-      if (!all(groupList %in% names(SummarizedExperiment::assays(Object)))) {
-        stop("groupList includes celltypes not found within Object.")
-      }
-
-      keepIdx <- which(names(SummarizedExperiment::assays(Object)) %in% groupList)
-      SummarizedExperiment::assays(Object) <- SummarizedExperiment::assays(Object)[keepIdx]
-      Object@metadata$summarizedData <- summarizedData[groupList, ]
-
-      # Subset peaks
-      if (subsetPeaks) {
-        rowMeta <- GenomicRanges::mcols(SummarizedExperiment::rowRanges(Object))[, groupList]
-
-        if (!is.null(dim(rowMeta))) {
-          rowMeta <- rowSums(as.data.frame(rowMeta)) > 0
-        }
-        Object <- Object[rowMeta, ]
-      }
-
-      return(Object)
-    }
-  }
-
-  # Subset samples by sample metadata
-  if (subsetBy %in% colnames(sampleData)) {
-    if (!all(groupList %in% unique(sampleData[[subsetBy]]))) {
-      stop(
-        stringr::str_interp(
-          "groupList includes names not found within the column '${subsetBy}'"
-        ),
-        " in the sample metadata. (see `colData(Object)`). "
-      )
-    }
-
-    if (removeNA) {
-      keepSamples <- rownames(sampleData)[which(sampleData[[subsetBy]] %in% groupList)]
-    } else {
-      keepSamples <- rownames(sampleData)[which(
-        sampleData[[subsetBy]] %in% groupList | is.na(sampleData[[subsetBy]])
-      )]
-    }
-
-    Object <- Object[, keepSamples]
-    Object@metadata$summarizedData <- summarizedData[, keepSamples]
-    return(Object)
-  } else {
-    stop("subsetBy not recognized.")
-  }
+  .subset_mocha_object(
+    Object,
+    subsetBy = subsetBy,
+    groupList = groupList,
+    removeNA = removeNA,
+    subsetPeaks = subsetPeaks,
+    verbose = verbose
+  )
 }
 
 #' @title Modify the cell population names in a Sample-Tile Object from

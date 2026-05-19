@@ -71,7 +71,7 @@ test_that("trainPeakModel youden threshold uses cutpointr", {
 })
 
 test_that("callOpenTiles accepts custom peakModel and uses tileSize", {
-  skip_if_not_installed("TxDb.Hsapiens.UCSC.hg38.refGene")
+  skip_if_not_installed("TxDb.Hsapiens.UCSC.hg38.knownGene")
   skip_if_not_installed("org.Hs.eg.db")
 
   frags <- MOCHA::exampleFragments[[1]]
@@ -97,7 +97,7 @@ test_that("callOpenTiles accepts custom peakModel and uses tileSize", {
       cellColData = MOCHA::exampleCellColData,
       blackList = MOCHA::exampleBlackList,
       genome = "hg19",
-      TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+      TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
       OrgDb = "org.Hs.eg.db",
       outDir = tempdir(),
       cellPopLabel = "Clusters",
@@ -117,7 +117,7 @@ test_that("callOpenTiles accepts custom peakModel and uses tileSize", {
 })
 
 test_that("callOpenTiles without peakModel matches default peak model path", {
-  skip_if_not_installed("TxDb.Hsapiens.UCSC.hg38.refGene")
+  skip_if_not_installed("TxDb.Hsapiens.UCSC.hg38.knownGene")
   skip_if_not_installed("org.Hs.eg.db")
 
   capture.output(
@@ -126,7 +126,7 @@ test_that("callOpenTiles without peakModel matches default peak model path", {
       cellColData = MOCHA::exampleCellColData,
       blackList = MOCHA::exampleBlackList,
       genome = "hg19",
-      TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+      TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
       OrgDb = "org.Hs.eg.db",
       outDir = tempdir(),
       cellPopLabel = "Clusters",
@@ -143,7 +143,7 @@ test_that("callOpenTiles without peakModel matches default peak model path", {
       cellColData = MOCHA::exampleCellColData,
       blackList = MOCHA::exampleBlackList,
       genome = "hg19",
-      TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+      TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
       OrgDb = "org.Hs.eg.db",
       outDir = tempdir(),
       cellPopLabel = "Clusters",

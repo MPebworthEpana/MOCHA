@@ -156,8 +156,10 @@ The input ggplot object with motif labels overlaid
   plotting motif overlay, ensure that motif annotations have been added to
   your counts SummarizedExperiment. A basic plot can be rendered with just a
   counts SummarizedExperiment, but additional formatting arguments allow for
-  further customization. Note that to show specific genes with the option
-  'whichGenes' the \pkg{RMariaDB} package must be installed.
+  further customization. Note that gene-symbol lookup for the
+  'whichGenes' option requires either an installed \pkg{AnnotationDbi} +
+  OrgDb package (offline) or a \pkg{biomaRt} \code{Mart} connection
+  (online).
 }
 \examples{
 \dontrun{

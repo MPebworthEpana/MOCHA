@@ -51,12 +51,7 @@ if (requireNamespace("Seurat", quietly = TRUE) &&
       fragment_lines = lines,
       meta = meta
     )
-    skip_if_null(obj)
-
-    frag_obj <- Signac::Fragments(obj[["ATAC"]])[[1]]
-    cells_map <- c(c1 = "AAAC", c2 = "AAAG", c3 = "TTTC")
-    methods::slot(frag_obj, "cells") <- cells_map
-    Signac::Fragments(obj[["ATAC"]]) <- list(frag_obj)
+    skip_if(is.null(obj), "Could not build test Seurat object (indexed fragments required)")
 
     parsed <- MOCHA::seuratToMOCHAInputs(
       seuratObj = obj,
@@ -75,15 +70,18 @@ if (requireNamespace("Seurat", quietly = TRUE) &&
 
   test_that("seuratToMOCHAInputs errors on missing metadata columns", {
     meta <- data.frame(
-      Sample = "sample1",
-      row.names = "c1",
+      Sample = rep("sample1", 2),
+      row.names = c("c1", "c2"),
       stringsAsFactors = FALSE
     )
     obj <- make_test_seurat_chromatin(
-      fragment_lines = "chr1\t1\t10\tAAAC\t1",
+      fragment_lines = c(
+        "chr1\t760101\t760110\tAAAC\t1",
+        "chr1\t760111\t760120\tAAAG\t1"
+      ),
       meta = meta
     )
-    skip_if_null(obj)
+    skip_if(is.null(obj), "Could not build test Seurat object (indexed fragments required)")
 
     expect_error(
       MOCHA::seuratToMOCHAInputs(obj, cellPopLabel = "cellPop"),
@@ -93,17 +91,24 @@ if (requireNamespace("Seurat", quietly = TRUE) &&
 
   test_that("seuratToMOCHAInputs errors on invalid assay", {
     meta <- data.frame(
-      Sample = "sample1",
-      cellPop = "TypeA",
-      row.names = "c1",
+      Sample = rep("sample1", 2),
+      cellPop = rep("TypeA", 2),
+      row.names = c("c1", "c2"),
       stringsAsFactors = FALSE
     )
     obj <- make_test_seurat_chromatin(
-      fragment_lines = "chr1\t1\t10\tAAAC\t1",
+      fragment_lines = c(
+        "chr1\t760101\t760110\tAAAC\t1",
+        "chr1\t760111\t760120\tAAAG\t1"
+      ),
       meta = meta
     )
-    skip_if_null(obj)
+    skip_if(is.null(obj), "Could not build test Seurat object (indexed fragments required)")
 
+    rna_counts <- Matrix::Matrix(1, nrow = 1, ncol = 2, sparse = TRUE)
+    rownames(rna_counts) <- "gene1"
+    colnames(rna_counts) <- c("c1", "c2")
+    obj[["RNA"]] <- Seurat::CreateAssayObject(counts = rna_counts)
     expect_error(
       MOCHA::seuratToMOCHAInputs(obj, assay = "RNA", cellPopLabel = "cellPop"),
       regexp = "not a ChromatinAssay"
@@ -112,20 +117,21 @@ if (requireNamespace("Seurat", quietly = TRUE) &&
 
   test_that("seuratToMOCHAInputs errors on barcode mismatch", {
     meta <- data.frame(
-      Sample = "sample1",
-      cellPop = "TypeA",
-      row.names = "wrong_cell",
+      Sample = rep("sample1", 2),
+      cellPop = rep("TypeA", 2),
+      row.names = c("c1", "c2"),
       stringsAsFactors = FALSE
     )
     obj <- make_test_seurat_chromatin(
-      fragment_lines = "chr1\t1\t10\tAAAC\t1",
+      fragment_lines = c(
+        "chr1\t760101\t760110\tAAAC\t1",
+        "chr1\t760111\t760120\tAAAG\t1"
+      ),
       meta = meta
     )
-    skip_if_null(obj)
+    skip_if(is.null(obj), "Could not build test Seurat object (indexed fragments required)")
 
-    frag_obj <- Signac::Fragments(obj[["ATAC"]])[[1]]
-    methods::slot(frag_obj, "cells") <- c(wrong_cell = "AAAC")
-    Signac::Fragments(obj[["ATAC"]]) <- list(frag_obj)
+    rownames(obj@meta.data) <- c("wrong_cell", "wrong_cell2")
 
     expect_error(
       MOCHA::seuratToMOCHAInputs(obj, cellPopLabel = "cellPop"),
@@ -148,10 +154,13 @@ if (requireNamespace("Seurat", quietly = TRUE) &&
     )
 
     obj <- make_test_seurat_chromatin(
-      fragment_lines = character(0),
+      fragment_lines = c(
+        "chr1\t760101\t760110\tAAAC\t1",
+        "chr1\t760111\t760120\tAAAG\t1"
+      ),
       meta = meta
     )
-    skip_if_null(obj)
+    skip_if(is.null(obj), "Could not build test Seurat object (indexed fragments required)")
 
     parsed <- MOCHA::seuratToMOCHAInputs(
       seuratObj = obj,

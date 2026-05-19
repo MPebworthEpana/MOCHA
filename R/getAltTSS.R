@@ -28,7 +28,7 @@
 #' @param threshold FDR Threshold for determining significant vs non-significant
 #'   changes in accessibility. Following MOCHA's standards, default is 0.2.
 #' @param TxDb The TxDb-class transcript annotation
-#'   package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.refGene"). This
+#'   package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.knownGene"). This
 #'   must be installed. See
 #'   \href{https://bioconductor.org/packages/release/data/annotation/}{
 #'   Bioconductor AnnotationData Packages}.
@@ -76,13 +76,13 @@ getAltTSS <- function(completeDAPs,
 
   tss1 <- suppressWarnings(ensembldb::transcriptsBy(TxDb, by = ("gene")))
 
-  names(tss1) <- AnnotationDbi::mapIds(OrgDb, names(tss1), "SYMBOL", "ENTREZID")
+  names(tss1) <- .map_gene_ids(OrgDb, names(tss1), column = "SYMBOL", keytype = "ENTREZID")
 
   allT <- suppressWarnings(IRanges::stack(tss1) %>%
     GenomicRanges::trim(.) %>%
     GenomicRanges::promoters(., upstream = 0, downstream = 0) %>%
-    plyranges::mutate(exactTSS = IRanges::start(.)) %>%
-    plyranges::filter(!duplicated(exactTSS)) %>%
+    dplyr::mutate(exactTSS = IRanges::start(.)) %>%
+    dplyr::filter(!duplicated(exactTSS)) %>%
     plyranges::anchor_3p(.) %>%
     plyranges::stretch(., extend = 125) %>%
     GenomicRanges::trim())
@@ -99,18 +99,18 @@ getAltTSS <- function(completeDAPs,
   # TSSs change, but it opposite directions.
   # may need to consider removing the exactTSS sites
   altTSS <- tpeaks %>%
-    plyranges::filter(!duplicated(exactTSS)) %>%
-    plyranges::group_by(name) %>%
-    plyranges::filter(any(FDR <= threshold) & any(duplicated(name)))
+    dplyr::filter(!duplicated(exactTSS)) %>%
+    dplyr::group_by(name) %>%
+    dplyr::filter(any(FDR <= threshold) & any(duplicated(name)))
 
 
   altTSS <- altTSS %>%
-    plyranges::filter(
+    dplyr::filter(
       ifelse(all(FDR <= threshold, na.rm = TRUE) & !any(is.na(FDR)),
         !all(Log2FC_C > 0) & !all(Log2FC_C < 0), TRUE
       )
     ) %>%
-    plyranges::ungroup() %>%
+    dplyr::ungroup() %>%
     base::sort()
 
   if (nuancedTSS) {
@@ -118,7 +118,7 @@ getAltTSS <- function(completeDAPs,
       nuancedGenes <- split(altTSS, as.character(altTSS$name)) %>%
         lapply(., function(x) {
           tmp <- IRanges::gaps(x) %>%
-            plyranges::filter(
+            dplyr::filter(
               seqnames == GenomeInfoDb::seqnames(x) &
                 strand == GenomicRanges::strand(x)
             ) %>%
@@ -129,7 +129,7 @@ getAltTSS <- function(completeDAPs,
         unlist()
     )
 
-    altTSS <- plyranges::filter(
+    altTSS <- dplyr::filter(
       altTSS,
       name %in% names(nuancedGenes)[nuancedGenes]
     )

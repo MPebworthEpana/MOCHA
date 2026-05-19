@@ -79,7 +79,7 @@ tiles <- MOCHA::callOpenTiles(
   genome = "BSgenome.Hsapiens.UCSC.hg38",
   cellPopLabel = "leiden",
   cellCol = inputs$cellCol,
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
   OrgDb = "org.Hs.eg.db",
   outDir = tempdir()
 )

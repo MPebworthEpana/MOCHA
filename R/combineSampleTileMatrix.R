@@ -9,14 +9,45 @@
 #'   getSampleTileMatrix containing your sample-tile matrices
 #' @param NAtoZero Set NA values in the sample-tile matrix to zero
 #' @param verbose Set TRUE to display additional messages. Default is FALSE.
-#' @return TileCorr A data.table correlation matrix
+#' @param returnClass Return type: \code{"legacy"} (default) or \code{"mocha"}
+#'   (\code{MochaSampleTileMatrix} when the input is a MOCHA sample-tile matrix).
+#' @return A \code{RangedSummarizedExperiment} with one matrix across cell types.
 #'
+#' @examples
+#' \donttest{
+#' if (
+#'   requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+#'     requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+#'     requireNamespace("org.Hs.eg.db", quietly = TRUE)
+#' ) {
+#'   tiles <- MOCHA::callOpenTiles(
+#'     ATACFragments = MOCHA::exampleFragments,
+#'     cellColData = MOCHA::exampleCellColData,
+#'     blackList = MOCHA::exampleBlackList,
+#'     genome = "BSgenome.Hsapiens.UCSC.hg19",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'     OrgDb = "org.Hs.eg.db",
+#'     outDir = tempdir(),
+#'     cellPopLabel = "Clusters",
+#'     cellPopulations = c("C2", "C5"),
+#'     numCores = 1
+#'   )
+#'   stm <- MOCHA::getSampleTileMatrix(
+#'     tiles,
+#'     cellPopulations = c("C2", "C5"),
+#'     threshold = 0
+#'   )
+#'   combined <- MOCHA::combineSampleTileMatrix(stm)
+#' }
+#' }
 #'
 #' @export
 #' @keywords utils
 combineSampleTileMatrix <- function(SampleTileObj,
                                     NAtoZero = TRUE,
-                                    verbose = FALSE) {
+                                    verbose = FALSE,
+                                    returnClass = c("legacy", "mocha")) {
+  returnClass <- match.arg(returnClass)
   CellTypes <- FragNumber <- NULL
 
   genome <- S4Vectors::metadata(SampleTileObj)$Genome
@@ -128,5 +159,5 @@ combineSampleTileMatrix <- function(SampleTileObj,
     rowRanges = allRanges,
     metadata = newMetadata
   )
-  return(newObj)
+  .mocha_promote_return(newObj, returnClass)
 }

@@ -39,7 +39,7 @@ Default is 150 bp.}
 changes in accessibility. Following MOCHA's standards, default is 0.2.}
 
 \item{TxDb}{The TxDb-class transcript annotation
-package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.refGene"). This
+package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.knownGene"). This
 must be installed. See
 \href{https://bioconductor.org/packages/release/data/annotation/}{
 Bioconductor AnnotationData Packages}.}

@@ -52,7 +52,7 @@ SampleTileMatrices a MultiAssayExperiment containing a sample-tile
 # Starting from GRangesList
 if (
   require(BSgenome.Hsapiens.UCSC.hg19) &&
-    require(TxDb.Hsapiens.UCSC.hg38.refGene) &&
+    require(TxDb.Hsapiens.UCSC.hg38.knownGene) &&
     require(org.Hs.eg.db)
 ) {
   tiles <- MOCHA::callOpenTiles(
@@ -60,8 +60,8 @@ if (
     cellColData = MOCHA::exampleCellColData,
     blackList = MOCHA::exampleBlackList,
     genome = "BSgenome.Hsapiens.UCSC.hg19",
-    TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
-    Org = "org.Hs.eg.db",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    OrgDb = "org.Hs.eg.db",
     outDir = tempdir(),
     cellPopLabel = "Clusters",
     cellPopulations = c("C2", "C5"),

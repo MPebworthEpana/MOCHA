@@ -376,7 +376,7 @@ test_that("integration: import_snap_atac output works with callOpenTiles sample-
   skip_if_not(reticulate::py_module_available("scipy"))
   skip_if_not(
     requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
-      requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE) &&
+      requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
       requireNamespace("org.Hs.eg.db", quietly = TRUE)
   )
 
@@ -407,7 +407,7 @@ test_that("integration: import_snap_atac output works with callOpenTiles sample-
       cellColData = bundle$cellColData,
       blackList = MOCHA::exampleBlackList,
       genome = "hg19",
-      TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+      TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
       OrgDb = "org.Hs.eg.db",
       outDir = tempdir(),
       cellPopLabel = "cellPop",

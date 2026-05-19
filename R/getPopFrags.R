@@ -27,6 +27,13 @@ getPopFrags <- function(ArchRProj,
                         numCores = 1,
                         returnGRangesList = TRUE,
                         verbose = FALSE) {
+  if (!requireNamespace("ArchR", quietly = TRUE)) {
+    stop(
+      "Package 'ArchR' is required for getPopFrags(). ",
+      "Install ArchR separately.",
+      call. = FALSE
+    )
+  }
   nFrags <- NULL
   # Turn off ArchR logging messages
   suppressMessages(ArchR::addArchRVerbose(verbose = FALSE))

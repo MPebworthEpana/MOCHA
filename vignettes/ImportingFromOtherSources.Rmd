@@ -34,7 +34,7 @@ tileResults <- MOCHA::callOpenTiles(
   genome = "BSgenome.Hsapiens.UCSC.hg38",
   cellPopLabel = "predicted.id",
   cellPopulations = "ALL",
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
   Org = "org.Hs.eg.db",
   outDir = file.path(getwd(), "MOCHA_Out"),
   numCores = 4
@@ -253,7 +253,7 @@ tileResults <- MOCHA::callOpenTiles(ATACFragments = CellType_GRanges,
                              cellPopulations = fullMeta$predicted.id,
                              studySignal = studySignal,
                              cellCol = 'barcode',
-                             TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+                             TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
                              Org = "org.Hs.eg.db", 
                             outDir = paste(getwd(),'/MOCHA_Out', sep = ''), numCores= 35)
 
@@ -283,7 +283,7 @@ tileResults <- MOCHA::callOpenTiles(
   genome = "BSgenome.Hsapiens.UCSC.hg38",
   cellPopLabel = "leiden",
   cellCol = inputs$cellCol,
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
   OrgDb = "org.Hs.eg.db",
   outDir = file.path(getwd(), "MOCHA_Out"),
   numCores = 4
@@ -563,7 +563,7 @@ tileResults <- MOCHA::callOpenTiles(
   cellPopulations = cellPopulations,
   studySignal = studySignal,
   cellCol = cellCol,
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
   Org = "org.Hs.eg.db", 
   outDir = paste(getwd(),'/MOCHA_Out', sep = ''), 
   numCores = 5

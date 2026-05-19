@@ -163,7 +163,7 @@ the median number of fragments.}
 barcodes. Default is "RG", the unique cell identifier used by ArchR.}
 
 \item{TxDb}{The exact package name of a TxDb-class transcript annotation
-package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.refGene"). This
+package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.knownGene"). This
 must be installed. See
 \href{https://bioconductor.org/packages/release/data/annotation/}{
 Bioconductor AnnotationData Packages}.}
@@ -200,22 +200,12 @@ tileResults A MultiAssayExperiment object containing ranged data for
   files and an ArchR Project for meta-data purposes
 }
 \examples{
-\dontrun{
-# Starting from an ArchR Project:
-tileResults <- MOCHA::callOpenTiles(
-  ArchRProj = myArchRProj,
-  cellPopLabel = "celltype_labeling",
-  cellPopulations = "CD4",
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
-  OrgDb = "org.Hs.eg.db",
-  numCores = 1
-)
-}
 \donttest{
-# Starting from GRangesList:
+# ArchR Project input requires the ArchR package (not run here).
+# Starting from GRangesList with bundled example data:
 if (
   requireNamespace("BSgenome.Hsapiens.UCSC.hg19") &&
-  requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene") &&
+  requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene") &&
   requireNamespace("org.Hs.eg.db")
 ) {
   tiles <- MOCHA::callOpenTiles(
@@ -223,7 +213,7 @@ if (
     cellColData = MOCHA::exampleCellColData,
     blackList = MOCHA::exampleBlackList,
     genome = "BSgenome.Hsapiens.UCSC.hg19",
-    TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
     OrgDb = "org.Hs.eg.db",
     outDir = tempdir(),
     cellPopLabel = "Clusters",

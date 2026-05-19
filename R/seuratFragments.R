@@ -92,10 +92,10 @@
       if (length(cellsMap) == 0) {
         next
       }
-      mappedCells <- unname(cellsMap)
+      seuratIdsInFrag <- names(cellsMap)
       for (s in samples) {
         sampleCells <- cellIds[meta[[sampleColumn]] == s]
-        overlapMat[i, s] <- length(intersect(mappedCells, sampleCells))
+        overlapMat[i, s] <- length(intersect(seuratIdsInFrag, sampleCells))
       }
     }
 
@@ -148,8 +148,8 @@
     )
   }
 
-  mappedCells <- unname(cellsMap)
-  if (length(intersect(mappedCells, sampleCells)) == 0) {
+  seuratIdsInFrag <- names(cellsMap)
+  if (length(intersect(seuratIdsInFrag, sampleCells)) == 0) {
     stop(
       "Barcode prefix mismatch between Seurat cells and Signac Fragments. ",
       "No Fragment@cells entries match sample cell IDs. ",
@@ -157,7 +157,7 @@
     )
   }
 
-  fileBcs <- names(cellsMap)[cellsMap %in% sampleCells]
+  fileBcs <- unname(cellsMap)[names(cellsMap) %in% sampleCells]
   if (length(fileBcs) == 0) {
     return(.emptyFragmentGRanges(cellCol))
   }
@@ -176,7 +176,7 @@
     return(.emptyFragmentGRanges(cellCol))
   }
 
-  df$barcode <- unname(cellsMap[df$barcode])
+  df$barcode <- names(cellsMap)[match(df$barcode, cellsMap)]  # file barcode -> Seurat cell ID
 
   gr <- GenomicRanges::GRanges(
     seqnames = df$chr,
@@ -185,6 +185,19 @@
   )
   GenomicRanges::mcols(gr)[[cellCol]] <- df$barcode
   gr
+}
+
+#' Resolve file barcodes to read for a sample (Fragment@cells aware).
+#' @noRd
+.file_barcodes_for_sample <- function(sampleCells, cellsMap = NULL) {
+  if (!is.null(cellsMap) && length(cellsMap) > 0) {
+    # cellsMap: names = Seurat cell IDs, values = file barcodes
+    file_bcs <- unname(cellsMap)[names(cellsMap) %in% sampleCells]
+    if (length(file_bcs) > 0) {
+      return(list(file_barcodes = file_bcs, cells_map = cellsMap))
+    }
+  }
+  list(file_barcodes = sampleCells, cells_map = NULL)
 }
 
 #' Read a fragment file and filter to requested barcodes.
@@ -227,11 +240,9 @@
 #' @noRd
 .emptyFragmentGRanges <- function(cellCol) {
   gr <- GenomicRanges::GRanges()
-  mcols <- S4Vectors::DataFrame(
-    matrix(character(), nrow = 0, ncol = 1),
-    colnames = cellCol
+  mcols(gr) <- S4Vectors::DataFrame(
+    stats::setNames(list(character()), cellCol)
   )
-  GenomicRanges::mcols(gr) <- mcols
   gr
 }
 
@@ -250,6 +261,8 @@
 #'   Default is \code{"RG"} (MOCHA/ArchR convention).
 #' @param fragmentPathColumn Optional metadata column with per-cell fragment
 #'   file paths. If provided, takes precedence over Signac \code{Fragments()}.
+#'   File barcodes must match \code{rownames(meta)} unless \code{Fragment@cells}
+#'   is available on the assay (then file barcodes are translated automatically).
 #' @param dropEmptySamples If \code{TRUE}, drop samples with no fragments and
 #'   warn.
 #' @param verbose Print progress messages.
@@ -362,6 +375,15 @@ seuratToMOCHAInputs <- function(
     }
     names(pathMap) <- samples
 
+    frag_objs <- tryCatch(
+      Signac::Fragments(seuratObj[[assay]]),
+      error = function(e) NULL
+    )
+    default_cells_map <- NULL
+    if (!is.null(frag_objs) && length(frag_objs) > 0) {
+      default_cells_map <- methods::slot(frag_objs[[1L]], "cells")
+    }
+
     for (s in samples) {
       sampleCells <- cellIds[meta[[sampleColumn]] == s]
       path <- pathMap[[s]][[1L]]
@@ -371,10 +393,14 @@ seuratToMOCHAInputs <- function(
       if (verbose) {
         message("Reading fragments for sample ", s, " from ", path)
       }
-      df <- .readFragmentFile(path, barcodes = sampleCells)
+      bc_info <- .file_barcodes_for_sample(sampleCells, default_cells_map)
+      df <- .readFragmentFile(path, barcodes = bc_info$file_barcodes)
       if (nrow(df) == 0) {
         out[[s]] <- .emptyFragmentGRanges(cellCol)
         next
+      }
+      if (!is.null(bc_info$cells_map)) {
+        df$barcode <- names(bc_info$cells_map)[match(df$barcode, bc_info$cells_map)]
       }
       gr <- GenomicRanges::GRanges(
         seqnames = df$chr,
@@ -465,8 +491,9 @@ seuratToMOCHAInputs <- function(
     numCores = 30,
     verbose = FALSE,
     force = FALSE,
-    assay = NULL,
-    fragmentPathColumn = NULL) {
+    peakModel = NULL,
+    returnClass = c("legacy", "mocha")) {
+  returnClass <- match.arg(returnClass)
   if (!methods::is(blackList, "GRanges")) {
     stop("Invalid blackList. blackList must be a GRanges.")
   }
@@ -481,11 +508,11 @@ seuratToMOCHAInputs <- function(
 
   parsed <- .seuratToSampleLevelFragments(
     seuratObj = ATACFragments,
-    assay = assay,
+    assay = NULL,
     sampleColumn = sampleColumn,
     cellPopLabel = cellPopLabel,
     cellCol = cellCol,
-    fragmentPathColumn = fragmentPathColumn,
+    fragmentPathColumn = NULL,
     dropEmptySamples = TRUE,
     verbose = verbose
   )
@@ -518,6 +545,8 @@ seuratToMOCHAInputs <- function(
     outDir = outDir,
     numCores = numCores,
     verbose = verbose,
-    force = force
+    force = force,
+    peakModel = peakModel,
+    returnClass = returnClass
   )
 }

@@ -20,17 +20,28 @@ Find out more by visiting the [MOCHA website](https://aifimmunology.github.io/MO
 
 
 ## <a name="installation"></a> Installation
-Install from binaries (stable release on CRAN):
-  
-    install.packages("MOCHA")
-    
-Install from source:
 
-    devtools::install_github("aifimmunology/MOCHA")
+MOCHA is submitted to [Bioconductor](https://bioconductor.org/). After acceptance:
 
-Install a specific development branch from source:
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("MOCHA")
+```
 
-    devtools::install_github("aifimmunology/MOCHA", ref = "your_branch_name")
+Before acceptance, install from the Bioconductor submission branch:
+
+```r
+if (!requireNamespace("remotes", quietly = TRUE))
+    install.packages("remotes")
+remotes::install_github("aifimmunology/MOCHA", ref = "bioc/submission")
+```
+
+Development builds from `main` or other branches:
+
+```r
+remotes::install_github("aifimmunology/MOCHA", ref = "your_branch_name")
+```
 
 ## <a name="overview"></a> Usage Overview
 
@@ -44,6 +55,15 @@ The example usage demonstrates this workflow:
 ## <a name="contact"></a> Contact
 
 While the pipeline can be run function-to-function, you may wish to inspect intermediate results or use end results for your own custom analyses. All MOCHA outputs use common Bioconductor data structures. We also provide some getters for accessing specific results.
+
+## MOCHA class system (optional)
+
+By default, MOCHA continues to return standard Bioconductor objects (`MultiAssayExperiment` from `callOpenTiles`, `RangedSummarizedExperiment` from `getSampleTileMatrix`). You may opt in to MOCHA-specific subclasses that fully inherit those types:
+
+- `MochaTileResults` (extends `MultiAssayExperiment`)
+- `MochaSampleTileMatrix` (extends `RangedSummarizedExperiment`)
+
+Pass `returnClass = "mocha"` to `callOpenTiles()`, `getSampleTileMatrix()`, `mergeTileResults()`, or `combineSampleTileMatrix()`. Existing objects can be coerced with `asMochaTileResults()` and `asMochaSTM()`. Subclass objects support `subset()` with the same semantics as `subsetMOCHAObject()` (e.g. `subset(stm, cells = "CD16 Mono")`). Legacy workflows using `subsetMOCHAObject()` are unchanged.
 
 ## callOpenTiles results
 
@@ -85,7 +105,7 @@ It also holds metadata related to the genome, transcript database, and annotatio
 Results of `MOCHA::getDifferentialAccessibleTiles` is given either as a `data.table` or a 'granges' and can be filtered accordingly:
 
 ``` r
-> head(plyranges::filter(differentials, seqnames =='chr4' & FDR < 0.2))
+> head(dplyr::filter(differentials, seqnames =='chr4' & FDR < 0.2))
 GRanges object with 6 ranges and 13 metadata columns:
       seqnames              ranges strand |                   Tile
          <Rle>           <IRanges>  <Rle> |            <character>

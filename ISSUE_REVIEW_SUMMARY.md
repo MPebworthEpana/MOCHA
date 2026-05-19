@@ -1,39 +1,21 @@
-# MOCHA Open Issues: Codebase Review Summary
+# MOCHA Open Issues: Remaining Work (Codebase Review)
 
-This document summarizes currently open GitHub issues against the current codebase state.
+This document lists open GitHub issues that are **not yet fully addressed** in the current codebase. Issues implemented in code (even if still open on GitHub) are omitted.
 
 ## Legend
 
-- **Addressed**: Implemented in codebase (issue may still be open on GitHub).
-- **Partially Addressed**: Some related implementation exists, but not fully aligned with issue.
+- **Partially Addressed**: Some related implementation exists, but not fully aligned with the issue.
 - **Open**: Not implemented or not sufficiently addressed in current code.
-
----
-
-## #166 Common Issues re: plotting, exporting, footprinting, and sharing MOCHA objects
-
-- **Status:** Addressed (kept open intentionally as reference)
-- **Summary:** Portability and path-related problems are documented.
-- **Code evidence:** `packMOCHA()`, `unpackMOCHA()`, and `updateDirectoryPath()` exist and are exported.
-- **Notes:** Issue body itself indicates it is intended as a persistent reference.
-
----
-
-## #119 Enhancement: Clean up data input
-
-- **Status:** Addressed (backward-compatible)
-- **Summary:** `callOpenTiles()` now accepts sample-level `GRangesList` input (one element per sample) and derives `CellPopulation#Sample` fragments from `cellColData`.
-- **Code evidence:** `.detectATACFragmentsInputMode()`, `.normalizeSampleLevelFragments()` in `R/callOpenTiles.R`; tests in `tests/testthat/test_callOpenTiles.R`.
-- **Notes:** Legacy `CellPopulation#Sample` naming remains supported.
 
 ---
 
 ## #109 MOCHA needs getters and subsetters
 
-- **Status:** Partially Addressed
-- **Summary:** Subsetting and multiple getters are implemented.
-- **Code evidence:** `subsetMOCHAObject()`, `getCellTypes()`, `getCellTypeTiles()`, `getSampleCellTypeMetadata()`.
-- **Gap:** The specific getter named in issue (`getOpenTiles`) is not present.
+- **Status:** Addressed (Phase 1)
+- **Summary:** `getOpenTiles()` added in `R/utils.R`, alongside the existing
+  `subsetMOCHAObject()`, `getCellTypes()`, `getCellTypeTiles()`, and
+  `getSampleCellTypeMetadata()` helpers. Returns a `GRangesList` (default) or
+  flat `data.frame` of called peaks per cell population.
 
 ---
 
@@ -48,18 +30,26 @@ This document summarizes currently open GitHub issues against the current codeba
 
 ## #84 addCellColData for MOCHA TileResults
 
-- **Status:** Open
-- **Summary:** No `addCellColData` helper found in exported API.
-- **Gap:** Functionality requested by issue appears absent.
+- **Status:** Addressed (Phase 1)
+- **Summary:** `addCellColData()` added in `R/utils.R`. Works on both MOCHA
+  tileResults (`MultiAssayExperiment`) and SampleTileMatrix
+  (`SummarizedExperiment`) objects. Supports positional value alignment or a
+  `samples =` mapping, with `force = TRUE` to overwrite.
 
 ---
 
 ## #69 Changing dependency from AnnotationDbi/RMariaDb to biomaRt
 
-- **Status:** Open
-- **Summary:** Current package still uses `AnnotationDbi`; `RMariaDB` still appears in `Suggests`.
-- **Code evidence:** `DESCRIPTION` includes `AnnotationDbi` import and `RMariaDB` suggestion.
-- **Gap:** Requested dependency transition not completed.
+- **Status:** Addressed (Phase 2)
+- **Summary:** `AnnotationDbi` moved from `Imports` to `Suggests`; `biomaRt`
+  added to `Suggests`; `RMariaDB` removed entirely. A new internal helper
+  `.map_gene_ids()` in `R/utils.R` routes through `biomaRt::getBM()` when a
+  `Mart` object is supplied and falls back to `AnnotationDbi::mapIds()`
+  otherwise, preserving offline workflows for users with an `OrgDb`
+  installed.
+- **Code evidence:** `R/utils.R:6` (`.map_gene_ids`), call sites at
+  `R/annotateTiles.R:58`, `R/getAltTSS.R:79`,
+  `R/plottingUtils.R:299,309`.
 
 ---
 
@@ -69,23 +59,6 @@ This document summarizes currently open GitHub issues against the current codeba
 - **Summary:** Some optional tuning parameters and plotting utilities exist.
 - **Code evidence:** `minZeroDiff`, `signalThreshold`, `plotConsensus()`, `plotIntensityDistribution()`.
 - **Gap:** Broader consistency and workflow guidance requested in issue appears only partially covered.
-
----
-
-## #36 Plot consensus tiles at different thresholds
-
-- **Status:** Addressed
-- **Summary:** Functionality for reproducibility-threshold exploration is implemented.
-- **Code evidence:** `plotConsensus()`.
-
----
-
-## #31 Assessing Dropout: Technical vs. Biological 0s
-
-- **Status:** Open
-- **Summary:** Basic dropout filtering exists, but no broad expanded module specifically separating technical vs biological zero inflation was identified.
-- **Code evidence:** `minZeroDiff` in differential testing.
-- **Gap:** Requested expanded dropout modeling functionality appears unresolved.
 
 ---
 
@@ -99,10 +72,14 @@ This document summarizes currently open GitHub issues against the current codeba
 
 ## #29 Longitudinal, LMM, and Variance decomposition integration
 
-- **Status:** Partially Addressed
-- **Summary:** Modeling functions exist, including LMEM/ZIGLMM/variance decomposition.
-- **Code evidence:** `runLMEM()`, `runZIGLMM()`, `varZIGLMM()`.
-- **Gap / Risk:** These functions are marked deprecated in `NEWS.md`; `varZIGLMM()` currently contains a `browser()` debug breakpoint.
+- **Status:** Addressed (Phase 1)
+- **Summary:** Modeling functions remain exported but now emit
+  `lifecycle::deprecate_warn()` / `deprecate_soft()` at call time (previously
+  commented out). The `browser()` breakpoint in `varZIGLMM()` is no longer
+  present. Users are pointed to the `ChAI` package for improved modeling.
+- **Code evidence:** `runLMEM()`, `runZIGLMM()`, `varZIGLMM()`,
+  `pilotLMEM()`, `pilotZIGLMM()`, `individualZIGLMM()`, `getModelValues()`,
+  `processModelOutputs()`.
 
 ---
 
@@ -113,9 +90,3 @@ This document summarizes currently open GitHub issues against the current codeba
 - **Code evidence:** Functions like `getAltTSS()`, `MotifEnrichment()`, `MotifSetEnrichmentAnalysis()`.
 - **Gap:** Vignette scope does not clearly map to issue's requested downstream analysis drafts.
 
----
-
-## Notes
-
-- Open PRs can appear in issue listings via GitHub API and should be excluded from issue triage summaries.
-- This summary reflects codebase state, not project-management intent (some issues may intentionally remain open).

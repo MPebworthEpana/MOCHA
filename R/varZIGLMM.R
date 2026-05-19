@@ -52,13 +52,13 @@ varZIGLMM <- function(TSAM_Object,
                       verbose = FALSE,
                       numCores = 1) {
 
- # lifecycle::deprecate_warn(
- #   when="1.1.0", 
- #   what="varZIGLMM()", 
- #   details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
-  # )
+  lifecycle::deprecate_warn(
+    when = "1.1.0",
+    what = "varZIGLMM()",
+    details = "Please use improved modeling functions in the package `ChAI` at https://github.com/aifimmunology/ChAI"
+  )
   Sample <- NULL
-  
+
   if (length(cellPopulation) > 1) {
     stop(
       "More than one cell population was provided. ",

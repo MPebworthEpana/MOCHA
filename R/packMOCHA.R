@@ -91,6 +91,7 @@ unpackMOCHA <- function(zipfile,
 
   # load MOCHA Object into memory
   MOCHAObj <- readRDS(paste(exdir, newDirectory, "MOCHA_Object.RDS", sep = "/"))
+  MOCHAObj <- .mocha_coerce_loaded_object(MOCHAObj)
 
   # Change directory path for the MOCHA object to the new directory
   MOCHAObj@metadata$Directory <- paste(exdir, newDirectory, sep = "/")

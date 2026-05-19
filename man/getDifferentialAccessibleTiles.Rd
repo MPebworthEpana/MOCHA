@@ -16,7 +16,11 @@ getDifferentialAccessibleTiles(
   qValueThreshold = 0.2,
   outputGRanges = TRUE,
   numCores = 1,
-  verbose = FALSE
+  verbose = FALSE,
+  dropoutAdjustment = c("none", "biological_only", "weighted"),
+  bioThreshold = 0.8,
+  techThreshold = NULL,
+  fdrToDisplay = NULL
 )
 }
 \arguments{
@@ -52,6 +56,22 @@ FALSE. Default is TRUE.}
 Default is 1.}
 
 \item{verbose}{Set TRUE to display additional messages. Default is FALSE.}
+
+\item{dropoutAdjustment}{How to incorporate dropout estimates when computing
+zero rates for tile filtering. \code{"none"} uses raw zero fractions
+(default). \code{"biological_only"} counts only zeros with
+\code{P(zero) >= bioThreshold} (biologically expected closure).
+\code{"weighted"} weights zeros by \code{P(zero)}. Requires a fittable
+\code{DropoutProb_*} assay from \code{\link{assessDropout}}; if absent,
+\code{assessDropout()} is run automatically for the requested cell population.}
+
+\item{bioThreshold}{Minimum \code{P(zero)} for a zero to count toward
+biological zero rates when \code{dropoutAdjustment = "biological_only"}.
+Default is 0.8.}
+
+\item{techThreshold}{Deprecated alias for \code{bioThreshold}.}
+
+\item{fdrToDisplay}{Deprecated alias for \code{qValueThreshold}.}
 }
 \value{
 full_results The differential accessibility results as a GRanges or
@@ -63,23 +83,38 @@ full_results The differential accessibility results as a GRanges or
   between groups by conducting a test
 }
 \examples{
-\dontrun{
-cellPopulation <- "MAIT"
-foreground <- "Positive"
-background <- "Negative"
-# Choose to output a GRanges or data.frame.
-# Default is TRUE
-outputGRanges <- TRUE
-# SampleTileMatrices is the output of MOCHA::getSampleTileMatrix
-differentials <- MOCHA::getDifferentialAccessibleTiles(
-  SampleTileObj = SampleTileMatrices,
-  cellPopulation = cellPopulation,
-  groupColumn = groupColumn,
-  foreground = foreground,
-  background = background,
-  outputGRanges = outputGRanges,
-  numCores = numCores
-)
+\donttest{
+if (
+  requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+    requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+    requireNamespace("org.Hs.eg.db", quietly = TRUE)
+) {
+  tiles <- MOCHA::callOpenTiles(
+    ATACFragments = MOCHA::exampleFragments,
+    cellColData = MOCHA::exampleCellColData,
+    blackList = MOCHA::exampleBlackList,
+    genome = "BSgenome.Hsapiens.UCSC.hg19",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    OrgDb = "org.Hs.eg.db",
+    outDir = tempdir(),
+    cellPopLabel = "Clusters",
+    cellPopulations = "C2",
+    numCores = 1
+  )
+  stm <- MOCHA::getSampleTileMatrix(
+    tiles,
+    cellPopulations = "C2",
+    threshold = 0
+  )
+  diffs <- MOCHA::getDifferentialAccessibleTiles(
+    SampleTileObj = stm,
+    cellPopulation = "C2",
+    groupColumn = "Sample",
+    foreground = unique(SummarizedExperiment::colData(stm)$Sample)[1],
+    background = unique(SummarizedExperiment::colData(stm)$Sample)[2],
+    numCores = 1
+  )
+}
 }
 }
 \keyword{downstream}

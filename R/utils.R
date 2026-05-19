@@ -1,4 +1,53 @@
 # Internal helpers for SampleTileObject coverage workflows
+
+# Map gene identifiers using either a Bioconductor OrgDb (via AnnotationDbi)
+# or a biomaRt::Mart connection. Routes by class so callers can transparently
+# pass either, supporting offline (AnnotationDbi) and online (biomaRt) workflows.
+.map_gene_ids <- function(db, keys, column = "SYMBOL", keytype = "ENTREZID") {
+  if (methods::is(db, "Mart")) {
+    if (!requireNamespace("biomaRt", quietly = TRUE)) {
+      stop("Package 'biomaRt' is required when passing a Mart connection.")
+    }
+    attr_col <- .biomart_attribute(column)
+    attr_key <- .biomart_attribute(keytype)
+    res <- biomaRt::getBM(
+      attributes = unique(c(attr_key, attr_col)),
+      filters = attr_key,
+      values = as.character(keys),
+      mart = db
+    )
+    out <- res[[attr_col]][match(as.character(keys), as.character(res[[attr_key]]))]
+    out[!nzchar(out)] <- NA_character_
+    return(out)
+  }
+  if (!requireNamespace("AnnotationDbi", quietly = TRUE)) {
+    stop(
+      "Gene-id mapping requires either AnnotationDbi (with an OrgDb) ",
+      "or a biomaRt::useEnsembl() Mart passed in place of the OrgDb. ",
+      "Install AnnotationDbi or provide a Mart."
+    )
+  }
+  suppressWarnings(AnnotationDbi::mapIds(db, keys, column, keytype))
+}
+
+# biomaRt attribute names for the OrgDb-style labels used across MOCHA.
+.biomart_attribute <- function(label) {
+  switch(
+    toupper(label),
+    "ENTREZID" = "entrezgene_id",
+    "ENSEMBL" = "ensembl_gene_id",
+    "ENSEMBLTRANS" = "ensembl_transcript_id",
+    "TXNAME" = "ensembl_transcript_id",
+    "SYMBOL" = "external_gene_name",
+    "GENENAME" = "external_gene_name",
+    "REFSEQ" = "refseq_mrna",
+    stop(sprintf(
+      "No biomaRt attribute is configured for OrgDb label '%s'. Pass an OrgDb (AnnotationDbi) or extend .biomart_attribute().",
+      label
+    ))
+  )
+}
+
 .resolveSubSamples <- function(metaFile, groupColumn = NULL, subGroups = NULL) {
   if (!is.null(subGroups) & !is.null(groupColumn)) {
     subSamples <- lapply(subGroups, function(x) {
@@ -290,7 +339,7 @@ dehashIter <- function(cellIDs, oldfrags){
     RG <- NULL
     newFrags <- lapply(oldfrags, function(ZZ){
           
-                  plyranges::filter(ZZ, RG %in% cellIDs)
+                  dplyr::filter(ZZ, RG %in% cellIDs)
           
           })
     
@@ -566,9 +615,9 @@ getAnnotationDbFromInstalledPkgname <- function(dbName, type) {
 #' @export
 #' @keywords utils
 getCellTypes <- function(object) {
-  if (class(object)[1] == "MultiAssayExperiment") {
+  if (methods::is(object, "MultiAssayExperiment")) {
     return(names(object))
-  } else if (class(object)[1] == "RangedSummarizedExperiment") {
+  } else if (methods::is(object, "RangedSummarizedExperiment")) {
     return(names(SummarizedExperiment::assays(object)))
   } else {
     stop("Object not recognized. Please provide an object from callOpenTiles or getSampleTileMatrix.")
@@ -587,9 +636,9 @@ getCellTypes <- function(object) {
 #' @export
 #' @keywords utils
 getCellTypeTiles <- function(object, cellType) {
-  if (class(object)[1] == "MultiAssayExperiment") {
+  if (methods::is(object, "MultiAssayExperiment")) {
     stop("This is a MultiAssayExperiment, and thus like a tileResults object. Please provide a SampleTileMatrix object.")
-  } else if (class(object)[1] == "RangedSummarizedExperiment") {
+  } else if (methods::is(object, "RangedSummarizedExperiment")) {
     all_ranges <- SummarizedExperiment::rowRanges(object)
 
     if (!all(cellType %in% SummarizedExperiment::assayNames(object))) {
@@ -710,4 +759,181 @@ plotIntensityDistribution <- function(TSAM_object, cellPopulation, returnDF = FA
   }
 
   return(p1)
+}
+
+
+#' @title Add a column to the sample-level colData of a MOCHA object
+#'
+#' @description \code{addCellColData} adds a new column to the sample-level
+#'   colData of a MOCHA tileResults (\code{MultiAssayExperiment} from
+#'   \code{callOpenTiles}) or SampleTileMatrix
+#'   (\code{RangedSummarizedExperiment} from \code{getSampleTileMatrix}).
+#'   MOCHA pseudobulks by sample x cell-population, so colData rows are
+#'   biological samples; the name mirrors \code{ArchR::addCellColData} for
+#'   API familiarity.
+#'
+#' @param object A MOCHA tileResults or SampleTileMatrix object.
+#' @param name Character scalar. Name of the column to add.
+#' @param value Vector of values to add. Either length \code{nrow(colData)} (in
+#'   which case it is assumed aligned with \code{samples}) or a named vector
+#'   with names matching sample identifiers.
+#' @param samples Optional character vector of sample identifiers that
+#'   \code{value} corresponds to. Defaults to \code{rownames(colData(object))}.
+#'   Missing samples will receive \code{NA}.
+#' @param force Logical. If \code{TRUE}, an existing column with the same
+#'   \code{name} is overwritten. Default \code{FALSE}.
+#'
+#' @return The input object with the new colData column attached.
+#'
+#' @export
+#' @keywords utils
+addCellColData <- function(object, name, value, samples = NULL, force = FALSE) {
+  if (!is.character(name) || length(name) != 1L || !nzchar(name)) {
+    stop("`name` must be a single non-empty character string.")
+  }
+
+  isMAE <- methods::is(object, "MultiAssayExperiment")
+  isSE <- methods::is(object, "SummarizedExperiment")
+  if (!isMAE && !isSE) {
+    stop("`object` must be a MOCHA tileResults (MultiAssayExperiment) or SampleTileMatrix (SummarizedExperiment).")
+  }
+
+  cd <- if (isMAE) {
+    MultiAssayExperiment::colData(object)
+  } else {
+    SummarizedExperiment::colData(object)
+  }
+
+  if (name %in% colnames(cd) && !force) {
+    stop(sprintf("Column '%s' already exists in colData. Use force = TRUE to overwrite.", name))
+  }
+
+  rn <- rownames(cd)
+  if (is.null(samples)) {
+    if (length(value) != nrow(cd)) {
+      stop(sprintf(
+        "`value` has length %d but colData has %d rows. Provide `samples` to specify alignment or match the colData row count.",
+        length(value), nrow(cd)
+      ))
+    }
+    aligned <- value
+  } else {
+    if (length(samples) != length(value)) {
+      stop("`samples` and `value` must have the same length.")
+    }
+    aligned <- rep(NA, nrow(cd))
+    storage.mode(aligned) <- storage.mode(value)
+    idx <- match(samples, rn)
+    if (any(is.na(idx))) {
+      stop(sprintf(
+        "These samples were not found in colData: %s",
+        paste(samples[is.na(idx)], collapse = ", ")
+      ))
+    }
+    aligned[idx] <- value
+  }
+
+  cd[[name]] <- aligned
+  if (isMAE) {
+    MultiAssayExperiment::colData(object) <- cd
+  } else {
+    SummarizedExperiment::colData(object) <- cd
+  }
+  return(object)
+}
+
+
+#' @title Get per-cell-population open tiles from a MOCHA tileResults object
+#'
+#' @description \code{getOpenTiles} extracts the called open tiles (peaks) for
+#'   one or more cell populations from a \code{MultiAssayExperiment} returned
+#'   by \code{callOpenTiles}. By default tiles are returned as a
+#'   \code{GRangesList} keyed by cell population; with \code{returnType =
+#'   "data.frame"} they are flattened into a single data frame with a
+#'   \code{CellPopulation} column.
+#'
+#' @param tileResults A \code{MultiAssayExperiment} from \code{callOpenTiles}.
+#' @param cellPopulations Character vector of cell population names, or
+#'   \code{"all"} (default) to return all populations.
+#' @param returnType One of \code{"GRangesList"} (default) or
+#'   \code{"data.frame"}.
+#'
+#' @return A \code{GRangesList} or \code{data.frame} of open tiles per cell
+#'   population.
+#'
+#' @examples
+#' \donttest{
+#' if (
+#'   requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+#'     requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+#'     requireNamespace("org.Hs.eg.db", quietly = TRUE)
+#' ) {
+#'   tiles <- MOCHA::callOpenTiles(
+#'     ATACFragments = MOCHA::exampleFragments,
+#'     cellColData = MOCHA::exampleCellColData,
+#'     blackList = MOCHA::exampleBlackList,
+#'     genome = "BSgenome.Hsapiens.UCSC.hg19",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'     OrgDb = "org.Hs.eg.db",
+#'     outDir = tempdir(),
+#'     cellPopLabel = "Clusters",
+#'     cellPopulations = "C2",
+#'     numCores = 1
+#'   )
+#'   openTiles <- MOCHA::getOpenTiles(tiles, cellPopulations = "C2")
+#' }
+#' }
+#'
+#' @export
+#' @keywords utils
+getOpenTiles <- function(tileResults,
+                         cellPopulations = "all",
+                         returnType = c("GRangesList", "data.frame")) {
+  if (!methods::is(tileResults, "MultiAssayExperiment")) {
+    stop("`tileResults` must be a MultiAssayExperiment from callOpenTiles().")
+  }
+  returnType <- match.arg(returnType)
+
+  available <- names(tileResults)
+  if (length(cellPopulations) == 1L && tolower(cellPopulations) == "all") {
+    cellPopulations <- available
+  } else if (!all(cellPopulations %in% available)) {
+    missing <- setdiff(cellPopulations, available)
+    stop(sprintf(
+      "These cell populations were not found in tileResults: %s",
+      paste(missing, collapse = ", ")
+    ))
+  }
+
+  grList <- lapply(cellPopulations, function(pop) {
+    re <- tileResults[[pop]]
+    peakMat <- RaggedExperiment::compactAssay(re, i = "peak")
+    isPeak <- rowSums(peakMat == TRUE, na.rm = TRUE) > 0
+    tiles <- SummarizedExperiment::rowRanges(re)
+    if (length(tiles) != length(isPeak)) {
+      keep <- seq_len(min(length(tiles), length(isPeak)))
+      tiles <- tiles[keep]
+      isPeak <- isPeak[keep]
+    }
+    tiles[isPeak]
+  })
+  names(grList) <- cellPopulations
+  grList <- GenomicRanges::GRangesList(grList)
+
+  if (returnType == "GRangesList") {
+    return(grList)
+  }
+
+  dfs <- lapply(cellPopulations, function(pop) {
+    gr <- grList[[pop]]
+    if (length(gr) == 0L) {
+      return(NULL)
+    }
+    data.frame(
+      CellPopulation = pop,
+      as.data.frame(gr),
+      stringsAsFactors = FALSE
+    )
+  })
+  do.call(rbind, dfs)
 }

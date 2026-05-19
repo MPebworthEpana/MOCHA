@@ -1,10 +1,67 @@
+# MOCHA 0.99.0 (Bioconductor submission)
+
+* Prepare package for initial Bioconductor submission on branch `bioc/submission`.
+* Reset version to `0.99.0`; populate `biocViews`, `BiocType`, and remove CRAN-only `Additional_repositories`.
+* Replace `TxDb.Hsapiens.UCSC.hg38.refGene` with Bioconductor `TxDb.Hsapiens.UCSC.hg38.knownGene`.
+* Add runnable `COVID-walkthrough` vignette (BiocStyle) using bundled example data.
+* Add `inst/CITATION`, `Bioc-check` CI workflow, and `requireNamespace()` guards for optional ArchR usage.
+* Retire CRAN submission artifacts (`cran-comments.md`, `CRAN-SUBMISSION`).
+
 # MOCHA (development version)
+* MOCHA S4 subclasses (opt-in, backward compatible):
+  - `MochaTileResults` and `MochaSampleTileMatrix` extend the existing
+    Bioconductor output types with validity checks and optional `returnClass =
+    "mocha"` on constructors.
+  - `asMochaTileResults()`, `asMochaSTM()`, and subclass methods `cellTypes()`
+    and `openTiles()` (tileResults only).
+  - `subset()` on subclass objects mirrors `subsetMOCHAObject()`; legacy defaults
+    and `subsetMOCHAObject()` are unchanged.
 * New Functions:
   - `trainPeakModel`: retrain the MOCHA peak-calling LRM and Youden threshold
     at a user-chosen tile size, following the paper's Methods. Optional
     dependencies: `cutpointr` for threshold selection and a MACS2 binary (or
     user-supplied `groundTruthPeaks`) for training labels.
   - `callOpenTiles` gains a `peakModel` argument; default behaviour is unchanged.
+* New dropout assessment module for distinguishing technical vs biological zeros
+  in sample-tile matrices:
+  - `estimateDropoutModel()`
+  - `assessDropout()`
+  - `getDropoutProb()`
+  - `classifyZeros()`
+  - `plotDropoutDiagnostics()`
+* New getters / setters:
+  - `addCellColData()` — append a sample-level column to a MOCHA tileResults
+    or SampleTileMatrix object's colData (issue #84).
+  - `getOpenTiles()` — extract per-cell-population called peaks from a
+    tileResults `MultiAssayExperiment` as a `GRangesList` or flat
+    `data.frame` (issue #109).
+* `getDifferentialAccessibleTiles()` gains optional `dropoutAdjustment` and
+  `bioThreshold` arguments (appended after `verbose` to preserve positional
+  compatibility). Deprecated aliases: `techThreshold` → `bioThreshold`,
+  `fdrToDisplay` → `qValueThreshold`. Dropout-adjusted modes fail fast with a
+  clear error when `DropoutProb_*` assays cannot be fitted.
+* `subsetMOCHAObject()` retains matching `DropoutProb_*` assays when subsetting
+  by cell type.
+* **Breaking change:** `DropoutProb_*` assays now store fitted `P(zero)` (not
+  `1 - P(zero)`). Lower values indicate technical (unexpected) zeros; higher
+  values indicate biological closure. `classifyZeros()` defaults are now
+  `techThreshold = 0.2` and `bioThreshold = 0.8`. Prior releases stored a
+  technical score where higher meant more technical.
+* Dropout diagnostics report leave-one-sample-out AUROC with tile means
+  (`log_mu`) recomputed from training samples only within each fold.
+* `plotDropoutDiagnostics(type = "calibration")` requires
+  `metadata(TSAM)$dropoutModels` (no zero-only fallback plot).
+* `runLMEM()`, `runZIGLMM()`, `varZIGLMM()`, and their companion functions
+  now emit `lifecycle::deprecate_warn()` at call time, matching their
+  documented deprecated status (issue #29).
+* Dependency migration (issue #69):
+  - `AnnotationDbi` moved from `Imports` to `Suggests`; `biomaRt` added to
+    `Suggests`; `RMariaDB` removed.
+  - Internal helper `.map_gene_ids()` routes gene-id mapping through either
+    `AnnotationDbi::mapIds()` (offline OrgDb) or `biomaRt::getBM()` when a
+    `Mart` connection is passed. Existing `annotateTiles()`, `getAltTSS()`,
+    and `plotRegion()` calls work unchanged for users with an OrgDb
+    installed.
 * Internal refactor to reduce duplicated helper logic across coverage extraction,
   export, motif footprinting, and co-accessibility workflows. No intended
   user-facing behavior changes.

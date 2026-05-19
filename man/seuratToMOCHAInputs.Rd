@@ -29,7 +29,9 @@ seuratToMOCHAInputs(
 Default is \code{"RG"} (MOCHA/ArchR convention).}
 
 \item{fragmentPathColumn}{Optional metadata column with per-cell fragment
-file paths. If provided, takes precedence over Signac \code{Fragments()}.}
+file paths. If provided, takes precedence over Signac \code{Fragments()}.
+File barcodes must match \code{rownames(meta)} unless \code{Fragment@cells}
+is available on the assay (then file barcodes are translated automatically).}
 
 \item{dropEmptySamples}{If \code{TRUE}, drop samples with no fragments and
 warn.}

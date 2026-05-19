@@ -1,12 +1,12 @@
 if (
-  require("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE) &&
+  require("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
     require("org.Hs.eg.db", quietly = TRUE) &&
     require("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) &&
     require("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE)
 ) {
   test_that("getAnnotationDbFromInstalledPkgname works in valid cases", {
     db1 <- MOCHA:::getAnnotationDbFromInstalledPkgname(
-      "TxDb.Hsapiens.UCSC.hg38.refGene", "TxDb"
+      "TxDb.Hsapiens.UCSC.hg38.knownGene", "TxDb"
     )
     expect_s4_class(db1, "TxDb")
 
@@ -18,7 +18,7 @@ if (
 
   test_that("getAnnotationDbFromInstalledPkgname errors with swapped type", {
     expect_error(db1 <- MOCHA:::getAnnotationDbFromInstalledPkgname(
-      "TxDb.Hsapiens.UCSC.hg38.refGene",
+      "TxDb.Hsapiens.UCSC.hg38.knownGene",
       type = "OrgDb"
     ))
 
@@ -38,7 +38,7 @@ if (
 
 test_that("getAnnotationDbFromInstalledPkgname errors with invalid type", {
   expect_error(MOCHA:::getAnnotationDbFromInstalledPkgname(
-    TxDb.Hsapiens.UCSC.hg38.refGene,
+    TxDb.Hsapiens.UCSC.hg38.knownGene,
     type = "TxDb"
   ))
 })

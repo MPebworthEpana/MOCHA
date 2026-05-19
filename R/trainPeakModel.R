@@ -61,7 +61,7 @@
 #'     cellColData = MOCHA::exampleCellColData,
 #'     blackList = MOCHA::exampleBlackList,
 #'     genome = "hg19",
-#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
 #'     OrgDb = "org.Hs.eg.db",
 #'     outDir = tempdir(),
 #'     cellPopLabel = "Clusters",
@@ -525,11 +525,27 @@ trainPeakModel <- function(ATACFragments,
     )
   })
   coefDF <- do.call(rbind, coefList)
+  finiteMedian <- function(x) {
+    x <- x[is.finite(x)]
+    if (length(x) == 0L) {
+      return(NA_real_)
+    }
+    stats::median(x)
+  }
   coefDF <- stats::aggregate(
     cbind(Intercept, Total, Max) ~ NumCells,
     data = coefDF,
-    FUN = stats::median
+    FUN = finiteMedian
   )
+  coefDF <- coefDF[
+    is.finite(coefDF$NumCells) &
+      (is.finite(coefDF$Intercept) | is.finite(coefDF$Total) | is.finite(coefDF$Max)),
+    ,
+    drop = FALSE
+  ]
+  if (nrow(coefDF) == 0L) {
+    stop("No finite coefficient summaries were produced during model fitting.")
+  }
 
   list(coefDF = coefDF, fitRuns = raw)
 }
@@ -548,10 +564,17 @@ trainPeakModel <- function(ATACFragments,
     )
   })
   threshAll <- do.call(rbind, threshRows)
+  finiteMedian <- function(x) {
+    x <- x[is.finite(x)]
+    if (length(x) == 0L) {
+      return(NA_real_)
+    }
+    stats::median(x)
+  }
   stats::aggregate(
     OptimalCutpoint ~ Ncells,
     data = threshAll,
-    FUN = stats::median
+    FUN = finiteMedian
   )
 }
 
@@ -626,13 +649,48 @@ trainPeakModel <- function(ATACFragments,
 #' @keywords internal
 #' @noRd
 .smoothCoefficients <- function(coefDF, method = "auto") {
+  fitLinear <- function(df) {
+    if (length(unique(df$NumCells)) < 2L) {
+      return(stats::lm(value ~ 1, data = df))
+    }
+    stats::lm(value ~ NumCells, data = df)
+  }
+
+  fitLoess <- function(df) {
+    if (nrow(df) < 2L) {
+      return(NULL)
+    }
+    model <- tryCatch(
+      suppressWarnings(stats::loess(value ~ NumCells, data = df, span = 0.75)),
+      error = function(e) NULL
+    )
+    if (is.null(model)) {
+      return(NULL)
+    }
+    preds <- tryCatch(
+      as.numeric(stats::predict(model, newdata = data.frame(NumCells = df$NumCells))),
+      error = function(e) rep(NA_real_, nrow(df))
+    )
+    if (any(!is.finite(preds))) {
+      return(NULL)
+    }
+    model
+  }
+
   smoothVar <- function(varName) {
     df <- data.frame(
       NumCells = coefDF$NumCells,
       value = coefDF[[varName]]
     )
-    loessFit <- stats::loess(value ~ NumCells, data = df, span = 0.75)
-    linearFit <- stats::lm(value ~ NumCells, data = df)
+    df <- df[is.finite(df$NumCells) & is.finite(df$value), , drop = FALSE]
+    if (nrow(df) < 1L) {
+      stop("No finite values available to smooth coefficient '", varName, "'.")
+    }
+    linearFit <- fitLinear(df)
+    loessFit <- fitLoess(df)
+    if (is.null(loessFit)) {
+      loessFit <- linearFit
+    }
     if (method == "loess") {
       return(list(loess = loessFit, linear = loessFit))
     }
@@ -660,16 +718,54 @@ trainPeakModel <- function(ATACFragments,
     OptimalCutpoint = threshDF$OptimalCutpoint
   )
   df <- df[is.finite(df$OptimalCutpoint) & is.finite(df$Ncells), , drop = FALSE]
-  if (nrow(df) < 2L) {
-    stop("Too few finite threshold estimates to smooth.")
+  if (nrow(df) < 1L) {
+    stop("No finite threshold estimates available to smooth.")
   }
-  if (nrow(df) < 4L || method == "linear") {
-    return(stats::lm(OptimalCutpoint ~ Ncells, data = df))
+
+  fitLinear <- function(df) {
+    if (length(unique(df$Ncells)) < 2L) {
+      return(stats::lm(OptimalCutpoint ~ 1, data = df))
+    }
+    stats::lm(OptimalCutpoint ~ Ncells, data = df)
   }
+
+  fitLoess <- function(df) {
+    if (nrow(df) < 2L) {
+      return(NULL)
+    }
+    model <- tryCatch(
+      suppressWarnings(stats::loess(OptimalCutpoint ~ Ncells, data = df, span = 0.75)),
+      error = function(e) NULL
+    )
+    if (is.null(model)) {
+      return(NULL)
+    }
+    preds <- tryCatch(
+      as.numeric(stats::predict(model, newdata = data.frame(Ncells = df$Ncells))),
+      error = function(e) rep(NA_real_, nrow(df))
+    )
+    if (any(!is.finite(preds))) {
+      return(NULL)
+    }
+    model
+  }
+
+  linearFit <- fitLinear(df)
+  if (method == "linear") {
+    return(linearFit)
+  }
+  loessFit <- fitLoess(df)
   if (method == "loess") {
-    return(stats::loess(OptimalCutpoint ~ Ncells, data = df, span = 0.75))
+    if (is.null(loessFit)) {
+      warning("LOESS threshold smoothing failed; falling back to linear model.")
+      return(linearFit)
+    }
+    return(loessFit)
   }
-  stats::loess(OptimalCutpoint ~ Ncells, data = df, span = 0.75)
+  if (is.null(loessFit)) {
+    return(linearFit)
+  }
+  loessFit
 }
 
 #' @keywords internal

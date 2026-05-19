@@ -12,6 +12,8 @@
 #' @param numCores Optional, the number of cores to use with multiprocessing.
 #'   Default is 1.
 #' @param verbose Set TRUE to display additional messages. Default is FALSE.
+#' @param returnClass Return type: \code{"legacy"} (default,
+#'   \code{MultiAssayExperiment}) or \code{"mocha"} (\code{MochaTileResults}).
 #'
 #' @return tileResults a single MultiAssayExperiment containing a sample-tile
 #'   intensity matrix for each sample and common cell population in the input
@@ -27,7 +29,11 @@
 #'
 #' @export
 #' @keywords utils
-mergeTileResults <- function(tileResultsList, numCores = 1, verbose = TRUE) {
+mergeTileResults <- function(tileResultsList,
+                            numCores = 1,
+                            verbose = TRUE,
+                            returnClass = c("legacy", "mocha")) {
+  returnClass <- match.arg(returnClass)
   Freq <- NULL
   # Test for duplicate sample names
   sampleTest <- unlist(lapply(tileResultsList, function(x) rownames(x@colData)))
@@ -39,8 +45,8 @@ mergeTileResults <- function(tileResultsList, numCores = 1, verbose = TRUE) {
   }
 
   # Test whether all the tileResultsList indices are MultiAssayExperiments
-  classTest <- lapply(tileResultsList, function(x) class(x)[1])
-  if (any(unlist(classTest) != "MultiAssayExperiment")) {
+  classTest <- vapply(tileResultsList, function(x) methods::is(x, "MultiAssayExperiment"), logical(1))
+  if (!all(classTest)) {
     stop(
       "At least one index of the tileResultsList is not ",
       "a MultiAssayExperiment. All objects in tileResultsList must be ",
@@ -169,7 +175,7 @@ mergeTileResults <- function(tileResultsList, numCores = 1, verbose = TRUE) {
       "History" = allHistory
     )
   )
-  return(tileResults)
+  .mocha_promote_return(tileResults, returnClass)
 }
 
 

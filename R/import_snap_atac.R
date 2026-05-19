@@ -54,7 +54,7 @@
 #'   genome = "BSgenome.Hsapiens.UCSC.hg38",
 #'   cellPopLabel = "leiden",
 #'   cellCol = inputs$cellCol,
-#'   TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+#'   TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
 #'   OrgDb = "org.Hs.eg.db",
 #'   outDir = tempdir()
 #' )
@@ -150,7 +150,7 @@ import_snap_atac <- function(
 #' @noRd
 .is_reticulate_object <- function(x) {
   inherits(x, "python.builtin.object") ||
-    inherits(x, "environment") && !is.null(reticulate::py_has_attr(x, "obs", silent = TRUE))
+    inherits(x, "environment") && isTRUE(tryCatch(reticulate::py_has_attr(x, "obs"), error = function(e) FALSE))
 }
 
 #' @noRd
@@ -410,16 +410,20 @@ import_snap_atac <- function(
 #' @noRd
 .py_reference_sequences <- function(x) {
   uns <- x$uns
-  if (is.null(uns) || !reticulate::py_has_attr(uns, "__getitem__", silent = TRUE)) {
+  if (is.null(uns)) {
     stop(
-      "SnapATAC2 object is missing uns['reference_sequences']. ",
-      "Re-import fragments with snapatac2.pp.import_fragments().",
+      "SnapATAC2 object is missing uns slot.",
       call. = FALSE
     )
   }
   ref <- tryCatch(
     uns[["reference_sequences"]],
-    error = function(e) NULL
+    error = function(e) {
+      tryCatch(
+        uns$reference_sequences,
+        error = function(e2) NULL
+      )
+    }
   )
   if (is.null(ref)) {
     stop(
@@ -456,20 +460,39 @@ import_snap_atac <- function(
 }
 
 #' @noRd
+.py_obsm_has_layer <- function(obsm, layer) {
+  mat <- tryCatch(
+    obsm[[layer]],
+    error = function(e) NULL
+  )
+  !is.null(mat)
+}
+
+#' @noRd
+.py_list_obsm_layers <- function(obsm) {
+  keys <- tryCatch(
+    reticulate::py_to_r(obsm$keys()),
+    error = function(e) character()
+  )
+  keys <- as.character(keys)
+  if (length(keys) > 0L && any(nzchar(keys))) {
+    return(keys)
+  }
+  # AnnData AxisArrays KeysView may not coerce cleanly; probe known layers.
+  candidates <- c("fragment_paired", "fragment_single")
+  keys <- candidates[vapply(candidates, function(k) .py_obsm_has_layer(obsm, k), logical(1))]
+  keys
+}
+
+#' @noRd
 .py_resolve_fragments_layer <- function(x, fragmentsLayer = "auto") {
   obsm <- x$obsm
   if (is.null(obsm)) {
     stop("SnapATAC2 object has no obsm slot.", call. = FALSE)
   }
-  keys <- tryCatch(
-    reticulate::py_to_r(obsm$keys()),
-    error = function(e) {
-      reticulate::py_to_r(reticulate::import("list", delay_load = TRUE)(obsm$keys()))
-    }
-  )
-  keys <- as.character(keys)
+  keys <- .py_list_obsm_layers(obsm)
   if (fragmentsLayer != "auto") {
-    if (!fragmentsLayer %in% keys) {
+    if (!.py_obsm_has_layer(obsm, fragmentsLayer)) {
       stop(
         "Requested fragmentsLayer '", fragmentsLayer, "' not found in obsm. ",
         "Available: ", paste(keys, collapse = ", "),
@@ -478,10 +501,10 @@ import_snap_atac <- function(
     }
     return(fragmentsLayer)
   }
-  if ("fragment_paired" %in% keys) {
+  if (.py_obsm_has_layer(obsm, "fragment_paired")) {
     return("fragment_paired")
   }
-  if ("fragment_single" %in% keys) {
+  if (.py_obsm_has_layer(obsm, "fragment_single")) {
     return("fragment_single")
   }
   stop(
@@ -490,6 +513,37 @@ import_snap_atac <- function(
     "Available obsm keys: ", paste(keys, collapse = ", "),
     call. = FALSE
   )
+}
+
+#' @noRd
+.extract_csr_from_r_matrix <- function(mat) {
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    return(NULL)
+  }
+  if (inherits(mat, "dgRMatrix")) {
+    p <- mat@p
+    j <- mat@j
+    x <- mat@x
+    n_rows <- nrow(mat)
+    rows <- integer()
+    cols <- integer()
+    values <- numeric()
+    for (r in seq_len(n_rows)) {
+      start <- p[r] + 1L
+      end <- p[r + 1L]
+      if (end >= start) {
+        idx <- seq.int(start, end)
+        rows <- c(rows, rep.int(r, length(idx)))
+        cols <- c(cols, as.integer(j[idx]))
+        values <- c(values, as.numeric(x[idx]))
+      }
+    }
+    return(list(rows = rows, cols = cols, values = values))
+  }
+  if (inherits(mat, "dgCMatrix")) {
+    return(.extract_csr_from_r_matrix(Matrix::t(mat)))
+  }
+  NULL
 }
 
 #' @noRd
@@ -503,17 +557,21 @@ import_snap_atac <- function(
   if (is.null(mat)) {
     stop("obsm layer '", layer_name, "' is NULL.", call. = FALSE)
   }
-  sp <- reticulate::import("scipy.sparse", delay_load = TRUE)
-  if (!inherits(mat, "python.builtin.object")) {
-    stop("Fragment matrix is not a Python object.", call. = FALSE)
+
+  r_csr <- .extract_csr_from_r_matrix(mat)
+  if (!is.null(r_csr)) {
+    r_csr$layer_name <- layer_name
+    return(r_csr)
   }
+
+  sp <- reticulate::import("scipy.sparse", delay_load = TRUE)
   coo <- tryCatch(
     {
-      m <- sp$coo_matrix(mat)
+      m <- reticulate::py_get_attr(sp, "coo_matrix")(mat)
       list(
-        rows = as.integer(reticulate::py_to_r(m$row)) + 1L,
-        cols = as.integer(reticulate::py_to_r(m$col)),
-        values = as.numeric(reticulate::py_to_r(m$data))
+        rows = as.integer(reticulate::py_to_r(reticulate::py_get_attr(m, "row"))) + 1L,
+        cols = as.integer(reticulate::py_to_r(reticulate::py_get_attr(m, "col"))),
+        values = as.numeric(reticulate::py_to_r(reticulate::py_get_attr(m, "data")))
       )
     },
     error = function(e) {
@@ -526,9 +584,9 @@ import_snap_atac <- function(
 
 #' @noRd
 .py_extract_csr_manual <- function(mat) {
-  indptr <- as.integer(reticulate::py_to_r(mat$indptr))
-  indices <- as.integer(reticulate::py_to_r(mat$indices))
-  data <- as.numeric(reticulate::py_to_r(mat$data))
+  indptr <- as.integer(reticulate::py_to_r(reticulate::py_get_attr(mat, "indptr")))
+  indices <- as.integer(reticulate::py_to_r(reticulate::py_get_attr(mat, "indices")))
+  data <- as.numeric(reticulate::py_to_r(reticulate::py_get_attr(mat, "data")))
   n_rows <- length(indptr) - 1L
   rows <- integer()
   cols <- integer()

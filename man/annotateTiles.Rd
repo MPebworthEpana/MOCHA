@@ -30,15 +30,27 @@ Obj, the input data structure with added gene annotations (whether GRanges or Sa
   https://bioconductor.org/packages/3.15/data/annotation/
 }
 \examples{
-\dontrun{
-library(TxDb.Hsapiens.UCSC.hg38.refGene)
-library(org.Hs.eg.db)
-SampleTileMatricesAnnotated <- MOCHA::annotateTiles(
-  SampleTileMatrices,
-  TxDb = TxDb.Hsapiens.UCSC.hg38.refGene,
-  Org = org.Hs.eg.db
-)
+\donttest{
+if (
+  requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+    requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+    requireNamespace("org.Hs.eg.db", quietly = TRUE)
+) {
+  tiles <- MOCHA::callOpenTiles(
+    ATACFragments = MOCHA::exampleFragments,
+    cellColData = MOCHA::exampleCellColData,
+    blackList = MOCHA::exampleBlackList,
+    genome = "BSgenome.Hsapiens.UCSC.hg19",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    OrgDb = "org.Hs.eg.db",
+    outDir = tempdir(),
+    cellPopLabel = "Clusters",
+    cellPopulations = "C2",
+    numCores = 1
+  )
+  stm <- MOCHA::getSampleTileMatrix(tiles, cellPopulations = "C2", threshold = 0)
+  annotated <- MOCHA::annotateTiles(stm)
 }
-
+}
 }
 \keyword{utils}

@@ -2,7 +2,7 @@ skip_on_cran()
 skip_unless_mocha_heavy()
 
 if (
-  requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE) &&
+  requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
     requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
     requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) &&
     requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
@@ -45,7 +45,7 @@ if (
       ArchRProj,
       cellPopLabel = "CellSubsets",
       cellPopulations = "CD16 Mono",
-      TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+      TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
       Org = "org.Hs.eg.db",
       numCores = 2,
       studySignal = studySignal,
@@ -90,7 +90,7 @@ if (
         numCores = 2
       )
     )
-    cd16_differentials <- plyranges::filter(differentials, FDR <= 0.2)
+    cd16_differentials <- dplyr::filter(differentials, FDR <= 0.2)
 
     expect_s4_class(cd16_differentials, "GRanges")
     expect_equal(length(cd16_differentials), 6211)

@@ -1,6 +1,6 @@
 skip_on_cran()
 if (
-  require("TxDb.Hsapiens.UCSC.hg38.refGene", quietly = TRUE) &&
+  require("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
   require("org.Hs.eg.db", quietly = TRUE) &&
   require("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) &&
   require("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE)
@@ -14,7 +14,7 @@ if (
         type = "message"
       )
 
-      TxDb <- "TxDb.Hsapiens.UCSC.hg38.refGene"
+      TxDb <- "TxDb.Hsapiens.UCSC.hg38.knownGene"
       OrgDb <- "org.Hs.eg.db"
       
       mytempdir <- tempdir()

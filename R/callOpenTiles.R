@@ -49,7 +49,7 @@
 #' @param cellCol The column in cellColData specifying unique cell ids or
 #'   barcodes. Default is "RG", the unique cell identifier used by ArchR.
 #' @param TxDb The exact package name of a TxDb-class transcript annotation
-#'   package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.refGene"). This
+#'   package for your organism (e.g. "TxDb.Hsapiens.UCSC.hg38.knownGene"). This
 #'   must be installed. See
 #'   \href{https://bioconductor.org/packages/release/data/annotation/}{
 #'   Bioconductor AnnotationData Packages}.
@@ -69,26 +69,19 @@
 #' @param peakModel Optional \code{MOCHAPeakModel} from \code{\link{trainPeakModel}}.
 #'   When \code{NULL}, the bundled 500 bp model is used. Custom models set the
 #'   tile width and study-signal calibration (\code{trainingMedian}).
+#' @param returnClass Return type: \code{"legacy"} (default,
+#'   \code{MultiAssayExperiment}) or \code{"mocha"} (\code{MochaTileResults}).
 #'
 #' @return tileResults A MultiAssayExperiment object containing ranged data for
 #'   each tile
 #' @examples
-#' \dontrun{
-#' # Starting from an ArchR Project:
-#' tileResults <- MOCHA::callOpenTiles(
-#'   ArchRProj = myArchRProj,
-#'   cellPopLabel = "celltype_labeling",
-#'   cellPopulations = "CD4",
-#'   TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
-#'   OrgDb = "org.Hs.eg.db",
-#'   numCores = 1
-#' )
-#' }
 #' \donttest{
+#' # ArchR Project input requires the ArchR package (not run here).
+#' # Starting from GRangesList with bundled example data:
 #' # Starting from GRangesList:
 #' if (
 #'   requireNamespace("BSgenome.Hsapiens.UCSC.hg19") &&
-#'   requireNamespace("TxDb.Hsapiens.UCSC.hg38.refGene") &&
+#'   requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene") &&
 #'   requireNamespace("org.Hs.eg.db")
 #' ) {
 #'   tiles <- MOCHA::callOpenTiles(
@@ -96,7 +89,7 @@
 #'     cellColData = MOCHA::exampleCellColData,
 #'     blackList = MOCHA::exampleBlackList,
 #'     genome = "BSgenome.Hsapiens.UCSC.hg19",
-#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.refGene",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
 #'     OrgDb = "org.Hs.eg.db",
 #'     outDir = tempdir(),
 #'     cellPopLabel = "Clusters",
@@ -131,7 +124,8 @@ setGeneric(
            numCores = 30,
            verbose = FALSE,
            force = FALSE,
-           peakModel = NULL) {
+           peakModel = NULL,
+           returnClass = c("legacy", "mocha")) {
     standardGeneric("callOpenTiles")
   },
   signature = "ATACFragments"
@@ -333,7 +327,9 @@ setGeneric(
                                    numCores = 30,
                                    verbose = FALSE,
                                    force = FALSE,
-                                   peakModel = NULL) {
+                                   peakModel = NULL,
+                                   returnClass = c("legacy", "mocha")) {
+  returnClass <- match.arg(returnClass)
   Sample <- seqnames <- NULL
 
   genome <- BSgenome::getBSgenome(genome)
@@ -454,7 +450,8 @@ setGeneric(
     verbose,
     force,
     useArchR = FALSE,
-    peakModel = peakModel
+    peakModel = peakModel,
+    returnClass = returnClass
   )
 }
 #' @rdname callOpenTiles-methods
@@ -487,7 +484,16 @@ setMethod(
                                  numCores = 30,
                                  verbose = FALSE,
                                  force = FALSE,
-                                 peakModel = NULL) {
+                                 peakModel = NULL,
+                                 returnClass = c("legacy", "mocha")) {
+  returnClass <- match.arg(returnClass)
+  if (!requireNamespace("ArchR", quietly = TRUE)) {
+    stop(
+      "Package 'ArchR' is required for ArchRProject input. ",
+      "Install ArchR separately or use GRangesList input via callOpenTiles().",
+      call. = FALSE
+    )
+  }
   Sample <- nFrags <- NULL
   # Load Genome
   genome <- ArchR::validBSgenome(ArchR::getGenome(ATACFragments))
@@ -536,7 +542,8 @@ setMethod(
     verbose,
     force,
     useArchR = TRUE,
-    peakModel = peakModel
+    peakModel = peakModel,
+    returnClass = returnClass
   )
 }
 setMethod(
@@ -563,7 +570,9 @@ setMethod(
                            verbose,
                            force,
                            useArchR,
-                           peakModel) {
+                           peakModel,
+                           returnClass = c("legacy", "mocha")) {
+  returnClass <- match.arg(returnClass)
   Sample <- meanValues <- NULL
   peakModel <- if (is.null(peakModel)) {
     .defaultPeakModel()
@@ -1041,5 +1050,5 @@ setMethod(
       "History" = list(paste("callOpenTiles", utils::packageVersion("MOCHA")))
     )
   )
-  return(tileResults)
+  .mocha_promote_return(tileResults, returnClass)
 }

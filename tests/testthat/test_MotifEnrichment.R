@@ -4,8 +4,8 @@ test_that("MotifEnrichment works with mock data", {
     MOCHA:::testPeaks,
     tileColumn = "tileID"
   )
-  Group1 <- plyranges::filter(testPeaks, FDR < 0.1)
-  Group2 <- plyranges::filter(testPeaks, FDR >= 0.1)
+  Group1 <- dplyr::filter(testPeaks, FDR < 0.1)
+  Group2 <- dplyr::filter(testPeaks, FDR >= 0.1)
 
   FDR <- NULL
   enrichDAP_df <- MotifEnrichment(

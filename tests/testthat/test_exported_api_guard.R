@@ -36,7 +36,7 @@ test_that("exported APIs are referenced in tests or explicitly allowlisted", {
     pattern = "^test_.*\\.R$",
     full.names = TRUE
   )
-  test_text <- paste(vapply(test_files, readLines, character()), collapse = "\n")
+  test_text <- paste(unlist(lapply(test_files, readLines)), collapse = "\n")
 
   missing <- character()
   for (fn in exports) {

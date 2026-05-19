@@ -25,28 +25,55 @@
 #' @param numCores The number of cores to use with multiprocessing.
 #'  Default is 1.
 #' @param verbose Set TRUE to display additional messages. Default is FALSE.
+#' @param dropoutAdjustment How to incorporate dropout estimates when computing
+#'  zero rates for tile filtering. \code{"none"} uses raw zero fractions
+#'  (default). \code{"biological_only"} counts only zeros with
+#'  \code{P(zero) >= bioThreshold} (biologically expected closure).
+#'  \code{"weighted"} weights zeros by \code{P(zero)}. Requires a fittable
+#'  \code{DropoutProb_*} assay from \code{\link{assessDropout}}; if absent,
+#'  \code{assessDropout()} is run automatically for the requested cell population.
+#' @param bioThreshold Minimum \code{P(zero)} for a zero to count toward
+#'  biological zero rates when \code{dropoutAdjustment = "biological_only"}.
+#'  Default is 0.8.
+#' @param techThreshold Deprecated alias for \code{bioThreshold}.
+#' @param fdrToDisplay Deprecated alias for \code{qValueThreshold}.
 #'
 #' @return full_results The differential accessibility results as a GRanges or
 #'   matrix data.frame depending on the flag `outputGRanges`.
 #'
 #' @examples
-#' \dontrun{
-#' cellPopulation <- "MAIT"
-#' foreground <- "Positive"
-#' background <- "Negative"
-#' # Choose to output a GRanges or data.frame.
-#' # Default is TRUE
-#' outputGRanges <- TRUE
-#' # SampleTileMatrices is the output of MOCHA::getSampleTileMatrix
-#' differentials <- MOCHA::getDifferentialAccessibleTiles(
-#'   SampleTileObj = SampleTileMatrices,
-#'   cellPopulation = cellPopulation,
-#'   groupColumn = groupColumn,
-#'   foreground = foreground,
-#'   background = background,
-#'   outputGRanges = outputGRanges,
-#'   numCores = numCores
-#' )
+#' \donttest{
+#' if (
+#'   requireNamespace("BSgenome.Hsapiens.UCSC.hg19", quietly = TRUE) &&
+#'     requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
+#'     requireNamespace("org.Hs.eg.db", quietly = TRUE)
+#' ) {
+#'   tiles <- MOCHA::callOpenTiles(
+#'     ATACFragments = MOCHA::exampleFragments,
+#'     cellColData = MOCHA::exampleCellColData,
+#'     blackList = MOCHA::exampleBlackList,
+#'     genome = "BSgenome.Hsapiens.UCSC.hg19",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'     OrgDb = "org.Hs.eg.db",
+#'     outDir = tempdir(),
+#'     cellPopLabel = "Clusters",
+#'     cellPopulations = "C2",
+#'     numCores = 1
+#'   )
+#'   stm <- MOCHA::getSampleTileMatrix(
+#'     tiles,
+#'     cellPopulations = "C2",
+#'     threshold = 0
+#'   )
+#'   diffs <- MOCHA::getDifferentialAccessibleTiles(
+#'     SampleTileObj = stm,
+#'     cellPopulation = "C2",
+#'     groupColumn = "Sample",
+#'     foreground = unique(SummarizedExperiment::colData(stm)$Sample)[1],
+#'     background = unique(SummarizedExperiment::colData(stm)$Sample)[2],
+#'     numCores = 1
+#'   )
+#' }
 #' }
 #' @export
 #' @keywords downstream
@@ -62,7 +89,28 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
                                            qValueThreshold = 0.2,
                                            outputGRanges = TRUE,
                                            numCores = 1,
-                                           verbose = FALSE) {
+                                           verbose = FALSE,
+                                           dropoutAdjustment = c("none", "biological_only", "weighted"),
+                                           bioThreshold = 0.8,
+                                           techThreshold = NULL,
+                                           fdrToDisplay = NULL) {
+  if (!is.null(techThreshold)) {
+    lifecycle::deprecate_warn(
+      when = "1.2.0",
+      what = "getDifferentialAccessibleTiles(techThreshold = )",
+      with = "getDifferentialAccessibleTiles(bioThreshold = )"
+    )
+    bioThreshold <- techThreshold
+  }
+  if (!is.null(fdrToDisplay)) {
+    lifecycle::deprecate_warn(
+      when = "1.2.0",
+      what = "getDifferentialAccessibleTiles(fdrToDisplay = )",
+      with = "getDifferentialAccessibleTiles(qValueThreshold = )"
+    )
+    qValueThreshold <- fdrToDisplay
+  }
+
   if (!all(cellPopulation %in% names(SummarizedExperiment::assays(SampleTileObj)))) {
     stop("cellPopulation was not found within SampleTileObj. Check available cell populations with `colData(SampleTileObj)`.")
   }
@@ -73,9 +121,17 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
     }
   }
 
+  dropoutAdjustment <- match.arg(dropoutAdjustment)
+
   if(!qValueMethod %in% c('standard', 'experimental')){
   
       stop("qValueMethod must either be set to 'standard' or 'experimental'")     
+  }
+
+  if (dropoutAdjustment != "none") {
+    for (cp in cellPopulation) {
+      SampleTileObj <- .ensure_dropout_assay(SampleTileObj, cp, verbose = verbose)
+    }
   }
     
   metaFile <- SummarizedExperiment::colData(SampleTileObj)
@@ -134,10 +190,26 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
       #medians_a[is.na(medians_a)] = 0
       #medians_b[is.na(medians_b)] = 0
       # Set NAs to zero
+      intensityForZeros <- sampleTileMatrix
       sampleTileMatrix[is.na(sampleTileMatrix)] <- 0
 
-      zero_A <- rowMeans(sampleTileMatrix[, which(group == 1), drop = FALSE] == 0)
-      zero_B <- rowMeans(sampleTileMatrix[, which(group == 0), drop = FALSE] == 0)
+      dropoutProb <- NULL
+      if (dropoutAdjustment != "none") {
+        probAssay <- .dropout_prob_assay_name(cellPop)
+        dropoutProb <- SummarizedExperiment::assay(SampleTileObj, probAssay)
+        dropoutProb <- dropoutProb[rownames(intensityForZeros), colnames(intensityForZeros), drop = FALSE]
+        dropoutProb[is.na(intensityForZeros)] <- NA_real_
+      }
+
+      zeroRates <- .compute_adjusted_zero_rates(
+        intensityForZeros,
+        dropoutProb = dropoutProb,
+        group = group,
+        adjustment = dropoutAdjustment,
+        bioThreshold = bioThreshold
+      )
+      zero_A <- zeroRates$zero_A
+      zero_B <- zeroRates$zero_B
 
       diff0s <- abs(zero_A - zero_B)
 
@@ -151,9 +223,35 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
       ############################################################################
       # Estimate differential accessibility
 
+      if (length(idx) == 0) {
+        warning(
+          "No tiles passed filtering thresholds for cell population ", cellPop,
+          call. = FALSE
+        )
+        nTiles <- nrow(sampleTileMatrix)
+        empty_results <- data.frame(
+          Tile = rownames(sampleTileMatrix),
+          CellPopulation = rep(cellPop, nTiles),
+          Foreground = rep(foreground, nTiles),
+          Background = rep(background, nTiles),
+          P_value = rep(NA_real_, nTiles),
+          Test_Statistic = rep(NA_real_, nTiles),
+          FDR = rep(NA_real_, nTiles),
+          Log2FC_C = rep(NA_real_, nTiles),
+          MeanDiff = rep(NA_real_, nTiles),
+          Avg_Intensity_Case = rep(NA_real_, nTiles),
+          Pct0_Case = rep(NA_real_, nTiles),
+          Avg_Intensity_Control = rep(NA_real_, nTiles),
+          Pct0_Control = rep(NA_real_, nTiles),
+          stringsAsFactors = FALSE
+        )
+        DAT_list <- append(DAT_list, list(empty_results))
+        next
+      }
+
       ## Let's create a matrix to iterate over. 
       cl <- parallel::makeCluster(numCores)
-      res_pvals <- pbapply::pbapply(cl = cl, sampleTileMatrix[idx,], 
+      res_pvals <- pbapply::pbapply(cl = cl, sampleTileMatrix[idx, , drop = FALSE], 
                                 MARGIN = 1, estimate_differential_accessibility,
                                     group = group)
       parallel::stopCluster(cl)
@@ -196,7 +294,7 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
 
             filtered_res$FDR <- qvalue::qvalue(filtered_res$P_value)$qvalues
         }
-      } else {
+      } else if (nrow(filtered_res) > 0) {
         filtered_res$FDR <- NA # TODO Handle appropriately
       }
       #############################################################################
@@ -256,8 +354,15 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
       
   }
 
+  DAT_list <- DAT_list[!vapply(DAT_list, is.null, logical(1))]
+  if (length(DAT_list) == 0) {
+    if (outputGRanges) {
+      return(GenomicRanges::GRanges())
+    }
+    return(data.frame())
+  }
   full_results <- do.call('rbind', DAT_list)
-  full_results = full_results[!is.na(full_results$Tile),]
+  full_results <- full_results[!is.na(full_results$Tile), , drop = FALSE]
   if (outputGRanges) {
     full_results <- MOCHA::differentialsToGRanges(full_results)
   }
