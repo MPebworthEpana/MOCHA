@@ -10,7 +10,8 @@ getSampleTileMatrix(
   groupColumn = NULL,
   threshold = 0.2,
   numCores = 1,
-  verbose = FALSE
+  verbose = FALSE,
+  returnClass = c("legacy", "mocha")
 )
 }
 \arguments{
@@ -37,6 +38,10 @@ tune this parameter to omit potentially spurious peaks.}
 Default is 1.}
 
 \item{verbose}{Set TRUE to display additional messages. Default is FALSE.}
+
+\item{returnClass}{Return type: \code{"legacy"} (default,
+\code{RangedSummarizedExperiment}) or \code{"mocha"}
+(\code{MochaSampleTileMatrix}).}
 }
 \value{
 SampleTileMatrices a MultiAssayExperiment containing a sample-tile

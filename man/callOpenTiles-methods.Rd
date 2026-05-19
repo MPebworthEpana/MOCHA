@@ -30,7 +30,8 @@ callOpenTiles(
   numCores = 30,
   verbose = FALSE,
   force = FALSE,
-  peakModel = NULL
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 
 .callOpenTiles_default(
@@ -50,7 +51,8 @@ callOpenTiles(
   numCores = 30,
   verbose = FALSE,
   force = FALSE,
-  peakModel = NULL
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 
 \S4method{callOpenTiles}{GRangesList}(
@@ -70,7 +72,8 @@ callOpenTiles(
   numCores = 30,
   verbose = FALSE,
   force = FALSE,
-  peakModel = NULL
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 
 \S4method{callOpenTiles}{list}(
@@ -90,7 +93,8 @@ callOpenTiles(
   numCores = 30,
   verbose = FALSE,
   force = FALSE,
-  peakModel = NULL
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 
 .callOpenTiles_ArchR(
@@ -106,7 +110,8 @@ callOpenTiles(
   numCores = 30,
   verbose = FALSE,
   force = FALSE,
-  peakModel = NULL
+  peakModel = NULL,
+  returnClass = c("legacy", "mocha")
 )
 }
 \arguments{
@@ -189,6 +194,9 @@ already exist. Default is FALSE.}
 \item{peakModel}{Optional \code{MOCHAPeakModel} from \code{\link{trainPeakModel}}.
 When \code{NULL}, the bundled 500 bp model is used. Custom models set the
 tile width and study-signal calibration (\code{trainingMedian}).}
+
+\item{returnClass}{Return type: \code{"legacy"} (default,
+\code{MultiAssayExperiment}) or \code{"mocha"} (\code{MochaTileResults}).}
 }
 \value{
 tileResults A MultiAssayExperiment object containing ranged data for
@@ -203,6 +211,7 @@ tileResults A MultiAssayExperiment object containing ranged data for
 \donttest{
 # ArchR Project input requires the ArchR package (not run here).
 # Starting from GRangesList with bundled example data:
+# Starting from GRangesList:
 if (
   requireNamespace("BSgenome.Hsapiens.UCSC.hg19") &&
   requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene") &&

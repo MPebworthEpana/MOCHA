@@ -4,7 +4,12 @@
 \alias{combineSampleTileMatrix}
 \title{Merge the TSAM from multiple cell populations into a single matrix}
 \usage{
-combineSampleTileMatrix(SampleTileObj, NAtoZero = TRUE, verbose = FALSE)
+combineSampleTileMatrix(
+  SampleTileObj,
+  NAtoZero = TRUE,
+  verbose = FALSE,
+  returnClass = c("legacy", "mocha")
+)
 }
 \arguments{
 \item{SampleTileObj}{The SummarizedExperiment object output from
@@ -13,6 +18,9 @@ getSampleTileMatrix containing your sample-tile matrices}
 \item{NAtoZero}{Set NA values in the sample-tile matrix to zero}
 
 \item{verbose}{Set TRUE to display additional messages. Default is FALSE.}
+
+\item{returnClass}{Return type: \code{"legacy"} (default) or \code{"mocha"}
+(\code{MochaSampleTileMatrix} when the input is a MOCHA sample-tile matrix).}
 }
 \value{
 A \code{RangedSummarizedExperiment} with one matrix across cell types.
@@ -49,5 +57,6 @@ if (
   combined <- MOCHA::combineSampleTileMatrix(stm)
 }
 }
+
 }
 \keyword{utils}

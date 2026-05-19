@@ -53,5 +53,6 @@ if (
   openTiles <- MOCHA::getOpenTiles(tiles, cellPopulations = "C2")
 }
 }
+
 }
 \keyword{utils}

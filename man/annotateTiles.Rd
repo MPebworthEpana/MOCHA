@@ -52,5 +52,6 @@ if (
   annotated <- MOCHA::annotateTiles(stm)
 }
 }
+
 }
 \keyword{utils}

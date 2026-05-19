@@ -5,7 +5,12 @@
 \title{Merge tileResults from \code{callOpenTiles()} that share cell
   populations into a single object containing all samples}
 \usage{
-mergeTileResults(tileResultsList, numCores = 1, verbose = TRUE)
+mergeTileResults(
+  tileResultsList,
+  numCores = 1,
+  verbose = TRUE,
+  returnClass = c("legacy", "mocha")
+)
 }
 \arguments{
 \item{tileResultsList}{List of MultiAssayExperiments objects returned by
@@ -15,6 +20,9 @@ callOpenTiles containing containing peak calling results.}
 Default is 1.}
 
 \item{verbose}{Set TRUE to display additional messages. Default is FALSE.}
+
+\item{returnClass}{Return type: \code{"legacy"} (default,
+\code{MultiAssayExperiment}) or \code{"mocha"} (\code{MochaTileResults}).}
 }
 \value{
 tileResults a single MultiAssayExperiment containing a sample-tile
