@@ -103,7 +103,7 @@ runZIGLMM <- function(TSAM_Object,
   variableList <- c(all.vars(continuousFormula)[all.vars(continuousFormula) != "exp"], all.vars(ziformula))
 
   MetaDF <- dplyr::filter(MetaDF, Sample %in% colnames(modelingData))
-  modelingData <- modelingData[, match(colnames(modelingData), MetaDF$Sample)]
+  modelingData <- modelingData[, match(colnames(modelingData), MetaDF$Sample), drop = FALSE]
 
 
   # Subset metadata to just the variables needed. This minimizes overhead for parallelization
@@ -413,7 +413,7 @@ pilotZIGLMM <- function(TSAM_Object,
   variableList <- c(all.vars(continuousFormula)[all.vars(continuousFormula) != "exp"], all.vars(ziformula))
 
   MetaDF <- dplyr::filter(MetaDF, Sample %in% colnames(modelingData))
-  modelingData <- modelingData[pilotIndices, match(colnames(modelingData), MetaDF$Sample)]
+  modelingData <- modelingData[pilotIndices, match(colnames(modelingData), MetaDF$Sample), drop = FALSE]
 
   # Subset metadata to just the variables needed. This minimizes overhead for parallelization
   MetaDF <- MetaDF[, colnames(MetaDF) %in% c("Sample", variableList)]

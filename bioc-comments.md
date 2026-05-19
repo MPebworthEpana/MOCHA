@@ -1,4 +1,4 @@
-# Bioconductor submission check notes (MOCHA 0.99.0)
+# Bioconductor submission check notes (MOCHA 2.0.0)
 
 Branch: `bioc/submission`
 
@@ -8,8 +8,8 @@ Run on R-devel with Bioconductor dependencies installed:
 
 ```bash
 R CMD build MOCHA
-R CMD check --no-manual MOCHA_0.99.0.tar.gz
-R -q -e 'BiocCheck::BiocCheck("MOCHA_0.99.0.tar.gz")'
+R CMD check --no-manual MOCHA_2.0.0.tar.gz
+R -q -e 'BiocCheck::BiocCheck("MOCHA_2.0.0.tar.gz")'
 ```
 
 Document results below after running locally or from the `Bioc-check` GitHub Action.
@@ -42,8 +42,8 @@ docker run --rm -v "$PWD":/workspace -w /workspace \
   bioconductor/bioconductor_docker:devel bash -c '
   apt-get update -qq && apt-get install -y -qq libcurl4-openssl-dev libssl-dev libxml2-dev
   R -q -e "install.packages(\"remotes\"); remotes::install_deps(suggests=TRUE)"
-  R CMD build . && R CMD check --no-manual MOCHA_0.99.0.tar.gz
-  R -q -e "BiocCheck::BiocCheck(\"MOCHA_0.99.0.tar.gz\")"
+  R CMD build . && R CMD check --no-manual MOCHA_2.0.0.tar.gz
+  R -q -e "BiocCheck::BiocCheck(\"MOCHA_2.0.0.tar.gz\")"
 '
 ```
 

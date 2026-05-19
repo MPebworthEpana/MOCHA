@@ -1,7 +1,7 @@
-# MOCHA 0.99.0 (Bioconductor submission)
+# MOCHA 2.0.0
 
 * Prepare package for initial Bioconductor submission on branch `bioc/submission`.
-* Reset version to `0.99.0`; populate `biocViews`, `BiocType`, and remove CRAN-only `Additional_repositories`.
+* Bump package version to `2.0.0`; populate `biocViews`, `BiocType`, and remove CRAN-only `Additional_repositories`.
 * Replace `TxDb.Hsapiens.UCSC.hg38.refGene` with Bioconductor `TxDb.Hsapiens.UCSC.hg38.knownGene`.
 * Add runnable `COVID-walkthrough` vignette (BiocStyle) using bundled example data.
 * Add `inst/CITATION`, `Bioc-check` CI workflow, and `requireNamespace()` guards for optional ArchR usage.

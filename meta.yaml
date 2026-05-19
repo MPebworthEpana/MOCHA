@@ -1,4 +1,4 @@
-{% set version = "1.2.0" %}
+{% set version = "2.0.0" %}
 
 # Pinning guidance:
 # - This recipe is intentionally light on upper pins for a first pass.

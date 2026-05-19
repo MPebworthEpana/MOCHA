@@ -1,4 +1,4 @@
-{% set version = "1.2.0" %}
+{% set version = "2.0.0" %}
 
 # Pinning guidance:
 # - This recipe starts with minimal upper bounds.
@@ -11,7 +11,7 @@ package:
   version: {{ version|replace("-", "_") }}
 
 source:
-  # 1.2.0 is not on active CRAN src/contrib yet, so pin to a commit tarball.
+  # 2.0.0 is not on active CRAN src/contrib yet, so pin to a commit tarball.
   url: https://github.com/aifimmunology/MOCHA/archive/93d513fdaf4d7c0f056d03ad7dc3f563e03713ef.tar.gz
   sha256: df3f539f88b86858e8963f1b7a04b2c6960bade26cb16fd5366ce6e5899a1c26
 

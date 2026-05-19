@@ -100,7 +100,7 @@ varZIGLMM <- function(TSAM_Object,
   ziformula <- paste("~ ", zi_form)
 
   MetaDF <- dplyr::filter(MetaDF, Sample %in% colnames(modelingData))
-  modelingData <- modelingData[, match(colnames(modelingData), MetaDF$Sample)]
+  modelingData <- modelingData[, match(colnames(modelingData), MetaDF$Sample), drop = FALSE]
 
   # Subset metadata to just the variables needed. This minimizes overhead for parallelization
   MetaDF <- MetaDF[, colnames(MetaDF) %in% c("Sample", variableList)]
