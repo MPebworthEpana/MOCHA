@@ -32,7 +32,7 @@ jobs:
       - name: Install MOCHA dependencies
         run: |
           R -q -e 'install.packages("remotes", repos="https://cloud.r-project.org")'
-          R -q -e 'remotes::install_deps(dependencies=TRUE, upgrade=FALSE)'
+          R -q -e 'remotes::install_deps(dependencies=TRUE, suggests=TRUE, upgrade=FALSE)'
 
       - name: Build tarball
         run: R CMD build .

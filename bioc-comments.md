@@ -33,16 +33,28 @@ Document results below after running locally or from the `Bioc-check` GitHub Act
 
 ## Check results
 
-_Fill in after local or CI run:_
+Local R is not available in the development environment used for this branch.
+Run verification via the `Bioc-check` GitHub Action on push to `bioc/submission`,
+or locally:
+
+```bash
+docker run --rm -v "$PWD":/workspace -w /workspace \
+  bioconductor/bioconductor_docker:devel bash -c '
+  apt-get update -qq && apt-get install -y -qq libcurl4-openssl-dev libssl-dev libxml2-dev
+  R -q -e "install.packages(\"remotes\"); remotes::install_deps(suggests=TRUE)"
+  R CMD build . && R CMD check --no-manual MOCHA_0.99.0.tar.gz
+  R -q -e "BiocCheck::BiocCheck(\"MOCHA_0.99.0.tar.gz\")"
+'
+```
 
 ```
-R CMD check:
-  ERRORs: 
-  WARNINGs: 
-  NOTEs: 
+R CMD check: (pending CI / local docker run)
+  ERRORs: pending
+  WARNINGs: pending
+  NOTEs: pending
 
-BiocCheck:
-  ERRORS: 
-  WARNINGS: 
-  NOTES: 
+BiocCheck: (pending CI / local docker run)
+  ERRORS: pending
+  WARNINGS: pending
+  NOTES: pending
 ```
