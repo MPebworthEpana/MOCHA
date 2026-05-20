@@ -50,7 +50,7 @@ test_that("dropoutAdjustment none ignores DropoutProb assays for filtering", {
   none_adj <- suppressWarnings(
     MOCHA::getDifferentialAccessibleTiles(
       stm,
-      cellPopulation = "C2",
+      cellPopulations = "C2",
       groupColumn = "GroupA",
       foreground = "A",
       background = "B",
@@ -67,7 +67,7 @@ test_that("dropoutAdjustment none ignores DropoutProb assays for filtering", {
   no_assay <- suppressWarnings(
     MOCHA::getDifferentialAccessibleTiles(
       stm_no_dropout,
-      cellPopulation = "C2",
+      cellPopulations = "C2",
       groupColumn = "GroupA",
       foreground = "A",
       background = "B",

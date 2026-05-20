@@ -6,7 +6,7 @@ test_that("linearModeling returns named lmer list for one cell type", {
     ExperimentObj <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = "C2",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"
@@ -17,7 +17,7 @@ test_that("linearModeling returns named lmer list for one cell type", {
       ExperimentObj,
       formula = exp ~ PassQC,
       CellType = "C2",
-      threshold = 0.5,
+      reproducibilityThreshold = 0.5,
       NAtoZero = TRUE,
       numCores = 1
     ),
@@ -40,7 +40,7 @@ test_that("runZIGLMM validates formula and cellPopulation", {
       MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResults,
         cellPopulations = c("C2", "C5"),
-        threshold = 0,
+        reproducibilityThreshold = 0,
         numCores = 1
       )
     ),
@@ -86,7 +86,7 @@ test_that("pilotZIGLMM returns pilot model list", {
       MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResults,
         cellPopulations = c("C2", "C5"),
-        threshold = 0,
+        reproducibilityThreshold = 0,
         numCores = 1
       )
     ),
@@ -115,7 +115,7 @@ test_that("getModelValues extracts slopes and p-values from runZIGLMM output", {
       MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResults,
         cellPopulations = c("C2", "C5"),
-        threshold = 0,
+        reproducibilityThreshold = 0,
         numCores = 1
       )
     ),
@@ -151,7 +151,7 @@ test_that("varZIGLMM validates cellPopulation and returns variance decomposition
       MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResults,
         cellPopulations = "C2",
-        threshold = 0,
+        reproducibilityThreshold = 0,
         numCores = 1
       )
     ),

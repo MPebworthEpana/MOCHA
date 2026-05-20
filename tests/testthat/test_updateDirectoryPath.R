@@ -3,7 +3,7 @@ test_that("updateDirectoryPath updates Directory metadata on MOCHA objects", {
     stm <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = "C2",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"

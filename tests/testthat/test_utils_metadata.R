@@ -15,7 +15,7 @@ test_that("getSampleCellTypeMetadata works on getSampleTileMatrix output", {
     STObj <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = c("C2", "C5"),
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"
@@ -30,7 +30,7 @@ test_that("getSampleCellTypeMetadata supports legacy top-level metadata", {
   STObj <- MOCHA::getSampleTileMatrix(
     MOCHA:::testTileResults,
     cellPopulations = c("C2", "C5"),
-    threshold = 0,
+    reproducibilityThreshold = 0,
     numCores = 1
   )
 
@@ -55,7 +55,7 @@ test_that("getSampleCellTypeMetadata errors when counts are missing", {
   STObj <- MOCHA::getSampleTileMatrix(
     MOCHA:::testTileResults,
     cellPopulations = c("C2", "C5"),
-    threshold = 0,
+    reproducibilityThreshold = 0,
     numCores = 1
   )
   STObj@metadata$summarizedData <- NULL

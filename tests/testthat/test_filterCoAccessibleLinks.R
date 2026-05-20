@@ -3,7 +3,7 @@ test_that("filterCoAccessibleLinks filters by correlation and adds coordinates",
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = "C2",
-      threshold = 0
+      reproducibilityThreshold = 0
     )
   )
   links <- MOCHA::getCoAccessibleLinks(

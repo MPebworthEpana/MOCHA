@@ -9,7 +9,7 @@ if (requireNamespace("chromVAR", quietly = TRUE) &&
         MOCHA::getSampleTileMatrix(
           MOCHA:::testTileResultsMultisample,
           cellPopulations = c("C2", "C3"),
-          threshold = 1.1,
+          reproducibilityThreshold = 1.1,
           numCores = 1
         ),
         type = "message"
@@ -21,7 +21,7 @@ if (requireNamespace("chromVAR", quietly = TRUE) &&
       STObj <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = c("C2", "C3"),
-        threshold = 0,
+        reproducibilityThreshold = 0,
         numCores = 1
       ),
       type = "message"

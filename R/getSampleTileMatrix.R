@@ -14,11 +14,14 @@
 #' @param groupColumn Optional, the column containing sample group labels for
 #'   determining consensus tiles within sample groups. Default is NULL, all
 #'   samples will be used for determining consensus tiles.
-#' @param threshold Threshold for consensus tiles, the minimum \% of samples
-#'   (within a sample group, if groupColumn is set) that a peak must be called
-#'   in to be retained. If set to 0, retain the union of all samples' peaks
-#'   (this is equivalent to a threshold of 1/numSamples). It is recommended to
-#'   tune this parameter to omit potentially spurious peaks.
+#' @param reproducibilityThreshold Threshold for consensus tiles, the minimum
+#'   \% of samples (within a sample group, if groupColumn is set) that a peak
+#'   must be called in to be retained. If set to 0, retain the union of all
+#'   samples' peaks (this is equivalent to a threshold of 1/numSamples). Tune
+#'   to omit potentially spurious peaks; \code{\link{suggestConsensusThreshold}}
+#'   recommends a value automatically. Default 0.2.
+#' @param threshold Deprecated alias for \code{reproducibilityThreshold}. Use
+#'   \code{reproducibilityThreshold} instead.
 #' @param numCores Optional, the number of cores to use with multiprocessing.
 #'   Default is 1.
 #' @param verbose Set TRUE to display additional messages. Default is FALSE.
@@ -53,7 +56,7 @@
 #'   SampleTileMatrices <- MOCHA::getSampleTileMatrix(
 #'     tiles,
 #'     cellPopulations = c("C2", "C5"),
-#'     threshold = 0 # Take union of all samples' open tiles
+#'     reproducibilityThreshold = 0 # Take union of all samples' open tiles
 #'   )
 #' }
 #' }
@@ -63,10 +66,19 @@
 getSampleTileMatrix <- function(tileResults,
                                 cellPopulations = "ALL",
                                 groupColumn = NULL,
-                                threshold = 0.2,
+                                reproducibilityThreshold = 0.2,
                                 numCores = 1,
                                 verbose = FALSE,
-                                returnClass = c("legacy", "mocha")) {
+                                returnClass = c("legacy", "mocha"),
+                                threshold = NULL) {
+  if (!is.null(threshold)) {
+    lifecycle::deprecate_warn(
+      when = "2.0.0",
+      what = "getSampleTileMatrix(threshold = )",
+      with = "getSampleTileMatrix(reproducibilityThreshold = )"
+    )
+    reproducibilityThreshold <- threshold
+  }
   returnClass <- match.arg(returnClass)
   if (!methods::is(tileResults, "MultiAssayExperiment")) {
     stop("tileResults is not a MultiAssayExperiment")
@@ -102,7 +114,7 @@ getSampleTileMatrix <- function(tileResults,
     message(stringr::str_interp("Extracting consensus tile set for each population"))
   }
   iterList <- lapply(seq_along(MultiAssayExperiment::experiments(subTileResults)), function(x) {
-    list(MultiAssayExperiment::experiments(subTileResults)[[x]], sampleData, threshold, groupColumn, verbose)
+    list(MultiAssayExperiment::experiments(subTileResults)[[x]], sampleData, reproducibilityThreshold, groupColumn, verbose)
   })
   cl <- parallel::makeCluster(numCores)
   tryCatch({

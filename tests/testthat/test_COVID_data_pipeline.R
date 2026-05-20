@@ -63,7 +63,7 @@ if (
       tileResults,
       cellPopulations = "CD16 Mono",
       groupColumn = "COVID_status",
-      threshold = 0.2,
+      reproducibilityThreshold = 0.2,
       verbose = FALSE
     ))
 
@@ -82,7 +82,7 @@ if (
     capture.output(
       differentials <- MOCHA::getDifferentialAccessibleTiles(
         SampleTileObj = SampleTileMatrices,
-        cellPopulation = "CD16 Mono",
+        cellPopulations = "CD16 Mono",
         groupColumn = "COVID_status",
         foreground = "Positive",
         background = "Negative",

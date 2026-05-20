@@ -5,7 +5,7 @@ if (require("BSgenome.Hsapiens.UCSC.hg19", quietly=TRUE) &
       SampleTileMatrix <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = "all",
-        threshold = 0
+        reproducibilityThreshold = 0
       )
     )
     

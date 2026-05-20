@@ -3,7 +3,7 @@ test_that("extractRegion errors when coverage files aren't saved locally", {
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = "all",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     )
   )
@@ -29,7 +29,7 @@ test_that("extractRegion works on multisample data when HemeTutorial coverage ex
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = "all",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     )
   )
@@ -61,7 +61,7 @@ test_that("extractRegion errors when there is no fragment coverage for a cell po
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = "all",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     )
   )

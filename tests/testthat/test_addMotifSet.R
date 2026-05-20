@@ -11,7 +11,7 @@ if (requireNamespace("chromVAR", quietly = TRUE) &&
       STM <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       )
     )
 

@@ -47,7 +47,7 @@ if (
       tileResults,
       cellPopulations = "CD16 Mono",
       groupColumn = "COVID_status",
-      threshold = 0.2,
+      reproducibilityThreshold = 0.2,
       verbose = FALSE
     ))
 

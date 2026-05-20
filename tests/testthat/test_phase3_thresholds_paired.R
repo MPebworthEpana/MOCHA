@@ -155,7 +155,7 @@ test_that("getDifferentialAccessibleTiles rejects method = 'paired_wilcoxon' wit
   expect_error(
     MOCHA::getDifferentialAccessibleTiles(
       SampleTileObj = make_synthetic_sample_tile_matrix(),
-      cellPopulation = "C2",
+      cellPopulations = "C2",
       groupColumn = "GroupA",
       foreground = "A",
       background = "B",

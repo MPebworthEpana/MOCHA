@@ -6,7 +6,7 @@ if (requireNamespace("lmerTest", quietly = TRUE)) {
       ExperimentObj <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResults,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       ),
       type = "message"
     )
@@ -32,7 +32,7 @@ if (requireNamespace("lmerTest", quietly = TRUE)) {
       ExperimentObj <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       )
     )
 
@@ -58,7 +58,7 @@ if (requireNamespace("lmerTest", quietly = TRUE)) {
       ExperimentObj <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResults,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       ),
       type = "message"
     )
@@ -79,7 +79,7 @@ if (requireNamespace("lmerTest", quietly = TRUE)) {
       ExperimentObj <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       )
     )
 
@@ -97,7 +97,7 @@ if (requireNamespace("lmerTest", quietly = TRUE)) {
       ExperimentObj <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       )
     )
 
@@ -132,7 +132,7 @@ if (requireNamespace("lmerTest", quietly = TRUE)) {
       ExperimentObj <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       )
     )
 
