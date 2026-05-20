@@ -6,7 +6,10 @@
 #'
 #' @param SampleTileObj The SummarizedExperiment object output from
 #'  getSampleTileMatrix
-#' @param cellPopulation A string denoting the cell population of interest
+#' @param cellPopulations Character vector of cell-population names (matching
+#'   assay names in \code{SampleTileObj}) to test. Length \eqn{\ge 1}.
+#' @param cellPopulation Deprecated alias for \code{cellPopulations}. Use
+#'   \code{cellPopulations} instead.
 #' @param groupColumn The column containing sample group labels
 #' @param foreground The foreground group of samples for differential comparison
 #' @param background The background group of samples for differential comparison
@@ -75,7 +78,7 @@
 #'   )
 #'   diffs <- MOCHA::getDifferentialAccessibleTiles(
 #'     SampleTileObj = stm,
-#'     cellPopulation = "C2",
+#'     cellPopulations = "C2",
 #'     groupColumn = "Sample",
 #'     foreground = unique(SummarizedExperiment::colData(stm)$Sample)[1],
 #'     background = unique(SummarizedExperiment::colData(stm)$Sample)[2],
@@ -87,7 +90,7 @@
 #' @keywords downstream
 
 getDifferentialAccessibleTiles <- function(SampleTileObj,
-                                           cellPopulation,
+                                           cellPopulations = NULL,
                                            groupColumn,
                                            foreground,
                                            background,
@@ -103,7 +106,21 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
                                            techThreshold = NULL,
                                            fdrToDisplay = NULL,
                                            method = c("wilcoxon", "paired_wilcoxon", "polr"),
-                                           pairColumn = NULL) {
+                                           pairColumn = NULL,
+                                           cellPopulation = NULL) {
+  if (!is.null(cellPopulation)) {
+    lifecycle::deprecate_warn(
+      when = "2.0.0",
+      what = "getDifferentialAccessibleTiles(cellPopulation = )",
+      with = "getDifferentialAccessibleTiles(cellPopulations = )"
+    )
+    if (is.null(cellPopulations)) {
+      cellPopulations <- cellPopulation
+    }
+  }
+  if (is.null(cellPopulations)) {
+    stop("`cellPopulations` is required.")
+  }
   method <- match.arg(method)
   if (method == "paired_wilcoxon" && is.null(pairColumn)) {
     stop("`pairColumn` must be supplied when method = 'paired_wilcoxon'.")
@@ -125,8 +142,8 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
     qValueThreshold <- fdrToDisplay
   }
 
-  if (!all(cellPopulation %in% names(SummarizedExperiment::assays(SampleTileObj)))) {
-    stop("cellPopulation was not found within SampleTileObj. Check available cell populations with `colData(SampleTileObj)`.")
+  if (!all(cellPopulations %in% names(SummarizedExperiment::assays(SampleTileObj)))) {
+    stop("`cellPopulations` was not found within SampleTileObj. Check available cell populations with `colData(SampleTileObj)`.")
   }
 
   if (!is.null(signalThreshold)) {
@@ -143,7 +160,7 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
   }
 
   if (dropoutAdjustment != "none") {
-    for (cp in cellPopulation) {
+    for (cp in cellPopulations) {
       SampleTileObj <- .ensure_dropout_assay(SampleTileObj, cp, verbose = verbose)
     }
   }
@@ -167,7 +184,7 @@ getDifferentialAccessibleTiles <- function(SampleTileObj,
 
   #Run a for-loop over all cell populations
   DAT_list = list()
-  for(cellPop in cellPopulation){
+  for(cellPop in cellPopulations){
 
       # This will only include called tiles
       sampleTileMatrix <- MOCHA::getCellPopMatrix(SampleTileObj, cellPop, NAtoZero = FALSE)

@@ -49,7 +49,7 @@ test_that("We can subset a sampleTileMatrix object by celltypes", {
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = "all",
-      threshold = 0
+      reproducibilityThreshold = 0
     )
   )
 
@@ -79,7 +79,7 @@ test_that("We can subset a sampleTileMatrix object by Sample", {
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = "all",
-      threshold = 0
+      reproducibilityThreshold = 0
     )
   )
 
@@ -109,7 +109,7 @@ test_that("We can subset a sampleTileMatrix object - and peaks - by celltypes", 
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = "All",
-      threshold = 0
+      reproducibilityThreshold = 0
     )
   )
 

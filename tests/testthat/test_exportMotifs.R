@@ -5,7 +5,7 @@ if (require(chromVARmotifs)) {
       SampleTileMatrix <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = "all",
-        threshold = 0
+        reproducibilityThreshold = 0
       )
     )
     

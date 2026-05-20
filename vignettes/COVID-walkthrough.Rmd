@@ -94,7 +94,7 @@ Consensus tiles across samples are summarized with `getSampleTileMatrix`.
 sampleTileMatrices <- getSampleTileMatrix(
   tileResults,
   cellPopulations = c("C2", "C5"),
-  threshold = 0
+  reproducibilityThreshold = 0
 )
 sampleTileMatrices
 ```
@@ -130,7 +130,7 @@ samples <- unique(SummarizedExperiment::colData(c2Matrix)$Sample)
 if (length(samples) >= 2L) {
   diffs <- getDifferentialAccessibleTiles(
     SampleTileObj = c2Matrix,
-    cellPopulation = "C2",
+    cellPopulations = "C2",
     groupColumn = "Sample",
     foreground = samples[1],
     background = samples[2],

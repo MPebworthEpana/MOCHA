@@ -3,7 +3,7 @@ test_that("getDifferentialAccessibleTiles validates inputs", {
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = c("C2", "C3"),
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"
@@ -71,7 +71,7 @@ test_that("getDifferentialAccessibleTiles returns NULL when fewer than three sam
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = "C3",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"

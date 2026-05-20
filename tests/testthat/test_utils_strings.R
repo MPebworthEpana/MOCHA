@@ -22,7 +22,7 @@ test_that("isMOCHAObject identifies MOCHA object types", {
     stm <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = c("C2", "C5"),
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"

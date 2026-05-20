@@ -3,7 +3,7 @@ test_that("getCellPopMatrix returns sample by tile matrix for a cell population"
     stm <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = "C2",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"
@@ -20,7 +20,7 @@ test_that("getCellPopMatrix errors when cell population is missing", {
     stm <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = "C2",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"

@@ -6,7 +6,7 @@ if (dir.exists(MOCHA:::testTileResultsMultisample@metadata$Directory)) {
       SampleTileMatrix <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = "all",
-        threshold = 0
+        reproducibilityThreshold = 0
       )
     )
     

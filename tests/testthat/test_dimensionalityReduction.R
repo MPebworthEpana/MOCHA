@@ -10,7 +10,7 @@ if (requireNamespace("irlba", quietly = TRUE) &&
       SampleTileMatrix <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       ),
       type = "message"
     )
@@ -47,7 +47,7 @@ if (requireNamespace("irlba", quietly = TRUE) &&
       SampleTileMatrix <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       ),
       type = "message"
     )

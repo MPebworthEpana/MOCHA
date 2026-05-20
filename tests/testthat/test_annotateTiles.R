@@ -7,7 +7,7 @@ if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
       SampleTileMatrix <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResults,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       ),
       type = "message"
     )
@@ -31,7 +31,7 @@ if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
       SampleTileMatrix <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       ),
       type = "message"
     )
@@ -57,7 +57,7 @@ if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
       SampleTileMatrix <- MOCHA::getSampleTileMatrix(
         MOCHA:::testTileResultsMultisample,
         cellPopulations = cellPopulations,
-        threshold = 0
+        reproducibilityThreshold = 0
       ),
       type = "message"
     )

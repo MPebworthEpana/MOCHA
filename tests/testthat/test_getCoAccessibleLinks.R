@@ -4,7 +4,7 @@ test_that("FindCoAccessibleLinks works on a 1 sample test dataset", {
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = cellPopulations,
-      threshold = 0
+      reproducibilityThreshold = 0
     )
   )
 
@@ -34,7 +34,7 @@ test_that("FindCoAccessibleLinks works on a 3 sample test dataset", {
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResultsMultisample,
       cellPopulations = cellPopulations,
-      threshold = 0
+      reproducibilityThreshold = 0
     )
   )
 
@@ -63,7 +63,7 @@ test_that("FindCoAccessibleLinks errors with regions that are not valid tiles", 
     SampleTileMatrix <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = cellPopulations,
-      threshold = 0
+      reproducibilityThreshold = 0
     )
   )
 

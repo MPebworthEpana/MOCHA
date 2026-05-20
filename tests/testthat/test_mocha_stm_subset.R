@@ -3,7 +3,7 @@ test_that("subset() on MochaSampleTileMatrix matches subsetMOCHAObject", {
     stm <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = c("C2", "C5"),
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1,
       returnClass = "mocha"
     ),
@@ -13,7 +13,7 @@ test_that("subset() on MochaSampleTileMatrix matches subsetMOCHAObject", {
   legacy <- MOCHA::getSampleTileMatrix(
     MOCHA:::testTileResults,
     cellPopulations = c("C2", "C5"),
-    threshold = 0,
+    reproducibilityThreshold = 0,
     numCores = 1
   )
 
@@ -39,7 +39,7 @@ test_that("stm[, j] preserves MochaSampleTileMatrix class", {
     stm <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = "C2",
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1,
       returnClass = "mocha"
     ),

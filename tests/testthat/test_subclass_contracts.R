@@ -11,7 +11,7 @@ test_that("Mocha coercion and validity work on bundled tileResults", {
     stm <- MOCHA::getSampleTileMatrix(
       tr,
       cellPopulations = c("C2", "C5"),
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1,
       returnClass = "mocha"
     ),
@@ -35,7 +35,7 @@ test_that("returnClass legacy default is unchanged", {
     stm <- MOCHA::getSampleTileMatrix(
       MOCHA:::testTileResults,
       cellPopulations = c("C2", "C5"),
-      threshold = 0,
+      reproducibilityThreshold = 0,
       numCores = 1
     ),
     type = "message"
