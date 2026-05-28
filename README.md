@@ -45,8 +45,19 @@ remotes::install_github("aifimmunology/MOCHA", ref = "your_branch_name")
 
 ## <a name="overview"></a> Usage Overview
 
-Please view the example usage found in the vignette found under
-`vignettes/COVID-walkthrough.html`.
+Please view the example usage in the [MOCHA workflow tutorial](https://aifimmunology.github.io/MOCHA/articles/MOCHA-workflow-tutorial.html)
+and the [data import tutorial](https://aifimmunology.github.io/MOCHA/articles/Data-Import-Tutorial.html).
+
+### Articles
+
+| Tutorial | Description |
+|----------|-------------|
+| [MOCHA workflow tutorial](https://aifimmunology.github.io/MOCHA/articles/MOCHA-workflow-tutorial.html) | End-to-end peak calling, sample-tile matrices, annotation, and differentials (runnable on bundled data). |
+| [Data Import Tutorial](https://aifimmunology.github.io/MOCHA/articles/Data-Import-Tutorial.html) | Import from ArchR, Signac, SnapATAC2, and bundled fragments; call `callOpenTiles()`. |
+| [MOCHA downstream workflows](https://aifimmunology.github.io/MOCHA/articles/MOCHA-downstream-workflows.html) | Co-accessibility, dropout modeling, pseudobulk, merge/combine, and utilities. |
+| [Alternative TSS and TF regulation](https://aifimmunology.github.io/MOCHA/articles/Alternative-TSS-TF-regulation.html) | Motif enrichment, alternative TSSs, and footprinting. |
+| [Exporting and sharing](https://aifimmunology.github.io/MOCHA/articles/MOCHA-export-and-sharing.html) | `packMOCHA()`, coverage export, and IGV-oriented outputs. |
+| [Advanced modeling](https://aifimmunology.github.io/MOCHA/articles/MOCHA-advanced-modeling.html) | LMEM, ZIGLMM, and custom peak training. |
 
 The example usage demonstrates this workflow: 
 

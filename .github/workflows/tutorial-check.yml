@@ -1,0 +1,95 @@
+# Tutorial script verification (inst/tutorials + vignette read_chunk sync)
+on:
+  push:
+    branches: [bioc/submission, main, updates]
+  pull_request:
+    branches: [bioc/submission, main, updates]
+  schedule:
+    - cron: "0 7 * * 1"
+
+name: tutorial-check
+
+jobs:
+  tier-a:
+    runs-on: ubuntu-latest
+    container:
+      image: bioconductor/bioconductor_docker:devel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libcurl4-openssl-dev libssl-dev libxml2-dev pandoc
+
+      - name: Install R dependencies
+        run: |
+          R -q -e 'install.packages(c("BiocManager", "remotes"), repos="https://cloud.r-project.org")'
+          R -q -e 'BiocManager::install(c("BiocStyle", "zip", "rtracklayer"), update=FALSE, ask=FALSE)'
+          R -q -e 'remotes::install_deps(dependencies=TRUE, suggests=TRUE, upgrade=FALSE)'
+
+      - name: Build vignettes (read_chunk sync)
+        run: R CMD build . 2>&1 | tee tutorial-build.log
+
+      - name: Install built package
+        run: R CMD INSTALL MOCHA_*.tar.gz
+
+      - name: Validate chunk labels
+        run: Rscript scripts/validate_tutorial_chunks.R
+
+      - name: Run Tier A tutorial scripts
+        run: Rscript tests/scripts/run_tutorials.R --tier a 2>&1 | tee tutorial-tier-a.log
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutorial-check-tier-a
+          path: |
+            tutorial-build.log
+            tutorial-tier-a.log
+
+  tier-b:
+    runs-on: ubuntu-latest
+    container:
+      image: bioconductor/bioconductor_docker:devel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libcurl4-openssl-dev libssl-dev libxml2-dev pandoc
+
+      - name: Install R dependencies
+        run: |
+          R -q -e 'install.packages(c("BiocManager", "remotes"), repos="https://cloud.r-project.org")'
+          R -q -e 'BiocManager::install(c("BiocStyle", "zip", "rtracklayer", "uwot", "irlba"), update=FALSE, ask=FALSE)'
+          R -q -e 'remotes::install_deps(dependencies=TRUE, suggests=TRUE, upgrade=FALSE)'
+
+      - name: Install MOCHA from source
+        run: R CMD INSTALL .
+
+      - name: Run Tier B tutorial scripts
+        env:
+          NOT_CRAN: "true"
+        run: Rscript tests/scripts/run_tutorials.R --tier b 2>&1 | tee tutorial-tier-b.log
+
+      - name: Run tutorial testthat files
+        env:
+          NOT_CRAN: "true"
+          TESTTHAT_PARALLEL: "false"
+        run: |
+          R -q -e 'testthat::test_file("tests/testthat/test-tutorial-tier-a.R")'
+          R -q -e 'testthat::test_file("tests/testthat/test-tutorial-tier-b.R")'
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutorial-check-tier-b
+          path: tutorial-tier-b.log

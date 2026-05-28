@@ -1,0 +1,518 @@
+Skipping conda env create/update (MOCHA_SKIP_ENV_UPDATE=1); using existing 'mocha-test'.
+Using R: /home/enki/miniforge3/envs/mocha-test/bin/R
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Repository root: /home/enki/GitHub/MOCHA
+Installing MOCHA from source ...
+* installing to library ‘/home/enki/miniforge3/envs/mocha-test/lib/R/library’
+* installing *source* package ‘MOCHA’ ...
+** this is package ‘MOCHA’ version ‘2.0.0’
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** byte-compile and prepare package for lazy loading
+Warning: replacing previous import ‘SummarizedExperiment::shift’ by ‘data.table::shift’ when loading ‘MOCHA’
+in method for ‘callOpenTiles’ with signature ‘ATACFragments="ArchRProject"’: no definition for class “ArchRProject”
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+Warning: replacing previous import ‘SummarizedExperiment::shift’ by ‘data.table::shift’ when loading ‘MOCHA’
+** testing if installed package can be loaded from final location
+Warning: replacing previous import ‘SummarizedExperiment::shift’ by ‘data.table::shift’ when loading ‘MOCHA’
+** testing if installed package keeps a record of temporary installation path
+* DONE (MOCHA)
+Building full pkgdown site (reference + articles + ...) ...
+Removing existing docs/ (--no-clean to skip).
+── Cleaning files from old site ────────────────────────────────────────────────
+Cleaning MOCHA pkgdown docs from '/home/enki/GitHub/MOCHA/docs'
+── Initialising site ───────────────────────────────────────────────────────────
+Copying <pkgdown>/BS5/assets/katex-auto.js to katex-auto.js
+Copying <pkgdown>/BS5/assets/lightswitch.js to lightswitch.js
+Copying <pkgdown>/BS5/assets/link.svg to link.svg
+Copying <pkgdown>/BS5/assets/pkgdown.js to pkgdown.js
+Copying pkgdown/extra.css to extra.css
+Updating deps/bootstrap-5.3.8/bootstrap.bundle.min.js
+Updating deps/bootstrap-5.3.8/bootstrap.bundle.min.js.map
+Updating deps/bootstrap-5.3.8/bootstrap.min.css
+Updating deps/bootstrap-5.3.8/font.css
+Updating deps/bootstrap-5.3.8/fonts/07d40e985ad7c747025dabb9f22142c4.woff2
+Updating deps/bootstrap-5.3.8/fonts/1Ptug8zYS_SKggPNyC0ITw.woff2
+Updating deps/bootstrap-5.3.8/fonts/1Ptug8zYS_SKggPNyCAIT5lu.woff2
+Updating deps/bootstrap-5.3.8/fonts/1Ptug8zYS_SKggPNyCIIT5lu.woff2
+Updating deps/bootstrap-5.3.8/fonts/1Ptug8zYS_SKggPNyCMIT5lu.woff2
+Updating deps/bootstrap-5.3.8/fonts/1Ptug8zYS_SKggPNyCkIT5lu.woff2
+Updating deps/bootstrap-5.3.8/fonts/1f5e011d6aae0d98fc0518e1a303e99a.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCs6KVjbNBYlgoKcQ72j00.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCs6KVjbNBYlgoKcg72j00.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCs6KVjbNBYlgoKcw72j00.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCs6KVjbNBYlgoKew72j00.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCs6KVjbNBYlgoKfA72j00.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCs6KVjbNBYlgoKfw72.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCv6KVjbNBYlgoCxCvjs2yNL4U.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCv6KVjbNBYlgoCxCvjsGyN.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCv6KVjbNBYlgoCxCvjtGyNL4U.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCv6KVjbNBYlgoCxCvjvGyNL4U.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCv6KVjbNBYlgoCxCvjvWyNL4U.woff2
+Updating deps/bootstrap-5.3.8/fonts/4iCv6KVjbNBYlgoCxCvjvmyNL4U.woff2
+Updating deps/bootstrap-5.3.8/fonts/626330658504e338ee86aec8e957426b.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xK1dSBYKcSV-LCoeQqfX1RYOo3qPZ7jsDJT9g.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xK1dSBYKcSV-LCoeQqfX1RYOo3qPZ7ksDJT9g.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xK1dSBYKcSV-LCoeQqfX1RYOo3qPZ7nsDI.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xK1dSBYKcSV-LCoeQqfX1RYOo3qPZ7osDJT9g.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xK1dSBYKcSV-LCoeQqfX1RYOo3qPZ7psDJT9g.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xK1dSBYKcSV-LCoeQqfX1RYOo3qPZ7qsDJT9g.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xK1dSBYKcSV-LCoeQqfX1RYOo3qPZ7rsDJT9g.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xK3dSBYKcSV-LCoeQqfX1RYOo3qN67lqDY.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xK3dSBYKcSV-LCoeQqfX1RYOo3qNK7lqDY.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xK3dSBYKcSV-LCoeQqfX1RYOo3qNa7lqDY.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xK3dSBYKcSV-LCoeQqfX1RYOo3qNq7lqDY.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xK3dSBYKcSV-LCoeQqfX1RYOo3qO67lqDY.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xK3dSBYKcSV-LCoeQqfX1RYOo3qOK7l.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xK3dSBYKcSV-LCoeQqfX1RYOo3qPK7lqDY.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwkxduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwlBduz8A.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwlxdu.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwmBduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwmRduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwmhduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwmxduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwkxduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwlBduz8A.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwlxdu.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwmBduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwmRduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwmhduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwmxduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ik4zwkxduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ik4zwlBduz8A.woff2
+Updating deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ik4zwlxdu.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ik4zwmBduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ik4zwmRduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ik4zwmhduz8A.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/6xKydSBYKcSV-LCoeQqfX1RYOo3ik4zwmxduz8A.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR54z1Qlv-GDxkbKVQ_dFsvWNBeudwk.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR54z1Qlv-GDxkbKVQ_dFsvWNReuQ.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR54z1Qlv-GDxkbKVQ_dFsvWNdeudwk.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR54z1Qlv-GDxkbKVQ_dFsvWNheudwk.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR54z1Qlv-GDxkbKVQ_dFsvWNleudwk.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR54z1Qlv-GDxkbKVQ_dFsvWNpeudwk.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR54z1Qlv-GDxkbKVQ_dFsvWNteudwk.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR64z1Qlv-GDxkbKVQ_fO0KTet_.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR64z1Qlv-GDxkbKVQ_fO4KTet_.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR64z1Qlv-GDxkbKVQ_fO8KTet_.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR64z1Qlv-GDxkbKVQ_fOAKTQ.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR64z1Qlv-GDxkbKVQ_fOMKTet_.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR64z1Qlv-GDxkbKVQ_fOQKTet_.woff2
+Updating deps/bootstrap-5.3.8/fonts/CSR64z1Qlv-GDxkbKVQ_fOwKTet_.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvQlMIXxw.woff2
+Updating deps/bootstrap-5.3.8/fonts/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvUlMI.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvXlMIXxw.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvYlMIXxw.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvZlMIXxw.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvalMIXxw.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/HI_QiYsKILxRpg3hIP6sJ7fM7PqlONvblMIXxw.woff2
+Updating deps/bootstrap-5.3.8/fonts/HI_SiYsKILxRpg3hIP6sJ7fM7PqlM-vWjMY.woff2
+Updating deps/bootstrap-5.3.8/fonts/HI_SiYsKILxRpg3hIP6sJ7fM7PqlMOvWjMY.woff2
+Updating deps/bootstrap-5.3.8/fonts/HI_SiYsKILxRpg3hIP6sJ7fM7PqlMevWjMY.woff2
+Updating deps/bootstrap-5.3.8/fonts/HI_SiYsKILxRpg3hIP6sJ7fM7PqlMuvWjMY.woff2
+Updating deps/bootstrap-5.3.8/fonts/HI_SiYsKILxRpg3hIP6sJ7fM7PqlOevWjMY.woff2
+Updating deps/bootstrap-5.3.8/fonts/HI_SiYsKILxRpg3hIP6sJ7fM7PqlPevW.woff2
+Updating deps/bootstrap-5.3.8/fonts/HI_SiYsKILxRpg3hIP6sJ7fM7PqlPuvWjMY.woff2
+Updating deps/bootstrap-5.3.8/fonts/JTUSjIg1_i6t8kCHKm459W1hyzbi.woff2
+Updating deps/bootstrap-5.3.8/fonts/JTUSjIg1_i6t8kCHKm459WRhyzbi.woff2
+Updating deps/bootstrap-5.3.8/fonts/JTUSjIg1_i6t8kCHKm459WZhyzbi.woff2
+Updating deps/bootstrap-5.3.8/fonts/JTUSjIg1_i6t8kCHKm459Wdhyzbi.woff2
+Updating deps/bootstrap-5.3.8/fonts/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3-UBGEe.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3CUBGEe.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3GUBGEe.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3KUBGEe.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3OUBGEe.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3iUBGEe.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMawCUBGEe.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMaxKUBGEe.woff2
+Updating deps/bootstrap-5.3.8/fonts/QGYpz_kZZAGCONcK2A4bGOj8mNhN.woff2
+Updating deps/bootstrap-5.3.8/fonts/S6u8w4BMUTPHjxsAUi-qJCY.woff2
+Updating deps/bootstrap-5.3.8/fonts/S6u8w4BMUTPHjxsAXC-q.woff2
+Updating deps/bootstrap-5.3.8/fonts/S6u9w4BMUTPHh6UVSwaPGR_p.woff2
+Updating deps/bootstrap-5.3.8/fonts/S6u9w4BMUTPHh6UVSwiPGQ.woff2
+Updating deps/bootstrap-5.3.8/fonts/S6u9w4BMUTPHh7USSwaPGR_p.woff2
+Updating deps/bootstrap-5.3.8/fonts/S6u9w4BMUTPHh7USSwiPGQ.woff2
+Updating deps/bootstrap-5.3.8/fonts/S6uyw4BMUTPHjx4wXg.woff2
+Updating deps/bootstrap-5.3.8/fonts/S6uyw4BMUTPHjxAwXjeu.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7SUc.woff2
+Updating deps/bootstrap-5.3.8/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7SUc.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7SUc.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7SUc.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7SUc.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7SUc.woff2
+Updating deps/bootstrap-5.3.8/fonts/XRXV3I6Li01BKofIMeaBXso.woff2
+Updating deps/bootstrap-5.3.8/fonts/XRXV3I6Li01BKofINeaB.woff2
+Updating deps/bootstrap-5.3.8/fonts/XRXV3I6Li01BKofIO-aBXso.woff2
+Updating deps/bootstrap-5.3.8/fonts/XRXV3I6Li01BKofIOOaBXso.woff2
+Updating deps/bootstrap-5.3.8/fonts/XRXV3I6Li01BKofIOuaBXso.woff2
+Updating deps/bootstrap-5.3.8/fonts/c2f002b3a87d3f9bfeebb23d32cfd9f8.woff2
+Updating deps/bootstrap-5.3.8/fonts/ee91700cdbf7ce16c054c2bb8946c736.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqW106F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWt06F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWtE6F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWtU6F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWtk6F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWu06F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWuU6F.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWuk6F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWvU6F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWxU6F15M.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS2mu1aB.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSCmu1aB.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSGmu1aB.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSKmu1aB.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSOmu1aB.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSumu1aB.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSymu1aB.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTUGmu1aB.woff2
+Updating
+deps/bootstrap-5.3.8/fonts/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTVOmu1aB.woff2
+Updating deps/bootstrap-5.3.8/fonts/q5uGsou0JOdh94bfuQltOxU.woff2
+Updating deps/bootstrap-5.3.8/fonts/q5uGsou0JOdh94bfvQlt.woff2
+Updating deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js
+Updating deps/clipboard.js-2.0.11/clipboard.min.js
+Updating deps/font-awesome-6.5.2/css/all.css
+Updating deps/font-awesome-6.5.2/css/all.min.css
+Updating deps/font-awesome-6.5.2/css/v4-shims.css
+Updating deps/font-awesome-6.5.2/css/v4-shims.min.css
+Updating deps/font-awesome-6.5.2/webfonts/fa-brands-400.ttf
+Updating deps/font-awesome-6.5.2/webfonts/fa-brands-400.woff2
+Updating deps/font-awesome-6.5.2/webfonts/fa-regular-400.ttf
+Updating deps/font-awesome-6.5.2/webfonts/fa-regular-400.woff2
+Updating deps/font-awesome-6.5.2/webfonts/fa-solid-900.ttf
+Updating deps/font-awesome-6.5.2/webfonts/fa-solid-900.woff2
+Updating deps/font-awesome-6.5.2/webfonts/fa-v4compatibility.ttf
+Updating deps/font-awesome-6.5.2/webfonts/fa-v4compatibility.woff2
+Updating deps/headroom-0.11.0/headroom.min.js
+Updating deps/headroom-0.11.0/jQuery.headroom.min.js
+Updating deps/jquery-3.6.0/jquery-3.6.0.js
+Updating deps/jquery-3.6.0/jquery-3.6.0.min.js
+Updating deps/jquery-3.6.0/jquery-3.6.0.min.map
+Updating deps/search-1.0.0/autocomplete.jquery.min.js
+Updating deps/search-1.0.0/fuse.min.js
+Updating deps/search-1.0.0/mark.min.js
+── Building pkgdown site for package MOCHA ─────────────────────────────────────
+Reading from: /home/enki/GitHub/MOCHA
+Writing to: /home/enki/GitHub/MOCHA/docs
+── Sitrep ──────────────────────────────────────────────────────────────────────
+✔ URLs ok.
+✔ Favicons ok.
+✔ Open graph metadata ok.
+✔ Articles metadata ok.
+✔ Reference metadata ok.
+── Initialising site ───────────────────────────────────────────────────────────
+── Building home ───────────────────────────────────────────────────────────────
+Writing `authors.html`
+Reading BIOC_SUBMISSION.md
+Writing `BIOC_SUBMISSION.html`
+Reading ISSUE_REVIEW_SUMMARY.md
+Writing `ISSUE_REVIEW_SUMMARY.html`
+Reading bioc-comments.md
+Writing `bioc-comments.html`
+Reading LICENSE.md
+Writing `LICENSE.html`
+Reading README.md
+Writing `index.html`
+Writing `404.html`
+── Building function reference ─────────────────────────────────────────────────
+Writing `reference/index.html`
+Copying man/figures/workflow_diagram_v3_website.png to
+reference/figures/workflow_diagram_v3_website.png
+Reading man/GRangesToString.Rd
+Writing `reference/GRangesToString.html`
+Reading man/MotifEnrichment.Rd
+Writing `reference/MotifEnrichment.html`
+Reading man/MotifSetEnrichmentAnalysis.Rd
+Writing `reference/MotifSetEnrichmentAnalysis.html`
+Reading man/StringsToGRanges.Rd
+Writing `reference/StringsToGRanges.html`
+Reading man/addAccessibilityShift.Rd
+Writing `reference/addAccessibilityShift.html`
+Reading man/addCellColData.Rd
+Writing `reference/addCellColData.html`
+Reading man/addInsertionBias.Rd
+Writing `reference/addInsertionBias.html`
+Reading man/addMotifSet.Rd
+Writing `reference/addMotifSet.html`
+Reading man/annotateTiles.Rd
+Writing `reference/annotateTiles.html`
+Reading man/asMochaSTM.Rd
+Writing `reference/asMochaSTM.html`
+Reading man/asMochaTileResults.Rd
+Writing `reference/asMochaTileResults.html`
+Reading man/assessDropout.Rd
+Writing `reference/assessDropout.html`
+Reading man/bulkDimReduction.Rd
+Writing `reference/bulkDimReduction.html`
+Reading man/bulkUMAP.Rd
+Writing `reference/bulkUMAP.html`
+Reading man/callOpenTiles-methods.Rd
+Writing `reference/callOpenTiles-methods.html`
+Reading man/cellTypes.Rd
+Writing `reference/cellTypes.html`
+Reading man/classifyZeros.Rd
+Writing `reference/classifyZeros.html`
+Reading man/combineSampleTileMatrix.Rd
+Writing `reference/combineSampleTileMatrix.html`
+Reading man/correctGenome.Rd
+Writing `reference/correctGenome.html`
+Reading man/differentialsToGRanges.Rd
+Writing `reference/differentialsToGRanges.html`
+Reading man/dot-gene_plot_theme.Rd
+Writing `reference/dot-gene_plot_theme.html`
+Reading man/estimateDropoutModel.Rd
+Writing `reference/estimateDropoutModel.html`
+Reading man/exampleBlackList.Rd
+Writing `reference/exampleBlackList.html`
+Reading man/exampleCellColData.Rd
+Writing `reference/exampleCellColData.html`
+Reading man/exampleFragments.Rd
+Writing `reference/exampleFragments.html`
+Reading man/exportCoverage.Rd
+Writing `reference/exportCoverage.html`
+Reading man/exportDifferentials.Rd
+Writing `reference/exportDifferentials.html`
+Reading man/exportLocalFootprints.Rd
+Writing `reference/exportLocalFootprints.html`
+Reading man/exportMotifs.Rd
+Writing `reference/exportMotifs.html`
+Reading man/exportOpenTiles.Rd
+Writing `reference/exportOpenTiles.html`
+Reading man/extractErrorFromConsensusTiles.Rd
+Writing `reference/extractErrorFromConsensusTiles.html`
+Reading man/extractRegion.Rd
+Writing `reference/extractRegion.html`
+Reading man/filterCoAccessibleLinks.Rd
+Writing `reference/filterCoAccessibleLinks.html`
+Reading man/finalModelObject.Rd
+Writing `reference/finalModelObject.html`
+Reading man/getAltTSS.Rd
+Writing `reference/getAltTSS.html`
+Reading man/getAnnotationDbFromInstalledPkgname.Rd
+Writing `reference/getAnnotationDbFromInstalledPkgname.html`
+Reading man/getCellPopMatrix.Rd
+Writing `reference/getCellPopMatrix.html`
+Reading man/getCellTypeMotifs.Rd
+Writing `reference/getCellTypeMotifs.html`
+Reading man/getCellTypeTiles.Rd
+Writing `reference/getCellTypeTiles.html`
+Reading man/getCellTypes.Rd
+Writing `reference/getCellTypes.html`
+Reading man/getCoAccessibleLinks.Rd
+Writing `reference/getCoAccessibleLinks.html`
+Reading man/getCoverage.Rd
+Writing `reference/getCoverage.html`
+Reading man/getDifferentialAccessibleTiles.Rd
+Writing `reference/getDifferentialAccessibleTiles.html`
+Reading man/getDropoutProb.Rd
+Writing `reference/getDropoutProb.html`
+Reading man/getIntensityThreshold.Rd
+Writing `reference/getIntensityThreshold.html`
+Reading man/getModelValues.Rd
+Writing `reference/getModelValues.html`
+Reading man/getOpenTiles.Rd
+Writing `reference/getOpenTiles.html`
+Reading man/getPopFrags.Rd
+Writing `reference/getPopFrags.html`
+Reading man/getPromoterGenes.Rd
+Writing `reference/getPromoterGenes.html`
+Reading man/getSampleCellTypeMetadata.Rd
+Writing `reference/getSampleCellTypeMetadata.html`
+Reading man/getSampleTileMatrix.Rd
+Writing `reference/getSampleTileMatrix.html`
+Reading man/getSequencingBias.Rd
+Writing `reference/getSequencingBias.html`
+Reading man/import_snap_atac.Rd
+Writing `reference/import_snap_atac.html`
+Reading man/isMOCHAObject.Rd
+Writing `reference/isMOCHAObject.html`
+Reading man/linearModeling.Rd
+Writing `reference/linearModeling.html`
+Reading man/mergeTileResults.Rd
+Writing `reference/mergeTileResults.html`
+Reading man/motifFootprint.Rd
+Writing `reference/motifFootprint.html`
+Reading man/openTiles.Rd
+Writing `reference/openTiles.html`
+Reading man/packMOCHA.Rd
+Writing `reference/packMOCHA.html`
+Reading man/pilotLMEM.Rd
+Writing `reference/pilotLMEM.html`
+Reading man/pilotZIGLMM.Rd
+Writing `reference/pilotZIGLMM.html`
+Reading man/plotConsensus.Rd
+Writing `reference/plotConsensus.html`
+Reading man/plotDropoutDiagnostics.Rd
+Writing `reference/plotDropoutDiagnostics.html`
+Reading man/plotIntensityDistribution.Rd
+Writing `reference/plotIntensityDistribution.html`
+Reading man/plotMotifs.Rd
+Writing `reference/plotMotifs.html`
+Reading man/plotRegion.Rd
+Writing `reference/plotRegion.html`
+Reading man/renameCellTypes.Rd
+Writing `reference/renameCellTypes.html`
+Reading man/runLMEM.Rd
+Writing `reference/runLMEM.html`
+Reading man/runZIGLMM.Rd
+Writing `reference/runZIGLMM.html`
+Reading man/seuratToMOCHAInputs.Rd
+Writing `reference/seuratToMOCHAInputs.html`
+Reading man/simplifiedConsensusTiles.Rd
+Writing `reference/simplifiedConsensusTiles.html`
+Reading man/singlePopulationConsensusTiles.Rd
+Writing `reference/singlePopulationConsensusTiles.html`
+Reading man/singlePopulationSampleTileMatrix.Rd
+Writing `reference/singlePopulationSampleTileMatrix.html`
+Reading man/subsetMOCHAObject.Rd
+Writing `reference/subsetMOCHAObject.html`
+Reading man/suggestConsensusThreshold.Rd
+Writing `reference/suggestConsensusThreshold.html`
+Reading man/testCoAccessibility.Rd
+Writing `reference/testCoAccessibility.html`
+Reading man/testCoAccessibilityChromVar.Rd
+Writing `reference/testCoAccessibilityChromVar.html`
+Reading man/testCoAccessibilityRandom.Rd
+Writing `reference/testCoAccessibilityRandom.html`
+Reading man/trainPeakModel.Rd
+Writing `reference/trainPeakModel.html`
+Reading man/unpackMOCHA.Rd
+Writing `reference/unpackMOCHA.html`
+Reading man/updateDirectoryPath.Rd
+Writing `reference/updateDirectoryPath.html`
+Reading man/varZIGLMM.Rd
+Writing `reference/varZIGLMM.html`
+Reading man/youden_threshold.Rd
+Writing `reference/youden_threshold.html`
+── Building articles ───────────────────────────────────────────────────────────
+Writing `articles/index.html`
+Reading vignettes/Alternative-TSS-TF-regulation.Rmd
+Writing `articles/Alternative-TSS-TF-regulation.html`
+Reading vignettes/Data-Import-Tutorial.Rmd
+Writing `articles/Data-Import-Tutorial.html`
+Reading vignettes/MOCHA-advanced-modeling.Rmd
+Writing `articles/MOCHA-advanced-modeling.html`
+Reading vignettes/MOCHA-downstream-workflows.Rmd
+Writing `articles/MOCHA-downstream-workflows.html`
+Reading vignettes/MOCHA-export-and-sharing.Rmd
+Writing `articles/MOCHA-export-and-sharing.html`
+Reading vignettes/MOCHA-workflow-tutorial.Rmd
+Writing `articles/MOCHA-workflow-tutorial.html`
+── Building news ───────────────────────────────────────────────────────────────
+Writing `news/index.html`
+── Building sitemap ────────────────────────────────────────────────────────────
+Writing `sitemap.xml`
+── Building docs for llms ──────────────────────────────────────────────────────
+── Building redirects ──────────────────────────────────────────────────────────
+Adding redirect from reference/.callOpenTiles_ArchR.html to
+reference/callOpenTiles-methods.html.
+Adding redirect from reference/.callOpenTiles_default.html to
+reference/callOpenTiles-methods.html.
+Adding redirect from reference/callOpenTiles,.html to
+reference/callOpenTiles-methods.html.
+Adding redirect from reference/callOpenTiles,ArchRProject-method.html to
+reference/callOpenTiles-methods.html.
+Adding redirect from reference/callOpenTiles,GRangesList-method.html to
+reference/callOpenTiles-methods.html.
+Adding redirect from reference/callOpenTiles,list-method.html to
+reference/callOpenTiles-methods.html.
+Adding redirect from reference/GRangesList-method.html to
+reference/callOpenTiles-methods.html.
+Adding redirect from articles/COVID-walkthrough.html to
+articles/MOCHA-workflow-tutorial.html.
+Adding redirect from articles/DataImport-callOpenTiles.html to
+articles/Data-Import-Tutorial.html.
+Adding redirect from articles/ImportingFromOtherSources.html to
+articles/Data-Import-Tutorial.html.
+Adding redirect from articles/MotifAndAltTSS-walkthrough.html to
+articles/Alternative-TSS-TF-regulation.html.
+── Building search index ───────────────────────────────────────────────────────
+── Checking for problems ───────────────────────────────────────────────────────
+── Finished building pkgdown site for package MOCHA ────────────────────────────
+── Extra files for GitHub pages ────────────────────────────────────────────────
+Writing `.nojekyll`
+Warning messages:
+1: replacing previous import ‘SummarizedExperiment::shift’ by ‘data.table::shift’ when loading ‘MOCHA’ 
+2: In check_dep_version(dep_pkg = "TMB") : package version mismatch: 
+glmmTMB was built with TMB package version 1.9.19
+Current TMB package version is 1.9.21
+Please re-install glmmTMB from source or restore original ‘TMB’ package (see '?reinstalling' for more information)
+3: Failed to parse example for topic "runLMEM" 
+Done. Article HTML files: Alternative-TSS-TF-regulation.html, COVID-walkthrough.html, Data-Import-Tutorial.html, DataImport-callOpenTiles.html, ImportingFromOtherSources.html, index.html, MOCHA-advanced-modeling.html, MOCHA-downstream-workflows.html, MOCHA-export-and-sharing.html, MOCHA-workflow-tutorial.html, MotifAndAltTSS-walkthrough.html

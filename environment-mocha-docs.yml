@@ -1,0 +1,46 @@
+# Conda environment for building MOCHA pkgdown site and vignettes (WSL / local).
+# Create:  conda env create -f environment-mocha-docs.yml
+# Update:  conda env update -f environment-mocha-docs.yml --prune
+name: mocha-docs
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base>=4.3,<4.6
+  - pandoc>=3.0
+  - r-biocmanager
+  - r-devtools
+  - r-pkgdown>=2.0
+  - r-knitr
+  - r-rmarkdown
+  - bioconductor-biocstyle
+  - r-roxygen2
+  - r-dplyr
+  - r-data.table
+  - r-stringr
+  - r-magrittr
+  - r-ggplot2
+  - r-matrixstats
+  - r-scales
+  - r-tidyr
+  - r-pbapply
+  - bioconductor-qvalue
+  - bioconductor-genomicranges
+  - bioconductor-iranges
+  - bioconductor-s4vectors
+  - bioconductor-summarizedexperiment
+  - bioconductor-multiassayexperiment
+  - bioconductor-raggedexperiment
+  - bioconductor-genomicfeatures
+  - bioconductor-genomeinfodb
+  - bioconductor-biocgenerics
+  - bioconductor-annotationdbi
+  - bioconductor-bsgenome
+  - bioconductor-plyranges
+  - bioconductor-ggbio
+  - bioconductor-ensembldb
+  - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
+  - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
+  - bioconductor-org.hs.eg.db
+  - bioconductor-bsgenome.hsapiens.ucsc.hg19
+  - bioconductor-bsgenome.hsapiens.ucsc.hg38

@@ -1,22 +1,31 @@
 test_that("filterCoAccessibleLinks filters by correlation and adds coordinates", {
-  capture.output(
-    SampleTileMatrix <- MOCHA::getSampleTileMatrix(
-      MOCHA:::testTileResults,
-      cellPopulations = "C2",
-      reproducibilityThreshold = 0
-    )
+  SampleTileMatrix <- make_synthetic_sample_tile_matrix(
+    n_tiles = 40L,
+    n_per_group = 4L
   )
+  seed_tile <- SummarizedExperiment::rownames(SampleTileMatrix)[1L]
+  regions <- MOCHA::StringsToGRanges(seed_tile)
+
   links <- MOCHA::getCoAccessibleLinks(
     SampleTileMatrix,
     "C2",
-    MOCHA::StringsToGRanges("chr1:101873000-101873499"),
-    verbose = FALSE
+    regions,
+    verbose = FALSE,
+    ZI = FALSE
   )
   expect_gt(nrow(links), 0L)
-  skip_if(
-    !any(abs(links$Correlation) > 0, na.rm = TRUE),
-    "Fixture produced no non-zero correlations for filterCoAccessibleLinks"
+  expect_true(any(abs(links$Correlation) > 0, na.rm = TRUE))
+
+  links_zi <- MOCHA::getCoAccessibleLinks(
+    SampleTileMatrix,
+    "C2",
+    regions,
+    verbose = FALSE,
+    ZI = TRUE
   )
+  if (nrow(links_zi) > 0L) {
+    expect_true(any(!is.na(links_zi$Correlation)))
+  }
 
   filtered <- MOCHA::filterCoAccessibleLinks(links, threshold = 0)
   expect_true(all(abs(filtered$Correlation) > 0))

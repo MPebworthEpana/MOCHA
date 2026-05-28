@@ -68,15 +68,41 @@ exportCoverage <- function(SampleTileObject,
   subSamples <- grouping$subSamples
                          
   cl <- parallel::makeCluster(numCores)
+  on.exit(parallel::stopCluster(cl), add = TRUE)
   parallel::clusterEvalQ(cl, {
     library(GenomicRanges)
   })
   # Pull up the cell types of interest, and filter for samples and subset down to region of interest
   allCellPopCoverage <- NULL
   for (x in cellPopulations) {
+    expectedSamples <- unique(unlist(subSamples))
+    canCopyStructured <- sampleSpecific &&
+      saveFile &&
+      is.null(groupColumn) &&
+      .detect_coverage_layout(outDir, x) == "structured" &&
+      .coverage_tracks_exist(outDir, x, sampleIds = expectedSamples)
+
+    if (canCopyStructured) {
+      if (verbose) {
+        message(stringr::str_interp(
+          "Using existing structured coverage tracks for cell population ${x}."
+        ))
+      }
+      cellPopSubsampleCov <- .copy_structured_accessibility_tracks(
+        outDir = outDir,
+        cellPop = x,
+        sampleIds = expectedSamples,
+        destDir = dir,
+        verbose = verbose
+      )
+      allCellPopCoverage <- append(allCellPopCoverage, cellPopSubsampleCov)
+      next
+    }
+
     # MOCHA::getCoverage outputs a single list with two named items: "Accessibility"
     # and "Insertions".
-    # This is saved to *_CoverageFiles.RDS in MOCHA::callOpenTiles
+    # New runs save structured bigWig tracks under tracks/; legacy runs used
+    # *_CoverageFiles.RDS bundles.
     coverageBundle <- .readCoverageBundle(outDir, x)
     originalCovGRanges <- .selectAccessibilityCoverage(coverageBundle)
 

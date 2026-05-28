@@ -8,6 +8,42 @@
 * Retire CRAN submission artifacts (`cran-comments.md`, `CRAN-SUBMISSION`).
 
 # MOCHA (development version)
+
+## Documentation
+
+* Renamed vignettes: `MOCHA-workflow-tutorial`, `Data-Import-Tutorial`, `Alternative-TSS-TF-regulation`.
+* Merged `ImportingFromOtherSources` into `Data-Import-Tutorial` (ArchR, Signac, SnapATAC2, legacy SnapATAC v1, and manual fragment workflows).
+* pkgdown redirects from former article URLs to the new vignette pages.
+* Expanded tutorial library: tuning parameters and differential options in the workflow vignette;
+  new articles `MOCHA-downstream-workflows`, `MOCHA-export-and-sharing`, and
+  `MOCHA-advanced-modeling`; expanded alt-TSS/motif and import-utility sections.
+* Bioconductor build policy: only bundled-data chunks execute on builders; other vignette
+  chunks are reference-only (`eval = FALSE`).
+
+## Coverage storage
+
+* Coverage tracks from `callOpenTiles()` are now saved as per-sample bigWig
+  files under `tracks/{cellPop}/{Accessibility|Insertions}/`, with legacy
+  `{cellPop}_CoverageFiles.RDS` bundles still supported for reading.
+* Added `migrateCoverageToTracks()` to convert legacy RDS bundles to the
+  structured layout.
+* Track filenames use reversible percent-encoding to avoid sample-name
+  collisions; `exportCoverage()` copies existing structured tracks when
+  exporting sample-specific bigWigs without regrouping.
+* Coverage I/O validates unsafe path characters, prunes orphaned bigWigs
+  when sample sets change, and repairs incomplete migrations from legacy RDS
+  bundles when available.
+
+## Bug fixes
+
+* Fixed `getSampleCellTypeMetadata` export (`@export` was incorrectly on internal `.get_sample_celltype_count_tables()`).
+* Fixed `runZIGLMM()` / `pilotZIGLMM()` when `cellPopulation = "counts"` on combined sample-tile matrices (aligned with `varZIGLMM()`).
+* Fixed `varZIGLMM()` undefined `cl` when `numCores == 1`.
+* Fixed matrix subsetting (`drop = FALSE`) in `linearModeling()`, `varZIGLMM()`, and `runZIGLMM()` preventing empty modeling inputs.
+* Fixed `plotConsensus()` / `cellTypeDF()` when a single sample remains after filtering (`drop = FALSE`, empty-column guard).
+* Fixed `filterCoAccessibleLinks()` when all correlations are `NA` (`na.rm = TRUE` on threshold check).
+* Fixed `StringsToGRanges()` to error on unparseable region strings instead of returning invalid ranges.
+
 * MOCHA S4 subclasses (opt-in, backward compatible):
   - `MochaTileResults` and `MochaSampleTileMatrix` extend the existing
     Bioconductor output types with validity checks and optional `returnClass =
@@ -76,6 +112,23 @@
     arguments. Choose `"wilcoxon"` (default, unpaired), `"paired_wilcoxon"`
     (paired via `pairColumn`), or `"polr"` (proportional-odds cumulative
     logit; requires the `MASS` package, added to `Suggests`).
+* Parameter-naming consistency sweep (issue #61):
+  - `getDifferentialAccessibleTiles(cellPopulations = )` is now the
+    canonical kwarg; `cellPopulation =` is a deprecated alias that emits
+    `lifecycle::deprecate_warn("2.0.0", ...)`.
+  - `getSampleTileMatrix(reproducibilityThreshold = )` is now canonical;
+    `threshold =` is a deprecated alias.
+  - All in-tree tests and the `COVID-walkthrough` vignette were migrated
+    to the new canonical names. Existing user code continues to work
+    until the next major version.
+* New `MotifAndAltTSS-walkthrough` vignette (issue #27) — motif
+  enrichment, alternative TSS regulation, and motif footprinting
+  reference using bundled example data shape.
+* `COVID-walkthrough` vignette gains a "Tuning parameters" section
+  threading `plotConsensus()` / `suggestConsensusThreshold()` →
+  `plotIntensityDistribution()` → `signalThreshold` → method /
+  `pairColumn` → dropout adjustment, with a cheat-sheet table mapping
+  each knob to the helper that inspects it (issue #61).
 * Internal refactor to reduce duplicated helper logic across coverage extraction,
   export, motif footprinting, and co-accessibility workflows. No intended
   user-facing behavior changes.

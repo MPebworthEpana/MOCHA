@@ -1,0 +1,104 @@
+---
+title: "Advanced modeling: mixed models and custom peak training"
+author:
+  - "MOCHA authors"
+date: "`r BiocStyle::doc_date()`"
+package: MOCHA
+output:
+  BiocStyle::html_document:
+    toc_depth: 2
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Advanced modeling: mixed models and custom peak training}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  eval = FALSE
+)
+tutorial_read_chunks <- function(...) {
+  files <- unlist(list(...))
+  for (f in files) {
+    p <- system.file("tutorials", f, package = "MOCHA")
+    if (!nzchar(p)) p <- file.path("..", "inst", "tutorials", f)
+    knitr::read_chunk(p)
+  }
+}
+tutorial_read_chunks("05-advanced-modeling.R")
+```
+
+## Introduction
+
+Beyond Wilcoxon-based differentials in the
+[MOCHA workflow tutorial](MOCHA-workflow-tutorial.html), MOCHA supports linear
+mixed-effects models (LMEM), zero-inflated generalized linear mixed models
+(ZIGLMM), and custom peak training with `trainPeakModel()`.
+
+This vignette is entirely reference-only (`eval = FALSE`) because fitting
+requires study-specific metadata, sufficient sample counts, and optional
+packages (`lmerTest`, `glmmTMB`). Use it as a template alongside `?pilotLMEM`,
+`?runLMEM`, and `?trainPeakModel`.
+
+```{r libraries, eval=TRUE}
+library(MOCHA)
+```
+
+**Prerequisites:** A sample-tile matrix from `getSampleTileMatrix()` with
+appropriate `colData` columns (e.g. `Sample`, `PassQC`, subject IDs for
+random effects).
+
+## Linear mixed-effects models
+
+Pilot a formula on a subset of tiles, then run LMEM across the matrix.
+
+```{r pilot-lmem}
+```
+
+```{r run-lmem}
+```
+
+## Zero-inflated GLMM
+
+For count data with excess zeros, ZIGLMM extends the mixed-model framework.
+
+```{r pilot-ziglmm}
+```
+
+```{r run-ziglmm}
+```
+
+`linearModeling()` provides a higher-level interface when you want MOCHA to
+select between LMEM and ZIGLMM workflows; see `?linearModeling`.
+
+## Custom peak training
+
+`trainPeakModel()` learns sample-specific peak boundaries from fragments when
+you need models beyond the default `callOpenTiles()` peak caller.
+
+```{r train-peak-model}
+```
+
+Requires fragment-level data and genome annotation packages (see
+[Data Import Tutorial](Data-Import-Tutorial.html)).
+
+## MOCHA S4 subclasses (optional)
+
+By default, MOCHA returns standard Bioconductor types. Opt in with
+`returnClass = "mocha"` in constructors, or coerce existing objects:
+
+```{r s4-classes}
+```
+
+Subclasses inherit `MultiAssayExperiment` / `RangedSummarizedExperiment`
+behavior; `subset()` mirrors `subsetMOCHAObject()`.
+
+## Session information
+
+```{r session-info, eval=TRUE}
+```

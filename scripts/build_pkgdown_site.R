@@ -1,5 +1,10 @@
 #!/usr/bin/env Rscript
-# Build pkgdown site for MOCHA (Bioconductor Docker / CI).
+# Build full pkgdown site for MOCHA.
+#
+# Prefer WSL/local:  ./scripts/build_pkgdown_articles.sh --full-site
+# Or Docker:       bioconductor/bioconductor_docker:devel + this script
+#
+# Requires conda env mocha-docs (see environment-mocha-docs.yml) or equivalent.
 args <- commandArgs(trailingOnly = TRUE)
 clean <- !("--no-clean" %in% args)
 

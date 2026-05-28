@@ -17,7 +17,7 @@ test_that("getDifferentialAccessibleTiles validates inputs", {
       foreground = "scATAC_BMMC_R1",
       background = "scATAC_CD34_BMMC_R1"
     ),
-    "cellPopulation was not found"
+    "cellPopulations.* was not found"
   )
 
   expect_error(

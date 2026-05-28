@@ -2,30 +2,18 @@ skip_if_not_installed("glmmTMB")
 
 test_that("linearModeling returns named lmer list for one cell type", {
   skip_if_not_installed("lmerTest")
-  capture.output(
-    ExperimentObj <- MOCHA::getSampleTileMatrix(
-      MOCHA:::testTileResults,
-      cellPopulations = "C2",
-      reproducibilityThreshold = 0,
-      numCores = 1
-    ),
-    type = "message"
+  ExperimentObj <- make_synthetic_sample_tile_matrix(
+    n_tiles = 10L,
+    n_per_group = 4L
   )
 
-  models <- try(
-    MOCHA::linearModeling(
-      ExperimentObj,
-      formula = exp ~ PassQC,
-      CellType = "C2",
-      reproducibilityThreshold = 0.5,
-      NAtoZero = TRUE,
-      numCores = 1
-    ),
-    silent = TRUE
-  )
-  skip_if(
-    inherits(models, "try-error"),
-    "linearModeling could not fit lmer on single-sample fixture"
+  models <- MOCHA::linearModeling(
+    ExperimentObj,
+    formula = exp ~ GroupA + (1 | GroupA),
+    CellType = "C2",
+    threshold = 0,
+    NAtoZero = TRUE,
+    numCores = 1
   )
 
   expect_type(models, "list")

@@ -22,7 +22,17 @@ Document results below after running locally or from the `Bioc-check` GitHub Act
 ## Known acceptable items (Phase 1)
 
 - `ArchR` remains in `Suggests`; not available on Bioconductor. Examples and vignette use bundled `GRangesList` data only.
-- `ImportingFromOtherSources.Rmd` uses `eval = FALSE` (reference tutorial); primary runnable vignette is `COVID-walkthrough.Rmd`.
+- Six vignettes: `MOCHA-workflow-tutorial.Rmd` (runnable end-to-end on bundled data),
+  `Data-Import-Tutorial.Rmd` (runnable bundled section only; other import paths `eval = FALSE`),
+  `MOCHA-downstream-workflows.Rmd`, `MOCHA-export-and-sharing.Rmd`, and
+  `MOCHA-advanced-modeling.Rmd` (reference-only, `eval = FALSE`),
+  `Alternative-TSS-TF-regulation.Rmd` (mostly `eval = FALSE` templates).
+- Only chunks using bundled `exampleFragments` / package data run on Bioconductor builders;
+  all other chunks use `eval = FALSE` or `NOT_CRAN` guards.
+- Tutorial code lives in `inst/tutorials/*.R` (single source of truth); vignettes use
+  `knitr::read_chunk()`. Tier A/B scripts are exercised by `tutorial-check` CI and
+  `tests/scripts/run_tutorials.R`.
+- `ImportingFromOtherSources.Rmd` merged into `Data-Import-Tutorial.Rmd` (removed).
 - Pre-built vignette HTML under `vignettes/` is excluded via `.Rbuildignore`.
 
 ## Maintainer actions before opening Contributions PR

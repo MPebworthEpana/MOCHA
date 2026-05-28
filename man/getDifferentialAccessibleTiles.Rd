@@ -6,7 +6,7 @@
 \usage{
 getDifferentialAccessibleTiles(
   SampleTileObj,
-  cellPopulation,
+  cellPopulations = NULL,
   groupColumn,
   foreground,
   background,
@@ -22,14 +22,16 @@ getDifferentialAccessibleTiles(
   techThreshold = NULL,
   fdrToDisplay = NULL,
   method = c("wilcoxon", "paired_wilcoxon", "polr"),
-  pairColumn = NULL
+  pairColumn = NULL,
+  cellPopulation = NULL
 )
 }
 \arguments{
 \item{SampleTileObj}{The SummarizedExperiment object output from
 getSampleTileMatrix}
 
-\item{cellPopulation}{A string denoting the cell population of interest}
+\item{cellPopulations}{Character vector of cell-population names (matching
+assay names in \code{SampleTileObj}) to test. Length \eqn{\ge 1}.}
 
 \item{groupColumn}{The column containing sample group labels}
 
@@ -84,6 +86,9 @@ odds cumulative-logit on ordinal-binned values; requires the
 \item{pairColumn}{Column in \code{colData(SampleTileObj)} that identifies
 matched pairs across the foreground/background groups. Required when
 \code{method = "paired_wilcoxon"}; ignored otherwise.}
+
+\item{cellPopulation}{Deprecated alias for \code{cellPopulations}. Use
+\code{cellPopulations} instead.}
 }
 \value{
 full_results The differential accessibility results as a GRanges or
@@ -120,7 +125,7 @@ if (
   )
   diffs <- MOCHA::getDifferentialAccessibleTiles(
     SampleTileObj = stm,
-    cellPopulation = "C2",
+    cellPopulations = "C2",
     groupColumn = "Sample",
     foreground = unique(SummarizedExperiment::colData(stm)$Sample)[1],
     background = unique(SummarizedExperiment::colData(stm)$Sample)[2],

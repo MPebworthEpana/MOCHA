@@ -53,24 +53,26 @@ test_that("MotifSetEnrichmentAnalysis errors for invalid ligands", {
 
 test_that("MotifSetEnrichmentAnalysis heavy regression matches fixture expectations", {
   skip_unless_mocha_heavy()
-  motifEnrichmentTestDataFP <- Sys.getenv(
-    "MOCHA_MSEA_INPUT",
-    unset = "/home/jupyter/MOCHA/input_motifenrichment.csv"
-  )
-  expectedResultsFP <- Sys.getenv(
-    "MOCHA_MSEA_EXPECTED",
-    unset = "/home/jupyter/MOCHA/results_MSEA.csv"
-  )
+  paths <- mocha_msea_paths()
   skip_if_not(
-    file.exists(motifEnrichmentTestDataFP) && file.exists(expectedResultsFP),
+    file.exists(paths$input) && file.exists(paths$expected),
     "Heavy MSEA reference files not available"
   )
 
-  ligandTFMatrix <- readRDS(
-    "https://zenodo.org/record/3260758/files/ligand_tf_matrix.rds"
-  )
-  motifEnrichmentDF <- read.csv(motifEnrichmentTestDataFP)
-  expectedResults <- read.csv(expectedResultsFP)
+  ligand_path <- mocha_fixture_path("ligand_tf_matrix_mini.rds")
+  if (file.exists(ligand_path)) {
+    ligandTFMatrix <- readRDS(ligand_path)
+  } else {
+    skip_if_not_installed("curl")
+    ligandTFMatrix <- tryCatch(
+      readRDS("https://zenodo.org/record/3260758/files/ligand_tf_matrix.rds"),
+      error = function(e) NULL
+    )
+    skip_if(is.null(ligandTFMatrix), "Could not download ligand_tf_matrix from Zenodo")
+  }
+
+  motifEnrichmentDF <- read.csv(paths$input)
+  expectedResults <- read.csv(paths$expected)
 
   filteredligandTFMatrix <- ligandTFMatrix[
     rownames(ligandTFMatrix) %in% unique(motifEnrichmentDF$TranscriptionFactor),

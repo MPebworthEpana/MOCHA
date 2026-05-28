@@ -1,0 +1,110 @@
+---
+title: "Exporting and sharing MOCHA results"
+author:
+  - "MOCHA authors"
+date: "`r BiocStyle::doc_date()`"
+package: MOCHA
+output:
+  BiocStyle::html_document:
+    toc_depth: 2
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Exporting and sharing MOCHA results}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  eval = FALSE
+)
+tutorial_read_chunks <- function(...) {
+  files <- unlist(list(...))
+  for (f in files) {
+    p <- system.file("tutorials", f, package = "MOCHA")
+    if (!nzchar(p)) p <- file.path("..", "inst", "tutorials", f)
+    knitr::read_chunk(p)
+  }
+}
+tutorial_read_chunks("04-export.R")
+```
+
+## Introduction
+
+After the [MOCHA workflow tutorial](MOCHA-workflow-tutorial.html) and optional
+[downstream workflows](MOCHA-downstream-workflows.html), you may want to share
+results with collaborators or visualize tracks in IGV or the MOCHA Dash app.
+
+This vignette ports the narrative from
+`inst/notebooks/MOCHA-Export-Vignette.ipynb` into BiocStyle R Markdown. All
+chunks are reference-only because exports involve file I/O, large fragment
+data, and optional heavy dependencies. Code is maintained in
+`inst/tutorials/04-export.R`.
+
+```{r libraries, eval=TRUE}
+```
+
+**Prerequisites:** `tileResults` from `callOpenTiles()` and
+`sampleTileMatrices` from `getSampleTileMatrix()`.
+
+## Pack and unpack MOCHA objects
+
+`packMOCHA()` archives a MOCHA object and its on-disk outputs into a single zip
+for transfer. `unpackMOCHA()` restores the object and rewrites stored paths.
+
+```{r pack-unpack}
+```
+
+If you move the project directory after unpacking, update stored paths:
+
+```{r update-path}
+```
+
+## Export sample-specific coverage
+
+`exportCoverage()` writes bigWig files from fragment data in a tile-results
+object. This step can be slow and disk-intensive; use `numCores` and a
+dedicated output directory.
+
+```{r export-coverage}
+```
+
+## Export open tiles
+
+```{r export-open-tiles}
+```
+
+## Export differential tiles
+
+Load or compute differential peaks (`getDifferentialAccessibleTiles()`), then
+export accessibility tracks for foreground/background contrasts.
+
+```{r export-diffs}
+```
+
+## Export motifs
+
+Annotate peaks with PWMs (`addMotifSet()`), then export motif positions for
+visualization. See also [Alternative TSS usage and TF regulation](Alternative-TSS-TF-regulation.html).
+
+```{r export-motifs}
+```
+
+## Export local footprints
+
+```{r export-footprints}
+```
+
+## Interactive tracks (Dash app)
+
+For an interactive genome browser built on exported tracks, see
+`inst/notebooks/Tracks-Dash-App-Generic.ipynb` in the MOCHA source repository.
+
+## Session information
+
+```{r session-info, eval=TRUE}
+```

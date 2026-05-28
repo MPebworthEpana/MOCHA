@@ -106,8 +106,11 @@ exportLocalFootprints <- function(SampleTileObj,
     
     coverageBundle <- .readCoverageBundle(sourcedir, cellPopulation)
     if (!"Insertions" %in% names(coverageBundle)) {
-        covFile <- file.path(sourcedir, paste0(cellPopulation, "_CoverageFiles.RDS"))
-        stop("No insertions found in the file `", covFile, "`.",
+        legacyFile <- .coverage_legacy_path(sourcedir, cellPopulation)
+        structuredDir <- .coverage_cell_pop_dir(sourcedir, cellPopulation)
+        stop("No insertions found for cell population `", cellPopulation, "`.",
+             " Expected legacy bundle `", legacyFile, "` or structured tracks under `",
+             structuredDir, "`.",
              " Please run peak calling with the latest MOCHA version,",
              " 1.0.1 or greater.")
     }

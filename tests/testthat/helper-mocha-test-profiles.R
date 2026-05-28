@@ -81,6 +81,100 @@ skip_unless_heme_coverage <- function() {
   invisible(dir)
 }
 
+mocha_msea_paths <- function() {
+  list(
+    input = Sys.getenv(
+      "MOCHA_MSEA_INPUT",
+      unset = mocha_fixture_path("msea_motif_enrichment.csv")
+    ),
+    expected = Sys.getenv(
+      "MOCHA_MSEA_EXPECTED",
+      unset = mocha_fixture_path("msea_expected_results.csv")
+    )
+  )
+}
+
+#' Write minimal {cellPop}_CoverageFiles.RDS bundles for extractRegion tests.
+make_synthetic_coverage_dir <- function(
+  cell_populations,
+  sample_ids,
+  region = "chr1:18137866-38139912",
+  dir = tempfile(pattern = "mocha_cov_"),
+  copy_per_sample = TRUE
+) {
+  dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  region_gr <- MOCHA::StringsToGRanges(region)
+  S4Vectors::mcols(region_gr)$score <- 1L
+
+  sample_gr_list <- stats::setNames(
+    lapply(sample_ids, function(x) {
+      if (copy_per_sample) {
+        gr <- MOCHA::StringsToGRanges(as.character(region_gr))
+        S4Vectors::mcols(gr)$score <- 1L
+        gr
+      } else {
+        region_gr
+      }
+    }),
+    sample_ids
+  )
+  bundle <- list(
+    Accessibility = sample_gr_list,
+    Insertions = sample_gr_list
+  )
+
+  for (pop in cell_populations) {
+    saveRDS(
+      bundle,
+      file.path(dir, paste0(pop, "_CoverageFiles.RDS"))
+    )
+  }
+
+  normalizePath(dir, winslash = "/", mustWork = TRUE)
+}
+
+#' Write minimal structured bigWig tracks for coverage I/O tests.
+make_synthetic_tracks_dir <- function(
+  cell_populations,
+  sample_ids,
+  region = "chr1:18137866-38139912",
+  dir = tempfile(pattern = "mocha_tracks_"),
+  copy_per_sample = TRUE
+) {
+  dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  region_gr <- MOCHA::StringsToGRanges(region)
+  S4Vectors::mcols(region_gr)$score <- 1L
+
+  sample_gr_list <- stats::setNames(
+    lapply(sample_ids, function(x) {
+      if (copy_per_sample) {
+        gr <- MOCHA::StringsToGRanges(as.character(region_gr))
+        S4Vectors::mcols(gr)$score <- 1L
+        gr
+      } else {
+        region_gr
+      }
+    }),
+    sample_ids
+  )
+  bundle <- list(
+    Accessibility = sample_gr_list,
+    Insertions = sample_gr_list
+  )
+
+  for (pop in cell_populations) {
+    MOCHA:::.writeCoverageTracks(
+      covFiles = bundle,
+      outDir = dir,
+      cellPop = pop,
+      force = TRUE,
+      verbose = FALSE
+    )
+  }
+
+  normalizePath(dir, winslash = "/", mustWork = TRUE)
+}
+
 skip_unless_archr_project <- function(name = "PBMCSmall") {
   dir <- mocha_archr_project_dir(name)
   if (is.na(dir)) {

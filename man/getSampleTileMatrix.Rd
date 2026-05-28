@@ -8,10 +8,11 @@ getSampleTileMatrix(
   tileResults,
   cellPopulations = "ALL",
   groupColumn = NULL,
-  threshold = 0.2,
+  reproducibilityThreshold = 0.2,
   numCores = 1,
   verbose = FALSE,
-  returnClass = c("legacy", "mocha")
+  returnClass = c("legacy", "mocha"),
+  threshold = NULL
 )
 }
 \arguments{
@@ -28,11 +29,12 @@ the ArchR project metadata. Default is 'ALL'.}
 determining consensus tiles within sample groups. Default is NULL, all
 samples will be used for determining consensus tiles.}
 
-\item{threshold}{Threshold for consensus tiles, the minimum \% of samples
-(within a sample group, if groupColumn is set) that a peak must be called
-in to be retained. If set to 0, retain the union of all samples' peaks
-(this is equivalent to a threshold of 1/numSamples). It is recommended to
-tune this parameter to omit potentially spurious peaks.}
+\item{reproducibilityThreshold}{Threshold for consensus tiles, the minimum
+\% of samples (within a sample group, if groupColumn is set) that a peak
+must be called in to be retained. If set to 0, retain the union of all
+samples' peaks (this is equivalent to a threshold of 1/numSamples). Tune
+to omit potentially spurious peaks; \code{\link{suggestConsensusThreshold}}
+recommends a value automatically. Default 0.2.}
 
 \item{numCores}{Optional, the number of cores to use with multiprocessing.
 Default is 1.}
@@ -42,6 +44,9 @@ Default is 1.}
 \item{returnClass}{Return type: \code{"legacy"} (default,
 \code{RangedSummarizedExperiment}) or \code{"mocha"}
 (\code{MochaSampleTileMatrix}).}
+
+\item{threshold}{Deprecated alias for \code{reproducibilityThreshold}. Use
+\code{reproducibilityThreshold} instead.}
 }
 \value{
 SampleTileMatrices a MultiAssayExperiment containing a sample-tile
@@ -76,7 +81,7 @@ if (
   SampleTileMatrices <- MOCHA::getSampleTileMatrix(
     tiles,
     cellPopulations = c("C2", "C5"),
-    threshold = 0 # Take union of all samples' open tiles
+    reproducibilityThreshold = 0 # Take union of all samples' open tiles
   )
 }
 }

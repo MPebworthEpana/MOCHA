@@ -1,0 +1,135 @@
+---
+title: "MOCHA downstream workflows: co-accessibility, dropout, and pseudobulk"
+author:
+  - "MOCHA authors"
+date: "`r BiocStyle::doc_date()`"
+package: MOCHA
+output:
+  BiocStyle::html_document:
+    toc_depth: 2
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{MOCHA downstream workflows: co-accessibility, dropout, and pseudobulk}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  eval = FALSE
+)
+tutorial_read_chunks <- function(...) {
+  files <- unlist(list(...))
+  for (f in files) {
+    p <- system.file("tutorials", f, package = "MOCHA")
+    if (!nzchar(p)) p <- file.path("..", "inst", "tutorials", f)
+    knitr::read_chunk(p)
+  }
+}
+tutorial_read_chunks("03-downstream.R")
+```
+
+## Introduction
+
+This article covers analyses that extend the core workflow in the
+[MOCHA workflow tutorial](MOCHA-workflow-tutorial.html): co-accessibility between
+tiles, dropout modeling for zero inflation, pseudobulk dimensionality reduction,
+merging studies, and object utilities.
+
+**Prerequisites:** `tileResults`, `sampleTileMatrices`, `c2Matrix`, and
+`diffs` from the workflow tutorial (or equivalent objects from your project).
+
+All code chunks are reference-only (`eval = FALSE`) so the vignette builds on
+Bioconductor without large optional dependencies. Code is maintained in
+`inst/tutorials/03-downstream.R` and verified by `tests/scripts/run_tutorials.R`.
+
+```{r libraries, eval=TRUE}
+```
+
+## Co-accessibility
+
+Co-accessibility links pairs of open tiles whose accessibility covaries across
+samples within a cell population. Start from regions of interest (as `GRanges`
+or MOCHA tile strings), then filter and test links. The example uses a synthetic
+multisample matrix with a `GroupA` column for contrast testing.
+
+```{r co-access-links}
+```
+
+```{r filter-co-access}
+```
+
+```{r test-co-access}
+```
+
+For chromVAR-based testing on motif-linked regions, see `?testCoAccessibilityChromVar`.
+
+```{r co-access-not-cran, eval=(Sys.getenv("NOT_CRAN") == "true")}
+```
+
+## Dropout modeling
+
+Technical zeros in sparse scATAC can bias differential tests. MOCHA estimates
+per-tile dropout probabilities and can integrate them into
+`getDifferentialAccessibleTiles()` via `dropoutAdjustment`.
+
+```{r assess-dropout}
+```
+
+```{r dropout-model}
+```
+
+```{r dropout-plots}
+```
+
+Use `dropoutAdjustment` in `getDifferentialAccessibleTiles()`; see the workflow
+tutorial cheat-sheet and `?getDifferentialAccessibleTiles`.
+
+## Pseudobulk exploration
+
+Summarize sample-level accessibility across tiles for exploratory PCA/UMAP.
+Requires `uwot` (Suggests).
+
+```{r bulk-dr}
+```
+
+## Combining studies
+
+When you have separate MOCHA runs, merge peak-calling results or combine
+sample-tile matrices for joint analysis.
+
+```{r merge-tiles}
+```
+
+```{r combine-stm}
+```
+
+## Utilities
+
+Common getters and metadata helpers:
+
+```{r getters}
+```
+
+```{r rename-add-subset}
+```
+
+`StringsToGRanges()` converts MOCHA tile strings to `GRanges` for custom analyses.
+
+## Next steps
+
+- [Exporting and sharing MOCHA results](MOCHA-export-and-sharing.html) for
+  `packMOCHA()`, bigWig export, and IGV-oriented outputs.
+- [Alternative TSS usage and TF regulation](Alternative-TSS-TF-regulation.html)
+  for motif enrichment and footprinting.
+- [MOCHA workflow tutorial](MOCHA-workflow-tutorial.html) to revisit peak calling
+  and differentials.
+
+## Session information
+
+```{r session-info, eval=TRUE}
+```

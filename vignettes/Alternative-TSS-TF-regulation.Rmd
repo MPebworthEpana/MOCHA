@@ -1,0 +1,112 @@
+---
+title: "Alternative TSS usage and TF regulation"
+author:
+  - "MOCHA authors"
+date: "`r BiocStyle::doc_date()`"
+package: MOCHA
+output:
+  BiocStyle::html_document:
+    toc_depth: 2
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Alternative TSS usage and TF regulation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  eval = FALSE
+)
+tutorial_read_chunks <- function(...) {
+  files <- unlist(list(...))
+  for (f in files) {
+    p <- system.file("tutorials", f, package = "MOCHA")
+    if (!nzchar(p)) p <- file.path("..", "inst", "tutorials", f)
+    knitr::read_chunk(p)
+  }
+}
+tutorial_read_chunks("06-alt-tss-motifs.R")
+```
+
+## Introduction
+
+After differential testing, complete the [MOCHA workflow tutorial](MOCHA-workflow-tutorial.html)
+through `getDifferentialAccessibleTiles()` so you have `sampleTileMatrices` and
+`differentials` (`GRanges` with `FDR` and `Log2FC_C`). MOCHA then offers three downstream-analysis
+modules that correspond to Figures 4–5 of the manuscript:
+
+1. **Motif enrichment** within differentially accessible regions.
+2. **Alternative TSS regulation** — identifying genes whose multiple TSSs
+   respond differently across conditions.
+3. **Motif footprinting** — average insertion profiles around TF motif
+   instances within open chromatin.
+
+All chunks in this vignette are shown with `eval = FALSE` because the
+bundled example data is intentionally minimal. Code is maintained in
+`inst/tutorials/06-alt-tss-motifs.R`.
+
+## Setup
+
+```{r libraries, eval=TRUE}
+```
+
+We assume you already have:
+
+* `sampleTileMatrices` — a `RangedSummarizedExperiment` from
+  `getSampleTileMatrix()`.
+* `differentials` — a `GRanges` from
+  `getDifferentialAccessibleTiles()` with `FDR` and `Log2FC_C` columns.
+* TxDb / OrgDb references registered in your MOCHA object metadata.
+
+## Motif annotation with `addMotifSet()`
+
+Before enrichment or footprinting, attach PWM positions to your sample-tile
+matrix (requires `chromVARmotifs`, `motifmatchr`, and a BSgenome):
+
+```{r add-motif-set}
+```
+
+## 1. Motif enrichment in differential regions
+
+`MotifEnrichment()` runs a hypergeometric enrichment test for each motif
+in a `GRangesList` of motif positions against a background of non-target
+regions.
+
+```{r motif-enrichment}
+```
+
+`MotifSetEnrichmentAnalysis()` is a higher-level wrapper for upstream TF
+regulators:
+
+```{r motifset-enrichment}
+```
+
+## 2. Alternative TSS regulation (`getAltTSS`)
+
+```{r get-alt-tss}
+```
+
+Locus-level visualization:
+
+```{r plot-alt-tss}
+```
+
+## 3. Motif footprinting
+
+```{r motif-footprint}
+```
+
+`plotMotifs()` can return summary statistics when `returnDF = TRUE`:
+
+```{r plot-motifs}
+```
+
+## Session information
+
+```{r session-info, eval=TRUE}
+```

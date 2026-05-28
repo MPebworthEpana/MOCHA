@@ -13,4 +13,6 @@
 ^ISSUE_REVIEW_SUMMARY\.md$
 ^recipes/
 ^environment-mocha-test\.yml$
+^environment-mocha-docs\.yml$
+^docs/BUILD\.md$
 ^meta\.yaml$

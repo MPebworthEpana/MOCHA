@@ -1,4 +1,21 @@
 url: https://aifimmunology.github.io/MOCHA/
+
+redirects:
+  - ["articles/COVID-walkthrough.html", "articles/MOCHA-workflow-tutorial.html"]
+  - ["articles/DataImport-callOpenTiles.html", "articles/Data-Import-Tutorial.html"]
+  - ["articles/ImportingFromOtherSources.html", "articles/Data-Import-Tutorial.html"]
+  - ["articles/MotifAndAltTSS-walkthrough.html", "articles/Alternative-TSS-TF-regulation.html"]
+
+articles:
+- title: MOCHA tutorials
+  contents:
+  - MOCHA-workflow-tutorial
+  - Data-Import-Tutorial
+  - MOCHA-downstream-workflows
+  - Alternative-TSS-TF-regulation
+  - MOCHA-export-and-sharing
+  - MOCHA-advanced-modeling
+
 template:
   bootstrap: 5
   bootswatch: materia

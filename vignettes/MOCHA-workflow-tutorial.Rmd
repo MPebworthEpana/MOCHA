@@ -1,0 +1,169 @@
+---
+title: "MOCHA workflow tutorial"
+author:
+  - "MOCHA authors"
+date: "`r BiocStyle::doc_date()`"
+package: MOCHA
+output:
+  BiocStyle::html_document:
+    toc_depth: 2
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{MOCHA workflow tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+tutorial_read_chunks <- function(...) {
+  files <- unlist(list(...))
+  for (f in files) {
+    p <- system.file("tutorials", f, package = "MOCHA")
+    if (!nzchar(p)) p <- file.path("..", "inst", "tutorials", f)
+    knitr::read_chunk(p)
+  }
+}
+tutorial_read_chunks("01-workflow.R")
+```
+
+## Introduction
+
+MOCHA (Model-based single-cell Open Chromatin Analysis) provides peak calling,
+sample-tile matrices, and downstream analyses for scATAC-seq after cell-type
+identification. This vignette runs an end-to-end workflow on small bundled
+example data (`exampleFragments`, `exampleCellColData`, `exampleBlackList`)
+so it can be built on the Bioconductor build system without an ArchR project.
+
+Runnable code is maintained in `inst/tutorials/01-workflow.R` (included here via
+`knitr::read_chunk()`).
+
+For importing from ArchR, Signac, SnapATAC2, and other sources and calling open
+tiles, see [Data Import Tutorial: Signac, ArchR, SnapATAC and more](Data-Import-Tutorial.html).
+
+## Setup
+
+```{r libraries}
+```
+
+Annotation packages used below are listed in `DESCRIPTION` under `Suggests`.
+
+```{r check-deps, echo=FALSE}
+```
+
+## Peak calling with `callOpenTiles`
+
+MOCHA accepts a per-sample `GRangesList` of fragments plus cell metadata.
+
+```{r call-open-tiles}
+```
+
+Inspect called open tiles for one population:
+
+```{r get-open-tiles}
+```
+
+## Tuning parameters
+
+Before building sample-tile matrices, inspect how peak reproducibility
+varies across samples. `plotConsensus()` and `suggestConsensusThreshold()`
+help you choose `reproducibilityThreshold` for `getSampleTileMatrix()`.
+
+The bundled PBMCSmall example has one sample per cell population, so
+`suggestConsensusThreshold()` may return an empty table; use
+`reproducibilityThreshold = 0` (union) below when that happens.
+
+```{r plot-consensus}
+```
+
+```{r suggest-threshold}
+```
+
+The table below maps common tuning knobs to the functions that help you
+inspect them. For dropout-aware differentials, see
+[MOCHA downstream workflows](MOCHA-downstream-workflows.html).
+
+| Knob | Where set | Helper to inspect |
+|------|-----------|-------------------|
+| `reproducibilityThreshold` | `getSampleTileMatrix()` | `plotConsensus()`, `suggestConsensusThreshold()` |
+| `signalThreshold` | tile filtering in STM pipeline | `plotIntensityDistribution()` |
+| `method` / `pairColumn` | `getDifferentialAccessibleTiles()` | — |
+| `dropoutAdjustment` | `getDifferentialAccessibleTiles()` | `assessDropout()` |
+
+## Sample-tile matrices
+
+Consensus tiles across samples are summarized with `getSampleTileMatrix()`.
+We use `reproducibilityThreshold = 0` here for a permissive union; in practice
+you may use the value from `suggestConsensusThreshold()` above when multiple
+samples are available.
+
+```{r sample-tile-matrix}
+```
+
+```{r sample-tile-matrix-tuned, eval=FALSE}
+```
+
+Subset to one cell population:
+
+```{r subset}
+```
+
+```{r plot-intensity, eval=FALSE}
+```
+
+## Annotate tiles
+
+Gene annotations are added from TxDb/OrgDb stored in object metadata.
+
+```{r annotate}
+```
+
+### Motif annotations (optional)
+
+To attach PWM motif positions to a sample-tile matrix for enrichment or
+footprinting, use `addMotifSet()` (requires `chromVARmotifs`, `motifmatchr`,
+and a BSgenome). See [Alternative TSS usage and TF regulation](Alternative-TSS-TF-regulation.html).
+
+```{r add-motif-set, eval=FALSE}
+```
+
+## Differential accessibility (illustration)
+
+When sample metadata includes a grouping column, differential testing compares
+foreground and background sample sets. The example data uses the `Sample`
+column; we compare the first two samples as a minimal demonstration.
+
+```{r differentials}
+```
+
+### Advanced differential options
+
+`getDifferentialAccessibleTiles()` supports additional arguments for
+paired designs and dropout handling:
+
+```{r differentials-advanced, eval=FALSE}
+```
+
+When `dropoutAdjustment` is set and dropout probabilities are not already
+stored on the object, MOCHA runs `assessDropout()` automatically.
+
+## Next steps
+
+- [MOCHA downstream workflows](MOCHA-downstream-workflows.html) — co-accessibility,
+  dropout modeling, pseudobulk exploration, merging studies.
+- [Alternative TSS usage and TF regulation](Alternative-TSS-TF-regulation.html) —
+  motif enrichment, alternative TSSs, footprinting.
+- [Exporting and sharing MOCHA results](MOCHA-export-and-sharing.html) —
+  `packMOCHA()`, coverage export, IGV-oriented outputs.
+- [Advanced modeling](MOCHA-advanced-modeling.html) — mixed models and custom
+  peak training with `trainPeakModel()`.
+
+## Session information
+
+```{r session-info}
+```

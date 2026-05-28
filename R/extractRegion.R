@@ -113,9 +113,19 @@ extractRegion <- function(SampleTileObj,
   cl <- parallel::makeCluster(numCores)
   # Pull up the cell types of interest, and filter for samples and subset down to region of interest
   cellPopulation_Files <- lapply(cellPopulations, function(x) {
-
-    coverageBundle <- .readCoverageBundle(outDir, x)
-    originalCovGRanges <- .selectCoverageFromBundle(coverageBundle, coverage = type)
+    trackType <- if (type) {
+      "accessibility"
+    } else {
+      "insertions"
+    }
+    originalCovGRanges <- .loadCoverageTracks(
+      outDir = outDir,
+      cellPop = x,
+      trackType = trackType,
+      samples = unique(unlist(subSamples)),
+      region = regionGRanges,
+      verbose = verbose
+    )
     
     
     # Edge case: One or more samples are missing coverage for this cell population,

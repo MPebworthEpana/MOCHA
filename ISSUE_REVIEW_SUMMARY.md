@@ -60,10 +60,25 @@ This document lists open GitHub issues that are **not yet fully addressed** in t
 
 ## #61 Handling optional parameters for downstream steps
 
-- **Status:** Partially Addressed
-- **Summary:** Some optional tuning parameters and plotting utilities exist.
-- **Code evidence:** `minZeroDiff`, `signalThreshold`, `plotConsensus()`, `plotIntensityDistribution()`.
-- **Gap:** Broader consistency and workflow guidance requested in issue appears only partially covered.
+- **Status:** Addressed (Phase 4)
+- **Summary:** Two halves addressed.
+  1. **Consistency.** Two clear naming drifts unified with backwards-
+     compatible deprecation aliases:
+     - `getDifferentialAccessibleTiles(cellPopulations =)` now canonical;
+       `cellPopulation =` deprecated alias.
+     - `getSampleTileMatrix(reproducibilityThreshold =)` now canonical;
+       `threshold =` deprecated alias.
+     All in-tree callers (tests + vignettes) migrated.
+  2. **Workflow guidance.** A new "Tuning parameters" section in the
+     `COVID-walkthrough` vignette threads the major decision points
+     (`reproducibilityThreshold`, `signalThreshold`, `minZeroDiff`,
+     `qValueThreshold`, `method`/`pairColumn`, `dropoutAdjustment`) and
+     ends with a cheat-sheet table mapping each knob to the helper that
+     inspects it.
+- **Code evidence:** `R/getDifferentialAccessibleTiles.R`,
+  `R/getSampleTileMatrix.R`, `vignettes/COVID-walkthrough.Rmd`,
+  `tests/testthat/test_getDifferentialAccessibleTiles.R` (two new
+  alias-coverage tests).
 
 ---
 
@@ -104,8 +119,15 @@ This document lists open GitHub issues that are **not yet fully addressed** in t
 
 ## #27 Draft Vignettes for Figure 4-5 Analyses
 
-- **Status:** Partially Addressed
-- **Summary:** Related analysis functions exist (motif enrichment, alt TSS, etc.), but dedicated figure-4/5-style vignette coverage appears incomplete.
-- **Code evidence:** Functions like `getAltTSS()`, `MotifEnrichment()`, `MotifSetEnrichmentAnalysis()`.
-- **Gap:** Vignette scope does not clearly map to issue's requested downstream analysis drafts.
+- **Status:** Addressed (Phase 4)
+- **Summary:** New `vignettes/MotifAndAltTSS-walkthrough.Rmd` covering
+  the three Figure 4–5 modules:
+  1. Motif enrichment (`MotifEnrichment()` +
+     `MotifSetEnrichmentAnalysis()`).
+  2. Alternative TSS regulation (`getAltTSS()` + `plotRegion()`).
+  3. Motif footprinting (`motifFootprint()` /
+     `analyzeFootprints()`).
+  Chunks use `eval = FALSE` so the vignette builds quickly under
+  BiocStyle without requiring a full motif/TF fixture in the package.
+- **Code evidence:** `vignettes/MotifAndAltTSS-walkthrough.Rmd`.
 

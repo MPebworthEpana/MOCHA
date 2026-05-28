@@ -60,7 +60,10 @@
 #' @param outDir is a string describing the output directory for coverage files.
 #'   Must be a complete directory string. With ArchR input, set outDir to NULL
 #'   to create a directory within the input ArchR project directory named MOCHA
-#'   for saving files.
+#'   for saving files. Coverage tracks are written under
+#'   `tracks/{cellPop}/{Accessibility|Insertions}/{sample}.bw` with a
+#'   `tracks/manifest.rds` index. Legacy `{cellPop}_CoverageFiles.RDS` bundles
+#'   are still read when present.
 #' @param numCores integer. Number of cores to parallelize peak-calling across
 #'   multiple cell populations.
 #' @param force Optional, whether to force creation of coverage files if they
@@ -373,8 +376,9 @@ setGeneric(
   # Filter out fragments that are not aligned to the Genome.
   allnames <- names(ATACFragments)
   beforeLengths <- lengths(ATACFragments)
+  genomeSeqlevels <- as.character(GenomeInfoDb::seqnames(genome))
   ATACFragments <- lapply(ATACFragments, function(x) {
-    dplyr::filter(x, seqnames %in% GenomeInfoDb::seqnames(genome))
+    x[as.character(GenomicRanges::seqnames(x)) %in% genomeSeqlevels]
   })
   names(ATACFragments) <- allnames
 
@@ -830,9 +834,7 @@ setMethod(
       allFragmentCounts[cellPop, sampleNames] <- normalization_factors
 
       # save coverage files to folder.
-      if (!file.exists(
-        paste(outDir, "/", cellPop, "_CoverageFiles.RDS", sep = "")
-      ) || force) {
+      if (!.coverage_tracks_exist(outDir, cellPop, sampleIds = sampleNames) || force) {
         if (verbose) {
           message(stringr::str_interp(
             "Saving coverage files for cell population ${cellPop}"
@@ -844,9 +846,12 @@ setMethod(
           filterEmpty = TRUE,
           cl = cl, TxDb = TxDb
         )
-        saveRDS(
-          covFiles,
-          paste(outDir, "/", cellPop, "_CoverageFiles.RDS", sep = "")
+        .writeCoverageTracks(
+          covFiles = covFiles,
+          outDir = outDir,
+          cellPop = cellPop,
+          force = force,
+          verbose = verbose
         )
         rm(covFiles)
       }
@@ -1047,6 +1052,7 @@ setMethod(
       "TxDb" = list(pkgname = TxDbName, metadata = S4Vectors::metadata(TxDb)),
       "OrgDb" = list(pkgname = OrgDbName, metadata = S4Vectors::metadata(OrgDb)),
       "Directory" = outDir,
+      "CoverageLayout" = "tracks",
       "History" = list(paste("callOpenTiles", utils::packageVersion("MOCHA")))
     )
   )

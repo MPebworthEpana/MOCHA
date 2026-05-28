@@ -1,0 +1,518 @@
+#  Contact
+
+[![DOI](https://zenodo.org/badge/393137290.svg)](https://zenodo.org/doi/10.5281/zenodo.11459041)
+\# MOCHA: Model-based single-cell Open Chromatin Analysis
+
+MOCHA is an R package meant to enable robust sample-specific scATAC
+analysis by providing a novel single-cell peak-calling algorithm and
+leveraging the latest in zero-inflated statistical methods. We hope this
+package will enable translational research on scATAC datasets by
+addressing statistical issues around peak calling, differential
+accessibility, co-accessibility, and repeated measures. Our goal is to
+enable intuitive and robust identification of open chromatin,
+differential accessibility, and co-accessibility so that biomedical
+researchers can leverage scATAC datasets to identify the therapeutic
+targets.
+
+Find out more by visiting the [MOCHA
+website](https://aifimmunology.github.io/MOCHA/), or
+[publication](https://www.nature.com/articles/s41467-024-50612-6).
+
+------------------------------------------------------------------------
+
+### Table of Contents
+
+- [Installation](#installation)
+- [Overview](#overview)
+- [Contact](#contact)
+
+------------------------------------------------------------------------
+
+##  Installation
+
+MOCHA is submitted to [Bioconductor](https://bioconductor.org/). After
+acceptance:
+
+``` r
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("MOCHA")
+```
+
+Before acceptance, install from the Bioconductor submission branch:
+
+``` r
+
+if (!requireNamespace("remotes", quietly = TRUE))
+    install.packages("remotes")
+remotes::install_github("aifimmunology/MOCHA", ref = "bioc/submission")
+```
+
+Development builds from `main` or other branches:
+
+``` r
+
+remotes::install_github("aifimmunology/MOCHA", ref = "your_branch_name")
+```
+
+##  Usage Overview
+
+Please view the example usage in the [MOCHA workflow
+tutorial](https://aifimmunology.github.io/MOCHA/articles/MOCHA-workflow-tutorial.html)
+and the [data import
+tutorial](https://aifimmunology.github.io/MOCHA/articles/Data-Import-Tutorial.html).
+
+### Articles
+
+| Tutorial | Description |
+|----|----|
+| [MOCHA workflow tutorial](https://aifimmunology.github.io/MOCHA/articles/MOCHA-workflow-tutorial.html) | End-to-end peak calling, sample-tile matrices, annotation, and differentials (runnable on bundled data). |
+| [Data Import Tutorial](https://aifimmunology.github.io/MOCHA/articles/Data-Import-Tutorial.html) | Import from ArchR, Signac, SnapATAC2, and bundled fragments; call [`callOpenTiles()`](https://aifimmunology.github.io/MOCHA/reference/callOpenTiles-methods.md). |
+| [MOCHA downstream workflows](https://aifimmunology.github.io/MOCHA/articles/MOCHA-downstream-workflows.html) | Co-accessibility, dropout modeling, pseudobulk, merge/combine, and utilities. |
+| [Alternative TSS and TF regulation](https://aifimmunology.github.io/MOCHA/articles/Alternative-TSS-TF-regulation.html) | Motif enrichment, alternative TSSs, and footprinting. |
+| [Exporting and sharing](https://aifimmunology.github.io/MOCHA/articles/MOCHA-export-and-sharing.html) | [`packMOCHA()`](https://aifimmunology.github.io/MOCHA/reference/packMOCHA.md), coverage export, and IGV-oriented outputs. |
+| [Advanced modeling](https://aifimmunology.github.io/MOCHA/articles/MOCHA-advanced-modeling.html) | LMEM, ZIGLMM, and custom peak training. |
+
+The example usage demonstrates this workflow:
+
+![Workflow](reference/figures/workflow_diagram_v3_website.png)
+
+Workflow
+
+##  Contact
+
+While the pipeline can be run function-to-function, you may wish to
+inspect intermediate results or use end results for your own custom
+analyses. All MOCHA outputs use common Bioconductor data structures. We
+also provide some getters for accessing specific results.
+
+## MOCHA class system (optional)
+
+By default, MOCHA continues to return standard Bioconductor objects
+(`MultiAssayExperiment` from `callOpenTiles`,
+`RangedSummarizedExperiment` from `getSampleTileMatrix`). You may opt in
+to MOCHA-specific subclasses that fully inherit those types:
+
+- `MochaTileResults` (extends `MultiAssayExperiment`)
+- `MochaSampleTileMatrix` (extends `RangedSummarizedExperiment`)
+
+Pass `returnClass = "mocha"` to
+[`callOpenTiles()`](https://aifimmunology.github.io/MOCHA/reference/callOpenTiles-methods.md),
+[`getSampleTileMatrix()`](https://aifimmunology.github.io/MOCHA/reference/getSampleTileMatrix.md),
+[`mergeTileResults()`](https://aifimmunology.github.io/MOCHA/reference/mergeTileResults.md),
+or
+[`combineSampleTileMatrix()`](https://aifimmunology.github.io/MOCHA/reference/combineSampleTileMatrix.md).
+Existing objects can be coerced with
+[`asMochaTileResults()`](https://aifimmunology.github.io/MOCHA/reference/asMochaTileResults.md)
+and
+[`asMochaSTM()`](https://aifimmunology.github.io/MOCHA/reference/asMochaSTM.md).
+Subclass objects support
+[`subset()`](https://rdrr.io/r/base/subset.html) with the same semantics
+as
+[`subsetMOCHAObject()`](https://aifimmunology.github.io/MOCHA/reference/subsetMOCHAObject.md)
+(e.g. `subset(stm, cells = "CD16 Mono")`). Legacy workflows using
+[`subsetMOCHAObject()`](https://aifimmunology.github.io/MOCHA/reference/subsetMOCHAObject.md)
+are unchanged.
+
+## callOpenTiles results
+
+The output of the first step of the pipeline,
+[`MOCHA::callOpenTiles`](https://aifimmunology.github.io/MOCHA/reference/callOpenTiles-methods.md)
+is a
+[MultiAssayExperiment](https://www.bioconductor.org/packages/devel/bioc/vignettes/MultiAssayExperiment/inst/doc/MultiAssayExperiment.html#overview-of-the-multiassayexperiment-class)
+organizing your open-tiles by cell population. This is the input to the
+next function, `MOCHA::getSampleTileMatrices`.
+
+Sample-level metadata can be accessed using `colData(tileResults)`.
+
+A specific cell population’s results are stored as a
+[RaggedExperiment](https://bioconductor.org/packages/release/bioc/vignettes/RaggedExperiment/inst/doc/RaggedExperiment.html).
+
+This object stores ranged data alongside the sample-level metadata.
+
+## getSampleTileMatrix results
+
+The output of getSampleTileMatrix is a
+[SummarizedExperiment](https://bioconductor.org/packages/devel/bioc/vignettes/SummarizedExperiment/inst/doc/SummarizedExperiment.html)
+organizing the TSAM (Tile Sample Accessibility Matrix) by cell
+population. This is the input to
+[`MOCHA::getDifferentialAccessibleTiles`](https://aifimmunology.github.io/MOCHA/reference/getDifferentialAccessibleTiles.md)
+and other downstream analyses.
+
+``` r
+
+## Subset results for Chr 4
+> SampleTileMatrices[grep('chr4', rownames(SampleTileMatrices)),]
+class: RangedSummarizedExperiment 
+dim: 8112 39 
+metadata(6): CellCounts FragmentCounts ... OrgDb Directory
+assays(1): CD16 Mono
+rownames(8112): chr4:10005500-10005999 chr4:10006000-10006499 ...
+  chr4:99961000-99961499 chr4:99961500-99961999
+rowData names(1): CD16 Mono
+colnames(39): B011-AP0C1W3 B011-AP0C1W8 ... FSQEAZ0C2D3-02
+  FSQFAZ0BZJQ-02
+colData names(186): Sample well_id ... ATAC_WellID AIFI.Batch
+```
+
+It also holds metadata related to the genome, transcript database, and
+annotations: `metadata(SampleTileMatrices)`
+
+## getDifferentialAccessibleTiles results
+
+Results of
+[`MOCHA::getDifferentialAccessibleTiles`](https://aifimmunology.github.io/MOCHA/reference/getDifferentialAccessibleTiles.md)
+is given either as a `data.table` or a ‘granges’ and can be filtered
+accordingly:
+
+``` r
+> head(dplyr::filter(differentials, seqnames =='chr4' & FDR < 0.2))
+GRanges object with 6 ranges and 13 metadata columns:
+      seqnames              ranges strand |                   Tile
+         <Rle>           <IRanges>  <Rle> |            <character>
+  [1]     chr4   10023500-10023999      * | chr4:10023500-10023999
+  [2]     chr4   10024000-10024499      * | chr4:10024000-10024499
+  [3]     chr4   10063500-10063999      * | chr4:10063500-10063999
+  [4]     chr4   10096500-10096999      * | chr4:10096500-10096999
+  [5]     chr4     1010500-1010999      * |   chr4:1010500-1010999
+  [6]     chr4 101346000-101346499      * | chr4:101346000-10134..
+      CellPopulation  Foreground  Background     P_value Test_Statistic
+         <character> <character> <character>   <numeric>      <numeric>
+  [1]      CD16 Mono    Positive    Negative 0.002610899       11.89612
+  [2]      CD16 Mono    Positive    Negative 0.023560228        7.49639
+  [3]      CD16 Mono    Positive    Negative 0.000421733       12.43336
+  [4]      CD16 Mono    Positive    Negative 0.006561717       10.05301
+  [5]      CD16 Mono    Positive    Negative 0.016701496        5.72747
+  [6]      CD16 Mono    Positive    Negative 0.006274534        7.46972
+            FDR  Log2FC_C   MeanDiff Avg_Intensity_Case Pct0_Case
+      <numeric> <numeric>  <numeric>          <numeric> <numeric>
+  [1] 0.0788621  1.023296  2.9715709            12.3478 0.0000000
+  [2] 0.1910923  0.648633 -0.0879542            12.2027 0.0588235
+  [3] 0.0451423  0.786501  0.7773734            12.8422 0.0000000
+  [4] 0.1124369  0.739042  1.3575321            13.0183 0.0000000
+  [5] 0.1628641 -0.476150 -0.4293368            13.6077 0.0000000
+  [6] 0.1091473 -0.397274 -0.3913687            13.1689 0.0000000
+      Avg_Intensity_Control Pct0_Control
+                  <numeric>    <numeric>
+  [1]               11.1988    0.1818182
+  [2]               11.4155    0.0000000
+  [3]               12.0881    0.0000000
+  [4]               12.2886    0.0454545
+  [5]               14.2039    0.0000000
+  [6]               13.5651    0.0000000
+  -------
+  seqinfo: 24 sequences from an unspecified genome; no seqlengths
+```
+
+## getCoAccessibleLinks results
+
+Results of
+[`MOCHA::getCoAccessibleLinks`](https://aifimmunology.github.io/MOCHA/reference/getCoAccessibleLinks.md)
+is given as a `data.frame` and can be filtered further according to
+correlation using
+[`MOCHA::filterCoAccessibleLinks`](https://aifimmunology.github.io/MOCHA/reference/filterCoAccessibleLinks.md).
+
+``` r
+> head(links)
+   Correlation                  Tile1                  Tile2
+1:  0.06203363 chr4:10023500-10023999 chr4:10005500-10005999
+2: -0.07812306 chr4:10023500-10023999 chr4:10006000-10006499
+3:  0.06192133 chr4:10023500-10023999 chr4:10006500-10006999
+4:  0.25329153 chr4:10023500-10023999 chr4:10007000-10007499
+5:  0.09938466 chr4:10023500-10023999 chr4:10013500-10013999
+6:  0.03643015 chr4:10023500-10023999 chr4:10015000-10015499
+
+
+> MOCHA::filterCoAccessibleLinks(links, threshold = 0.4)
+   Correlation                  Tile1                  Tile2  chr    start      end
+1:   0.5035455 chr4:10023500-10023999 chr4:10024000-10024499 chr4 10023500 10024499
+2:   0.5121115 chr4:10023500-10023999 chr4:10063500-10063999 chr4 10023500 10063999
+3:   0.4059254 chr4:10023500-10023999 chr4:10078000-10078499 chr4 10023500 10078499
+4:   0.4003500 chr4:10023500-10023999 chr4:10096500-10096999 chr4 10023500 10096999
+5:   0.4367843 chr4:10023500-10023999 chr4:10106500-10106999 chr4 10023500 10106999
+```
+
+To contact the developers on issues and feature requests, please contact
+us via the discussions tab for feature requests, or open issues for any
+bugs.
+
+#  License
+
+MOCHA follows the Allen Institute Software License - full information
+about the license can be found on the LICENSE file.
+
+# Package index
+
+## Open Chromatin Identification
+
+- [`callOpenTiles()`](https://aifimmunology.github.io/MOCHA/reference/callOpenTiles-methods.md)
+  [`.callOpenTiles_default()`](https://aifimmunology.github.io/MOCHA/reference/callOpenTiles-methods.md)
+  [`.callOpenTiles_ArchR()`](https://aifimmunology.github.io/MOCHA/reference/callOpenTiles-methods.md)
+  : Perform peak-calling on a set of fragments or an ArchR Project
+- [`getSampleTileMatrix()`](https://aifimmunology.github.io/MOCHA/reference/getSampleTileMatrix.md)
+  : Get consensus sample-tile matrices containing the signal intensity
+  at each tile
+- [`import_snap_atac()`](https://aifimmunology.github.io/MOCHA/reference/import_snap_atac.md)
+  : Import SnapATAC2 AnnData / AnnDataSet for MOCHA peak calling
+- [`trainPeakModel()`](https://aifimmunology.github.io/MOCHA/reference/trainPeakModel.md)
+  : Retrain MOCHA peak-calling models at a chosen tile size
+
+## Plotting
+
+- [`plotConsensus()`](https://aifimmunology.github.io/MOCHA/reference/plotConsensus.md)
+  : Plot to determine the reproducibility threshold
+- [`plotDropoutDiagnostics()`](https://aifimmunology.github.io/MOCHA/reference/plotDropoutDiagnostics.md)
+  : Plot dropout model diagnostics
+- [`plotIntensityDistribution()`](https://aifimmunology.github.io/MOCHA/reference/plotIntensityDistribution.md)
+  : Plots the distribution of sample-tile intensities for a given cell
+  population
+- [`plotRegion()`](https://aifimmunology.github.io/MOCHA/reference/plotRegion.md)
+  : Plot a given region summarized across all cell groupings
+- [`suggestConsensusThreshold()`](https://aifimmunology.github.io/MOCHA/reference/suggestConsensusThreshold.md)
+  : Suggest a reproducibility threshold for consensus tile selection
+
+## Downstream Analyses
+
+- [`MotifEnrichment()`](https://aifimmunology.github.io/MOCHA/reference/MotifEnrichment.md)
+  : Test for enrichment of motifs against a background
+
+- [`MotifSetEnrichmentAnalysis()`](https://aifimmunology.github.io/MOCHA/reference/MotifSetEnrichmentAnalysis.md)
+  : Test the enrichment of a given TF motif set against a motif set
+  downstream of multiple ligands
+
+- [`addAccessibilityShift()`](https://aifimmunology.github.io/MOCHA/reference/addAccessibilityShift.md)
+  : Add difference in accessibility between two conditions
+
+- [`addInsertionBias()`](https://aifimmunology.github.io/MOCHA/reference/addInsertionBias.md)
+  : Add InsertionBias to MOCHA object
+
+- [`assessDropout()`](https://aifimmunology.github.io/MOCHA/reference/assessDropout.md)
+  : Assess technical vs biological zeros on a sample-tile matrix
+
+- [`bulkDimReduction()`](https://aifimmunology.github.io/MOCHA/reference/bulkDimReduction.md)
+  : Run PCA or LSI dimensionality reduction on tiles
+
+- [`bulkUMAP()`](https://aifimmunology.github.io/MOCHA/reference/bulkUMAP.md)
+  : Generate UMAP from pseudobulk LSI results
+
+- [`estimateDropoutModel()`](https://aifimmunology.github.io/MOCHA/reference/estimateDropoutModel.md)
+  : Estimate a logistic dropout model for a cell population
+
+- [`filterCoAccessibleLinks()`](https://aifimmunology.github.io/MOCHA/reference/filterCoAccessibleLinks.md)
+  : Filter links by correlation strength
+
+- [`getAltTSS()`](https://aifimmunology.github.io/MOCHA/reference/getAltTSS.md)
+  : Annotate peaks falling in Transcription Start Sites (TSSs) and
+  identify alternatively regulated TSSs for each gene
+
+- [`getCellTypeMotifs()`](https://aifimmunology.github.io/MOCHA/reference/getCellTypeMotifs.md)
+  : Get motifset for a given cell type
+
+- [`getCoAccessibleLinks()`](https://aifimmunology.github.io/MOCHA/reference/getCoAccessibleLinks.md)
+  : Find co-accessible neighboring regions
+
+- [`getDifferentialAccessibleTiles()`](https://aifimmunology.github.io/MOCHA/reference/getDifferentialAccessibleTiles.md)
+  : Conduct a differential test between open regions of two sample
+  groups
+
+- [`linearModeling()`](https://aifimmunology.github.io/MOCHA/reference/linearModeling.md)
+  :
+
+  `linearModeling`
+
+- [`motifFootprint()`](https://aifimmunology.github.io/MOCHA/reference/motifFootprint.md)
+  : Generate motif footprints
+
+- [`pilotLMEM()`](https://aifimmunology.github.io/MOCHA/reference/pilotLMEM.md)
+  : Execute a pilot run of single linear model on a subset of data
+
+- [`pilotZIGLMM()`](https://aifimmunology.github.io/MOCHA/reference/pilotZIGLMM.md)
+  : Execute a pilot run of model on a subset of data
+
+- [`runLMEM()`](https://aifimmunology.github.io/MOCHA/reference/runLMEM.md)
+  : Run Linear Mixed-Effects Modeling for continuous, non-zero inflated
+  data
+
+- [`runZIGLMM()`](https://aifimmunology.github.io/MOCHA/reference/runZIGLMM.md)
+  : Run Zero-inflated Generalized Linear Mixed Modeling on pseudobulked
+  scATAC data
+
+- [`testCoAccessibility()`](https://aifimmunology.github.io/MOCHA/reference/testCoAccessibility.md)
+  : Test if tile pairs are significantly different against a random,
+  non-overlapping background set
+
+- [`testCoAccessibilityChromVar()`](https://aifimmunology.github.io/MOCHA/reference/testCoAccessibilityChromVar.md)
+  : Test input tile pairs against a ChromVAR background
+
+- [`testCoAccessibilityRandom()`](https://aifimmunology.github.io/MOCHA/reference/testCoAccessibilityRandom.md)
+  : Test input tile pairs against a random background
+
+- [`varZIGLMM()`](https://aifimmunology.github.io/MOCHA/reference/varZIGLMM.md)
+  : Zero-inflated Variance Decomposition for pseudobulked scATAC data
+
+## Exporting/Sharing
+
+- [`exportCoverage()`](https://aifimmunology.github.io/MOCHA/reference/exportCoverage.md)
+  : Export normalized coverage files to per-sample or sample-averaged
+  (per cell population) BigWig files.
+
+- [`exportDifferentials()`](https://aifimmunology.github.io/MOCHA/reference/exportDifferentials.md)
+  :
+
+  Export differential peaks from
+  [`getDifferentialAccessibleTiles()`](https://aifimmunology.github.io/MOCHA/reference/getDifferentialAccessibleTiles.md)
+  to BigBed format for visualization in genome browsers.
+
+- [`exportLocalFootprints()`](https://aifimmunology.github.io/MOCHA/reference/exportLocalFootprints.md)
+  : Export insertion counts to per-sample BigWig files after applying a
+  rolling sum and rolling median smoothing filter.
+
+- [`exportMotifs()`](https://aifimmunology.github.io/MOCHA/reference/exportMotifs.md)
+  :
+
+  Export motif annotations from
+  [`addMotifSet()`](https://aifimmunology.github.io/MOCHA/reference/addMotifSet.md)
+  to BigBed format for visualization in genome browsers.
+
+- [`exportOpenTiles()`](https://aifimmunology.github.io/MOCHA/reference/exportOpenTiles.md)
+  : Export open tiles of a given cell population to BigBed format for
+  visualization in genome browsers.
+
+- [`packMOCHA()`](https://aifimmunology.github.io/MOCHA/reference/packMOCHA.md)
+  : Zip up a MOCHA object and its linked files for portability between
+  file systems
+
+- [`plotMotifs()`](https://aifimmunology.github.io/MOCHA/reference/plotMotifs.md)
+  : plotMotifs - plots motif footprints, exported from motifFootprint
+
+- [`unpackMOCHA()`](https://aifimmunology.github.io/MOCHA/reference/unpackMOCHA.md)
+  :
+
+  Unzip a MOCHA object and its linked files created by
+  [`packMOCHA()`](https://aifimmunology.github.io/MOCHA/reference/packMOCHA.md)
+  for portability between file systems
+
+## Utilities
+
+- [`GRangesToString()`](https://aifimmunology.github.io/MOCHA/reference/GRangesToString.md)
+  : Convert a GRanges object to a string in the format 'chr1:100-200'
+
+- [`StringsToGRanges()`](https://aifimmunology.github.io/MOCHA/reference/StringsToGRanges.md)
+  : Convert a list of strings in the format "chr1:100-200" into a
+  GRanges
+
+- [`addCellColData()`](https://aifimmunology.github.io/MOCHA/reference/addCellColData.md)
+  : Add a column to the sample-level colData of a MOCHA object
+
+- [`addMotifSet()`](https://aifimmunology.github.io/MOCHA/reference/addMotifSet.md)
+  : Identify motifs within a peakset
+
+- [`annotateTiles()`](https://aifimmunology.github.io/MOCHA/reference/annotateTiles.md)
+  : Annotate tiles with gene annotations
+
+- [`asMochaSTM()`](https://aifimmunology.github.io/MOCHA/reference/asMochaSTM.md)
+  : Coerce to MochaSampleTileMatrix
+
+- [`asMochaTileResults()`](https://aifimmunology.github.io/MOCHA/reference/asMochaTileResults.md)
+  : Coerce to MochaTileResults
+
+- [`cellTypes()`](https://aifimmunology.github.io/MOCHA/reference/cellTypes.md)
+  : Get cell population names from a MOCHA object
+
+- [`classifyZeros()`](https://aifimmunology.github.io/MOCHA/reference/classifyZeros.md)
+  : Classify observed zeros as technical, biological, or ambiguous
+
+- [`combineSampleTileMatrix()`](https://aifimmunology.github.io/MOCHA/reference/combineSampleTileMatrix.md)
+  : Merge the TSAM from multiple cell populations into a single matrix
+
+- [`correctGenome()`](https://aifimmunology.github.io/MOCHA/reference/correctGenome.md)
+  :
+
+  `correctGenome`
+
+- [`differentialsToGRanges()`](https://aifimmunology.github.io/MOCHA/reference/differentialsToGRanges.md)
+  : Convert a data.frame or matrix to a GRanges
+
+- [`extractRegion()`](https://aifimmunology.github.io/MOCHA/reference/extractRegion.md)
+  : Extract accessibility coverage for a given region
+
+- [`getCellPopMatrix()`](https://aifimmunology.github.io/MOCHA/reference/getCellPopMatrix.md)
+  : Get the SampleTileMatrix of the given cell population
+
+- [`getCellTypeTiles()`](https://aifimmunology.github.io/MOCHA/reference/getCellTypeTiles.md)
+  : Extract the GRanges for a particular cell population
+
+- [`getCellTypes()`](https://aifimmunology.github.io/MOCHA/reference/getCellTypes.md)
+  : Extract cell population names from a Tile Results or Sample Tile
+  object.
+
+- [`getCoverage()`](https://aifimmunology.github.io/MOCHA/reference/getCoverage.md)
+  : Get sample-specific coverage files for each sample-cell population
+
+- [`getDropoutProb()`](https://aifimmunology.github.io/MOCHA/reference/getDropoutProb.md)
+  : Get predicted P(zero) dropout scores for a cell population
+
+- [`getModelValues()`](https://aifimmunology.github.io/MOCHA/reference/getModelValues.md)
+  : Get a data.frame of model values from the output of linear modeling
+
+- [`getOpenTiles()`](https://aifimmunology.github.io/MOCHA/reference/getOpenTiles.md)
+  : Get per-cell-population open tiles from a MOCHA tileResults object
+
+- [`getPopFrags()`](https://aifimmunology.github.io/MOCHA/reference/getPopFrags.md)
+  : Extract fragments by populations from an ArchR Project
+
+- [`getPromoterGenes()`](https://aifimmunology.github.io/MOCHA/reference/getPromoterGenes.md)
+  :
+
+  Extract the list of promoter genes from a GRanges annotated with
+  [`annotateTiles()`](https://aifimmunology.github.io/MOCHA/reference/annotateTiles.md)
+
+- [`getSampleCellTypeMetadata()`](https://aifimmunology.github.io/MOCHA/reference/getSampleCellTypeMetadata.md)
+  : Extract Sample-celltype specific metadata
+
+- [`isMOCHAObject()`](https://aifimmunology.github.io/MOCHA/reference/isMOCHAObject.md)
+  : isMOCHAObject
+
+- [`mergeTileResults()`](https://aifimmunology.github.io/MOCHA/reference/mergeTileResults.md)
+  :
+
+  Merge tileResults from
+  [`callOpenTiles()`](https://aifimmunology.github.io/MOCHA/reference/callOpenTiles-methods.md)
+  that share cell populations into a single object containing all
+  samples
+
+- [`openTiles()`](https://aifimmunology.github.io/MOCHA/reference/openTiles.md)
+  : Get open tiles from a MochaTileResults object
+
+- [`renameCellTypes()`](https://aifimmunology.github.io/MOCHA/reference/renameCellTypes.md)
+  :
+
+  Modify the cell population names in a Sample-Tile Object from
+  [`getSampleTileMatrix()`](https://aifimmunology.github.io/MOCHA/reference/getSampleTileMatrix.md)
+
+- [`seuratToMOCHAInputs()`](https://aifimmunology.github.io/MOCHA/reference/seuratToMOCHAInputs.md)
+  : Convert Seurat/Signac object to sample-level MOCHA fragment inputs.
+
+- [`subsetMOCHAObject()`](https://aifimmunology.github.io/MOCHA/reference/subsetMOCHAObject.md)
+  : Subset a tileResults object by metadata
+
+- [`updateDirectoryPath()`](https://aifimmunology.github.io/MOCHA/reference/updateDirectoryPath.md)
+  : updateDirectoryPath
+
+# Articles
+
+### MOCHA tutorials
+
+- [MOCHA workflow
+  tutorial](https://aifimmunology.github.io/MOCHA/articles/MOCHA-workflow-tutorial.md):
+- [Data Import Tutorial: Signac, ArchR, SnapATAC and
+  more](https://aifimmunology.github.io/MOCHA/articles/Data-Import-Tutorial.md):
+- [MOCHA downstream workflows: co-accessibility, dropout, and
+  pseudobulk](https://aifimmunology.github.io/MOCHA/articles/MOCHA-downstream-workflows.md):
+- [Alternative TSS usage and TF
+  regulation](https://aifimmunology.github.io/MOCHA/articles/Alternative-TSS-TF-regulation.md):
+- [Exporting and sharing MOCHA
+  results](https://aifimmunology.github.io/MOCHA/articles/MOCHA-export-and-sharing.md):
+- [Advanced modeling: mixed models and custom peak
+  training](https://aifimmunology.github.io/MOCHA/articles/MOCHA-advanced-modeling.md):

@@ -97,18 +97,6 @@
   }
 }
 
-.readCoverageBundle <- function(outDir, cellPop) {
-  covFile <- file.path(outDir, paste0(cellPop, "_CoverageFiles.RDS"))
-  if (!file.exists(covFile)) {
-    stop(
-      "Coverage file ",
-      covFile,
-      " could not be found."
-    )
-  }
-  readRDS(covFile)
-}
-
 .selectCoverageFromBundle <- function(bundle, coverage = TRUE) {
   if (coverage) {
     if ("Accessibility" %in% names(bundle)) {
@@ -449,6 +437,13 @@ StringsToGRanges <- function(regionString) {
     gsub("-.*|-.*", "", .) %>%
     as.numeric()
   endSite <- gsub(".*-|.*-", "", regionString) %>% as.numeric()
+
+  if (any(is.na(startSite) | is.na(endSite))) {
+    stop(
+      "Region must be a string matching format 'seqname:start-end', ",
+      "where start < end (e.g. chr1:123000-123500)."
+    )
+  }
 
   if (any(startSite >= endSite)) {
     stop("Error in region string: Make sure the start of the genomic range occurs before the end")

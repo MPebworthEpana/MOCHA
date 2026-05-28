@@ -91,7 +91,8 @@ Imports:
     pbapply,
     BSgenome,
     tidyselect,
-    lifecycle
+    lifecycle,
+    rtracklayer
 Suggests: 
     reticulate,
     ArchR,
@@ -123,7 +124,6 @@ Suggests:
     Biobase,
     lme4,
     zip,
-    rtracklayer,
     cowplot,
     mixtools,
     cutpointr,

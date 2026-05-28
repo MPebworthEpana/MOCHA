@@ -17,19 +17,19 @@
            chrY:21154500-21154999     chrY   21154500-21154999      * |     FALSE
              chrY:2709500-2709999     chrY     2709500-2709999      * |     FALSE
              chrY:2803000-2803499     chrY     2803000-2803499      * |     FALSE
-                                         C3    tileType        Gene
-                                  <logical> <character> <character>
-        chr10:100028000-100028499     FALSE    Promoter       LOXL4
-        chr10:100080500-100080999      TRUE      Distal        <NA>
-        chr10:100147000-100147499      TRUE  Intragenic     PYROXD2
-        chr10:100227000-100227499      TRUE  Intragenic       HPSE2
-        chr10:101190000-101190499     FALSE    Promoter        GOT1
-                              ...       ...         ...         ...
-           chrX:99870000-99870499      TRUE      Distal        <NA>
-           chrY:16263500-16263999      TRUE      Distal        <NA>
-           chrY:21154500-21154999      TRUE    Promoter        CD24
-             chrY:2709500-2709999      TRUE    Promoter      RPS4Y1
-             chrY:2803000-2803499      TRUE    Promoter         ZFY
+                                         C3    tileType          Gene
+                                  <logical> <character>   <character>
+        chr10:100028000-100028499     FALSE    Promoter         LOXL4
+        chr10:100080500-100080999      TRUE      Distal          <NA>
+        chr10:100147000-100147499      TRUE  Intragenic       PYROXD2
+        chr10:100227000-100227499      TRUE  Intragenic         HPSE2
+        chr10:101190000-101190499     FALSE    Promoter GOT1-DT, GOT1
+                              ...       ...         ...           ...
+           chrX:99870000-99870499      TRUE      Distal          <NA>
+           chrY:16263500-16263999      TRUE      Distal          <NA>
+           chrY:21154500-21154999      TRUE  Intragenic        TTTY14
+             chrY:2709500-2709999      TRUE    Promoter        RPS4Y1
+             chrY:2803000-2803499      TRUE    Promoter           ZFY
         -------
         seqinfo: 24 sequences from an unspecified genome; no seqlengths
 
@@ -52,19 +52,19 @@
            chrY:21154500-21154999     chrY   21154500-21154999      * |     FALSE
              chrY:2709500-2709999     chrY     2709500-2709999      * |     FALSE
              chrY:2803000-2803499     chrY     2803000-2803499      * |     FALSE
-                                         C3    tileType        Gene
-                                  <logical> <character> <character>
-        chr10:100028000-100028499     FALSE      Distal        <NA>
-        chr10:100080500-100080999      TRUE  Intragenic        CPN1
-        chr10:100147000-100147499      TRUE      Distal        <NA>
-        chr10:100227000-100227499      TRUE  Intragenic        CHUK
-        chr10:101190000-101190499     FALSE  Intragenic   LINC01514
-                              ...       ...         ...         ...
-           chrX:99870000-99870499      TRUE      Distal        <NA>
-           chrY:16263500-16263999      TRUE      Distal        <NA>
-           chrY:21154500-21154999      TRUE      Distal        <NA>
-             chrY:2709500-2709999      TRUE  Intragenic        CD99
-             chrY:2803000-2803499      TRUE      Distal        <NA>
+                                         C3    tileType         Gene
+                                  <logical> <character>  <character>
+        chr10:100028000-100028499     FALSE      Distal         <NA>
+        chr10:100080500-100080999      TRUE  Intragenic         CPN1
+        chr10:100147000-100147499      TRUE      Distal         <NA>
+        chr10:100227000-100227499      TRUE  Intragenic         CHUK
+        chr10:101190000-101190499     FALSE  Intragenic    LINC01514
+                              ...       ...         ...          ...
+           chrX:99870000-99870499      TRUE      Distal         <NA>
+           chrY:16263500-16263999      TRUE      Distal         <NA>
+           chrY:21154500-21154999      TRUE  Intragenic LOC105377225
+             chrY:2709500-2709999      TRUE  Intragenic         CD99
+             chrY:2803000-2803499      TRUE  Intragenic       RPS4Y1
         -------
         seqinfo: 24 sequences from an unspecified genome; no seqlengths
 

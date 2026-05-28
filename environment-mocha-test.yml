@@ -60,3 +60,7 @@ dependencies:
   - anndata
   - scipy
   - numpy
+  # pkgdown / vignette site build (see docs/BUILD.md)
+  - pandoc>=3.0
+  - r-pkgdown>=2.0
+  - bioconductor-biocstyle

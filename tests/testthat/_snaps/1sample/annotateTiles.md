@@ -19,15 +19,15 @@
           chr2:99954500-99954999     chr2   99954500-99954999      * |      TRUE
                                         C5    tileType          Gene
                                  <logical> <character>   <character>
-            chr1:1000000-1000499      TRUE      Distal          <NA>
+            chr1:1000000-1000499      TRUE  Intragenic  LOC100288175
           chr1:10002000-10002499      TRUE    Promoter        NMNAT1
           chr1:10002500-10002999      TRUE    Promoter  NMNAT1, LZIC
-        chr1:100026000-100026499      TRUE      Distal          <NA>
+        chr1:100026000-100026499      TRUE  Intragenic     LINC01708
           chr1:10003000-10003499      TRUE    Promoter  NMNAT1, LZIC
                              ...       ...         ...           ...
-          chr2:99952500-99952999      TRUE    Promoter EIF5B, TXNDC9
-          chr2:99953000-99953499      TRUE    Promoter EIF5B, TXNDC9
-          chr2:99953500-99953999      TRUE    Promoter EIF5B, TXNDC9
+          chr2:99952500-99952999      TRUE    Promoter TXNDC9, EIF5B
+          chr2:99953000-99953499      TRUE    Promoter TXNDC9, EIF5B
+          chr2:99953500-99953999      TRUE    Promoter TXNDC9, EIF5B
           chr2:99954000-99954499      TRUE    Promoter        TXNDC9
           chr2:99954500-99954999     FALSE    Promoter        TXNDC9
         -------

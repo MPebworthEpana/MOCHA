@@ -1,27 +1,157 @@
 ---
-title: "Importing From Other Sources"
-output: rmarkdown::html_vignette
+title: "Data Import Tutorial: Signac, ArchR, SnapATAC and more"
+author:
+  - "MOCHA authors"
+date: "`r BiocStyle::doc_date()`"
+package: MOCHA
+output:
+  BiocStyle::html_document:
+    toc_depth: 2
+    toc_float: true
 vignette: >
-  %\VignetteIndexEntry{Importing From Other Sources}
+  %\VignetteIndexEntry{Data Import Tutorial: Signac, ArchR, SnapATAC and more}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-```{r, include = FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  message = FALSE,
+  warning = FALSE
+)
+tutorial_read_chunks <- function(...) {
+  files <- unlist(list(...))
+  for (f in files) {
+    p <- system.file("tutorials", f, package = "MOCHA")
+    if (!nzchar(p)) p <- file.path("..", "inst", "tutorials", f)
+    knitr::read_chunk(p)
+  }
+}
+tutorial_read_chunks("02-import-bundled.R")
+```
+
+## Introduction
+
+MOCHA peak calling with `callOpenTiles()` runs **after** you have clustered cells and
+assigned cell-type or cluster labels. This vignette shows how to reach that step from
+seven common inputs:
+
+1. Bundled `GRangesList` example data (runnable on Bioconductor builders).
+2. An [ArchR](https://www.archrproject.com/) `ArchRProject` (Hematopoiesis tutorial data).
+3. Direct [Signac](https://stuartlab.org/signac/) / Seurat input (indexed fragments + labels).
+4. [Signac](https://stuartlab.org/signac/) 10k PBMC ATAC tutorial (Seurat object end-to-end).
+5. Signac multiome — manual fragment extraction (advanced).
+6. [SnapATAC2](https://scverse.org/SnapATAC2/) AnnData object (PBMC 5k tutorial).
+7. Legacy SnapATAC (v1) manual extraction from `.snap` files.
+
+For downstream steps (`getSampleTileMatrix`, differentials, motifs), see the
+[MOCHA workflow tutorial](MOCHA-workflow-tutorial.html).
+
+Reference sections (ArchR, Signac paths, SnapATAC2 shortcut, multiome manual, and legacy SnapATAC v1) use `eval = FALSE` code chunks so the vignette builds on Bioconductor without large downloads.
+
+### Prerequisites
+
+| Input | R packages | Other requirements |
+|-------|------------|-------------------|
+| Bundled `GRangesList` | MOCHA + annotation `Suggests` | None |
+| ArchR | MOCHA, ArchR (install separately) | Pre-clustered `ArchRProject` |
+| Direct Seurat/Signac | MOCHA, Seurat, Signac, BSgenome | `ChromatinAssay` with fragment paths; `Sample` + cell-type column |
+| Signac 10k ATAC | MOCHA, Seurat, Signac, BSgenome | 10x fragment TSV + index; clustering |
+| Signac multiome (manual) | MOCHA, Seurat, Signac, SeuratDisk, EnsDb, BSgenome | Multiome H5 + fragments; label transfer or existing labels |
+| SnapATAC2 | MOCHA, reticulate | Python `anndata` or `snapatac2`; clustered `.h5ad` |
+| Legacy SnapATAC v1 | MOCHA, SnapATAC (patched fork) | `.snap` files + metadata; large RAM for `extractReads` |
+
+Every path needs **`cellPopLabel`** (cluster/cell-type column), **`Sample`** (or
+`sampleColumn`), **`blackList`**, **`genome`**, **`TxDb`**, and **`OrgDb`**.
+
+```{r check-deps, echo=FALSE}
+```
+
+## Bundled `GRangesList` (Bioconductor-safe) {#bundled}
+
+The package ships small example objects derived from ArchR `PBMCSmall`
+(`exampleFragments`, `exampleCellColData`, `exampleBlackList`). Fragments use the
+`RG` cell barcode column; metadata includes `Sample` and `Clusters`.
+
+Bundled code is maintained in `inst/tutorials/02-import-bundled.R`.
+
+```{r bundled-libraries}
+```
+
+```{r bundled-call-open-tiles}
+```
+
+```{r bundled-get-open-tiles}
+```
+
+## ArchR `ArchRProject` {#archr}
+
+ArchR is not on Bioconductor; the chunks below are reference code (`eval = FALSE`).
+Install ArchR from [the ArchR website](https://www.archrproject.com/) before running locally.
+
+**Tutorial data:** `ArchR::getTutorialData("Hematopoiesis")` downloads three 10x fragment
+files (BMMC, PBMC, CD34-BMMC; ~35k cells total). Follow the
+[ArchR tutorial](https://www.archrproject.com/articles/Articles/tutorial.html) through
+clustering before MOCHA.
+
+**Quick local test:** `ArchR::getTestProject()` builds a small `PBMCSmall` project (see
+`tests/testthat/TESTING.md` in the MOCHA repository).
+
+```{r archr-setup, eval=FALSE}
+library(ArchR)
+library(MOCHA)
+
+addArchRGenome("hg19")
+inputFiles <- ArchR::getTutorialData("Hematopoiesis")
+
+ArrowFiles <- ArchR::createArrowFiles(
+  inputFiles = inputFiles,
+  sampleNames = names(inputFiles),
+  filterTSS = 4,
+  filterFrags = 1000,
+  addTileMat = TRUE,
+  addGeneScoreMat = TRUE
+)
+
+proj <- ArchR::ArchRProject(
+  ArrowFiles = ArrowFiles,
+  outputDirectory = "HemeTutorial",
+  copyArrows = TRUE
+)
+proj <- ArchR::filterDoublets(ArchRProj = proj)
+proj <- ArchR::addIterativeLSI(
+  ArchRProj = proj,
+  useMatrix = "TileMatrix",
+  name = "IterativeLSI"
+)
+proj <- ArchR::addClusters(input = proj, reducedDims = "IterativeLSI")
+proj <- ArchR::saveArchRProject(ArchRProj = proj)
+```
+
+MOCHA reads metadata, blacklist, and genome from the project. You supply TxDb/OrgDb
+and optionally restrict populations:
+
+```{r archr-call-open-tiles, eval=FALSE}
+# proj <- ArchR::loadArchRProject("HemeTutorial")
+# Or for a quick test: proj <- ArchR::loadArchRProject("PBMCSmall")
+
+tileResults <- callOpenTiles(
+  ATACFragments = proj,
+  cellPopLabel = "Clusters",
+  cellPopulations = c("C2", "C5"),
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+  OrgDb = "org.Hs.eg.db",
+  outDir = NULL,
+  numCores = 4
 )
 ```
 
-MOCHA is intended for use after clustering and cell labeling, since all functions of MOCHA operate on per-sample basis within each cell population. MOCHA can be used with an ArchR Project as input, as well as with a generic input. This tutorial has two sections: demonstrating MOCHA with generic inputs - [Importing from Signac](#signac) and [Importing from SnapATAC](#snapatac).
-
-## Direct Seurat/Signac input (recommended) {#seurat-direct}
+## Direct Seurat / Signac {#signac-direct}
 
 If your Seurat object already has a labeled `ChromatinAssay` with fragment paths (standard Signac workflow), you can call MOCHA directly without manually building a `GRangesList`:
 
-```{r}
+```{r, eval=FALSE}
 library(MOCHA)
 library(Signac)
 
@@ -35,7 +165,7 @@ tileResults <- MOCHA::callOpenTiles(
   cellPopLabel = "predicted.id",
   cellPopulations = "ALL",
   TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-  Org = "org.Hs.eg.db",
+  OrgDb = "org.Hs.eg.db",
   outDir = file.path(getwd(), "MOCHA_Out"),
   numCores = 4
 )
@@ -43,7 +173,7 @@ tileResults <- MOCHA::callOpenTiles(
 
 To inspect or debug the converted inputs before peak calling:
 
-```{r}
+```{r, eval=FALSE}
 inputs <- MOCHA::seuratToMOCHAInputs(
   seuratObj = seurat_obj,
   cellPopLabel = "predicted.id"
@@ -53,12 +183,121 @@ inputs <- MOCHA::seuratToMOCHAInputs(
 ```
 
 The manual fragment extraction workflow below remains available for advanced use cases.
+## Signac 10k PBMC ATAC {#signac-atac}
 
-## Importing from Signac {#signac}
+This section follows the Signac
+[PBMC 10k ATAC vignette](https://stuartlab.org/signac/articles/pbmc_vignette.html)
+through clustering, then calls MOCHA directly on the Seurat object. Code is
+reference-only (`eval = FALSE`) because of large downloads and optional packages.
 
-This vignette will follow the [Signac tutorial](https://stuartlab.org/signac/articles/pbmc_multiomic.html) to generate an Signac object and label cell types within it. If you already have a Signac object with cell types labelled, skip to section [Extract Fragments from Signac](#extract-frags-signac)
 
-```{r}
+```{r signac-download, eval=FALSE}
+# 10x PBMC 10k ATACv2 (Signac tutorial URLs)
+download.file(
+  "https://cf.10xgenomics.com/samples/cell-atac/2.1.0/10k_pbmc_ATACv2_nextgem_Chromium_Controller/10k_pbmc_ATACv2_nextgem_Chromium_Controller_filtered_peak_bc_matrix.h5",
+  destfile = "filtered_peak_bc_matrix.h5"
+)
+download.file(
+  "https://cf.10xgenomics.com/samples/cell-atac/2.1.0/10k_pbmc_ATACv2_nextgem_Chromium_Controller/10k_pbmc_ATACv2_nextgem_Chromium_Controller_singlecell.csv",
+  destfile = "singlecell.csv"
+)
+download.file(
+  "https://cf.10xgenomics.com/samples/cell-atac/2.1.0/10k_pbmc_ATACv2_nextgem_Chromium_Controller/10k_pbmc_ATACv2_nextgem_Chromium_Controller_fragments.tsv.gz",
+  destfile = "fragments.tsv.gz"
+)
+download.file(
+  "https://cf.10xgenomics.com/samples/cell-atac/2.1.0/10k_pbmc_ATACv2_nextgem_Chromium_Controller/10k_pbmc_ATACv2_nextgem_Chromium_Controller_fragments.tsv.gz.tbi",
+  destfile = "fragments.tsv.gz.tbi"
+)
+```
+
+```{r signac-preprocess, eval=FALSE}
+library(Signac)
+library(Seurat)
+library(MOCHA)
+
+set.seed(1234)
+counts <- Read10X_h5(filename = "filtered_peak_bc_matrix.h5")
+metadata <- read.csv(
+  file = "singlecell.csv",
+  header = TRUE,
+  row.names = 1
+)
+metadata <- metadata[colnames(counts), , drop = FALSE]
+
+chrom_assay <- CreateChromatinAssay(
+  counts = counts,
+  sep = c(":", "-"),
+  fragments = "fragments.tsv.gz",
+  min.cells = 10,
+  min.features = 200
+)
+
+pbmc <- CreateSeuratObject(
+  counts = chrom_assay,
+  assay = "peaks",
+  meta.data = metadata
+)
+
+pbmc <- NucleosomeSignal(object = pbmc)
+pbmc <- TSSEnrichment(object = pbmc)
+pbmc <- subset(
+  x = pbmc,
+  subset = peak_region_fragments > 3000 &
+    peak_region_fragments < 20000 &
+    pct_reads_in_peaks > 15 &
+    TSS.enrichment > 2 &
+    nucleosome_signal < 4
+)
+
+pbmc <- RunTFIDF(pbmc)
+pbmc <- FindTopFeatures(pbmc, min.cutoff = "q0")
+pbmc <- RunSVD(pbmc)
+pbmc <- RunUMAP(object = pbmc, reduction = "lsi", dims = 2:30)
+pbmc <- FindNeighbors(object = pbmc, reduction = "lsi", dims = 2:30)
+pbmc <- FindClusters(object = pbmc, verbose = FALSE, algorithm = 3, resolution = 0.5)
+
+# Single 10x library: MOCHA still needs a Sample column
+pbmc$Sample <- "pbmc10k"
+```
+
+**Recommended:** call MOCHA on the Seurat object (no manual `GRangesList`):
+
+```{r signac-call-open-tiles, eval=FALSE}
+tileResults <- callOpenTiles(
+  ATACFragments = pbmc,
+  blackList = blacklist_hg38_unified,
+  genome = "BSgenome.Hsapiens.UCSC.hg38",
+  cellPopLabel = "seurat_clusters",
+  cellPopulations = c("0", "1"),
+  sampleColumn = "Sample",
+  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+  OrgDb = "org.Hs.eg.db",
+  outDir = file.path(tempdir(), "MOCHA_Signac"),
+  numCores = 4
+)
+```
+
+Inspect converted inputs before peak calling:
+
+```{r signac-to-mocha-inputs, eval=FALSE}
+inputs <- seuratToMOCHAInputs(
+  seuratObj = pbmc,
+  cellPopLabel = "seurat_clusters",
+  sampleColumn = "Sample"
+)
+names(inputs$ATACFragments)
+head(inputs$cellColData)
+```
+
+## Signac multiome — manual fragment extraction {#signac-multiome-manual}
+
+For the lighter **10k PBMC ATAC-only** tutorial and direct `callOpenTiles(Seurat)`, see
+[Data Import Tutorial: Signac 10k PBMC ATAC](#signac-atac).
+
+This section follows the [Signac multiome tutorial](https://stuartlab.org/signac/articles/pbmc_multiomic.html) to build a labeled object and manually extract fragments. If you already have a Signac object with cell types labelled, skip to [Extract Fragments from Signac](#extract-frags-signac).
+
+```{r, eval=FALSE}
 library(Signac)
 library(Seurat)
 library(SeuratDisk)
@@ -69,7 +308,7 @@ set.seed(1234)
 
 ### Signac Tutorial Through Clustering
 
-```{r}
+```{r, eval=FALSE}
 # Download files
 system('wget https://cf.10xgenomics.com/samples/cell-arc/1.0.0/pbmc_granulocyte_sorted_10k/pbmc_granulocyte_sorted_10k_filtered_feature_bc_matrix.h5')
 system('wget https://cf.10xgenomics.com/samples/cell-arc/1.0.0/pbmc_granulocyte_sorted_10k/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz')
@@ -81,7 +320,7 @@ fragpath <- "pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz"
 
 ```
 
-```{r}
+```{r, eval=FALSE}
 # create a Seurat object containing the RNA adata
 pbmc <- CreateSeuratObject(
   counts = counts$`Gene Expression`,
@@ -89,6 +328,10 @@ pbmc <- CreateSeuratObject(
 )
 
 # create ATAC assay and add it to the object
+annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevelsStyle(annotation) <- "UCSC"
+genome(annotation) <- "hg38"
+
 pbmc[["ATAC"]] <- CreateChromatinAssay(
   counts = counts$Peaks,
   sep = c(":", "-"),
@@ -119,13 +362,13 @@ pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
 
 Label cell types:
 
-```{r}
+```{r, eval=FALSE}
 # load PBMC reference
 system('wget https://atlas.fredhutch.org/data/nygc/multimodal/pbmc_multimodal.h5seurat')
 reference <- LoadH5Seurat("pbmc_multimodal.h5seurat")
 ```
 
-```{r}
+```{r, eval=FALSE}
 DefaultAssay(pbmc) <- "SCT"
 
 # transfer cell type labels from reference to query
@@ -151,7 +394,7 @@ pbmc <- AddMetaData(
 )
 ```
 
-```{r}
+```{r, eval=FALSE}
 # set the cell identities to the cell type predictions
 Idents(pbmc) <- "predicted.id"
 
@@ -169,7 +412,7 @@ saveRDS(pbmc, 'pbmc_Signac_tutorial.rds')
 
 ### Extract Fragments from Signac Object {#extract-frags-signac}
 
-```{r}
+```{r, eval=FALSE}
 pbmc <- readRDS('pbmc_Signac_tutorial.rds')
 
 DefaultAssay(pbmc) <- 'ATAC'
@@ -178,7 +421,7 @@ fragObj <- Fragments(pbmc)
 
 Signac's training dataset only has one sample, so to simulate multiple samples, we will duplicate the data here. ***This should not be necessary with a large dataset.***
 
-```{r}
+```{r, eval=FALSE}
 full_pbmc <- merge(
   pbmc, 
   y = c(pbmc, pbmc), 
@@ -193,7 +436,7 @@ Instead, we're just duplicating data for the sake of this tutorial.
 
 More importantly, you do need to modify the barcode in the fragment file so it matches the barcodes in Seurat's metadata.
 
-```{r}
+```{r, eval=FALSE}
 fragList <- parallel::mclapply(1:3, function(x){
     frags <- read.table(GetFragmentData(fragObj[[1]]))
     names(frags) <- c('chr', 'start', 'end', 'barcode', 'val')
@@ -209,7 +452,7 @@ Generate your sample/cell type list by finding all combinations of Samples and C
 
 Here we must also rename the GRangesList to have names in the format `CellPopulation#Sample`.
 
-```{r}
+```{r, eval=FALSE}
 celltype_sample_list <- apply(expand.grid(unique(pbmc@meta.data$predicted.id), names(fragList)), 1, paste, collapse = "#")
 # Extract metadata, add the Sample column, as well as CellBarcode. 
 fullMeta <- full_pbmc@meta.data
@@ -231,7 +474,7 @@ names(CellType_GRanges) <- celltype_sample_list
 
 Calculate the study signal (the median number of fragments per cell)
 
-```{r}
+```{r, eval=FALSE}
 avg_reads <- lapply(fragList, function(x){
                 filtFrag <- dplyr::filter(as.data.frame(x), barcode  %in% rownames(fullMeta))
                 as.vector(table(filtFrag$barcode))
@@ -241,7 +484,7 @@ studySignal <- median(unlist(avg_reads))
 
 ### Call Open Tiles with MOCHA
 
-```{r}
+```{r, eval=FALSE}
 # Our blacklist comes included with Signac
 blackList <- blacklist_hg38_unified
 # Call Open Tiles
@@ -254,45 +497,72 @@ tileResults <- MOCHA::callOpenTiles(ATACFragments = CellType_GRanges,
                              studySignal = studySignal,
                              cellCol = 'barcode',
                              TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-                             Org = "org.Hs.eg.db", 
+                             OrgDb = "org.Hs.eg.db", 
                             outDir = paste(getwd(),'/MOCHA_Out', sep = ''), numCores= 35)
 
 TSAM <- MOCHA::getSampleTileMatrix(tileResults, threshold = 0.2, numCores = 3, verbose = TRUE)
 ```
+## SnapATAC2 {#snapatac2}
 
-## Importing from SnapATAC2 (recommended) {#snapatac2}
+SnapATAC2 examples use the
+[PBMC 5k tutorial](https://scverse.org/SnapATAC2/tutorials/pbmc.html). MOCHA imports
+fragment matrices from `.h5ad` via `import_snap_atac()` (requires **reticulate** and
+Python **anndata**). Reference code only (`eval = FALSE`).
 
-If you have a SnapATAC2 `AnnData` or `AnnDataSet` object (or an `.h5ad` file) with cell type labels in `obs`, use `import_snap_atac()` to convert to MOCHA inputs. This requires optional R package **reticulate** and Python package **anndata** (or **snapatac2** for `AnnDataSet`).
+```{r snapatac2-python-setup, eval=FALSE}
+# In R:
+if (!requireNamespace("reticulate", quietly = TRUE)) {
+  stop("Install reticulate, then configure a Python env with anndata or snapatac2.")
+}
+reticulate::py_install(c("anndata", "snapatac2"), pip = TRUE)
+```
 
-```{r}
+**Shortcut:** use the packaged annotated dataset (includes Leiden clusters):
+
+```{r snapatac2-load, eval=FALSE}
 library(MOCHA)
+library(reticulate)
 
-# adata: SnapATAC2 AnnData after clustering and labeling (obs must include Sample + cell type)
-# Or: inputs <- MOCHA::import_snap_atac("my_study.h5ad", cellPopLabel = "leiden", sampleColumn = "Sample")
+snapatac2 <- reticulate::import("snapatac2")
+h5ad_path <- snapatac2$datasets$pbmc5k(type = "annotated_h5ad")
+adata <- reticulate::import("anndata")$read_h5ad(h5ad_path)
 
-inputs <- MOCHA::import_snap_atac(
+# PBMC 5k is one library; add a Sample column for MOCHA
+adata$obs["Sample"] <- "pbmc5k"
+```
+
+Or run the full tutorial through Leiden clustering and save `pbmc.h5ad`, then load it
+in R with `import_snap_atac("pbmc.h5ad", ...)`.
+
+```{r snapatac2-import, eval=FALSE}
+inputs <- import_snap_atac(
   adata,
   cellPopLabel = "leiden",
-  sampleColumn = "Sample"
+  sampleColumn = "Sample",
+  chromPrefix = "add"
 )
 
-tileResults <- MOCHA::callOpenTiles(
+black_list <- Signac::blacklist_hg38_unified
+
+tileResults <- callOpenTiles(
   ATACFragments = inputs$ATACFragments,
   cellColData = inputs$cellColData,
-  blackList = black_list.gr,
+  blackList = black_list,
   genome = "BSgenome.Hsapiens.UCSC.hg38",
   cellPopLabel = "leiden",
   cellCol = inputs$cellCol,
+  cellPopulations = c("0", "1"),
   TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
   OrgDb = "org.Hs.eg.db",
-  outDir = file.path(getwd(), "MOCHA_Out"),
+  outDir = file.path(tempdir(), "MOCHA_SnapATAC2"),
   numCores = 4
 )
 ```
 
-You must provide `genome` and `blackList` to `callOpenTiles()`; `import_snap_atac()` does not infer them. Ensure chromosome names in your SnapATAC2 object match your BSgenome (use `chromPrefix = "add"` if needed).
+`import_snap_atac()` does not infer genome or blacklist; harmonize chromosome names
+with `chromPrefix` if needed (`"add"` prepends `chr` when missing).
 
-## Importing from legacy SnapATAC (v1) {#snapatac}
+## Legacy SnapATAC (v1) {#snapatac-v1}
 
 In this example, we follow the [SnapATAC 10X PBMC tutorial](https://github.com/r3fang/SnapATAC/tree/master/examples/10X_PBMC_15K#data_download) through the clustering step before extracting the fragments and cell metadata necessary for MOCHA.
 
@@ -319,7 +589,7 @@ gdown https://drive.google.com/uc?id=1SEFZ5CJgcmoAkmo4_1kCMYS60YOFP379
 gdown https://drive.google.com/uc?id=1RlBvTCqz6mhaTAkfYiCdeojD-U2mN2wp
 ```
 
-```{r}
+```{r, eval=FALSE}
 library(SnapATAC);
 snap.files = c(
   "atac_pbmc_5k_nextgem.snap", 
@@ -353,7 +623,7 @@ barcode.ls = lapply(seq(snap.files), function(i){
 x.sp.ls
 ```
 
-```{r}
+```{r, eval=FALSE}
 # for both datasets, we identify usable barcodes using [3.5-5] for log10(UMI) and [0.4-0.8] for promoter ratio as cutoff.
 cutoff.logUMI.low = c(3.5, 3.5);
 cutoff.logUMI.high = c(5, 5);
@@ -382,7 +652,7 @@ names(x.sp.ls) = sample.names;
 x.sp.ls
 ```
 
-```{r}
+```{r, eval=FALSE}
 # combine two snap object
 x.sp = Reduce(snapRbind, x.sp.ls);
 x.sp@metaData["Sample"] = x.sp@sample;
@@ -390,7 +660,7 @@ print(table(x.sp@sample))
 x.sp
 ```
 
-```{r}
+```{r, eval=FALSE}
 # Step 2. Add cell-by-bin matrix
 x.sp = addBmatToSnap(x.sp, bin.size=5000);
 # Step 3. Matrix binarization
@@ -419,7 +689,7 @@ if(length(idy) > 0){
 x.sp
 ```
 
-```{r}
+```{r, eval=FALSE}
 # The coverage of bins roughly obeys a log normal distribution. We remove the top 5% bins that overlap with invariant features such as the house keeping gene promoters.
 bin.cov = log10(Matrix::colSums(x.sp@bmat)+1);
 hist(
@@ -440,7 +710,7 @@ x.sp = x.sp[idx,];
 x.sp
 ```
 
-```{r}
+```{r, eval=FALSE}
 # Step 5. Dimensionality reduction
 row.covs.dens <- density(
   x = x.sp@metaData[,"logUMI"], 
@@ -486,7 +756,7 @@ Add the computed clusters to the Snap object metadata.
 
 The Snap object contains two samples, "PBMC 5K" and "PBMC 10K". Let's add a "Sample" column to the metadata. Let's also add a column "files" pointing to the original .snap files from which each cell came.
 
-```{r}
+```{r, eval=FALSE}
 # Add clusters (from SnapATAC::runCluster) to metadata
 x.sp@metaData$cluster = x.sp@cluster
 
@@ -515,7 +785,7 @@ Now we have a Snap object with metadata containing barcodes, unique cell ids (co
 
 Next we extract reads by sample and cell population, ensuring our final GRanges list is named following the pattern `CellPopulation#Sample`.
 
-```{r}
+```{r, eval=FALSE}
 snapMetadata <- read.csv("./snapMetadataforMOCHA.csv")
 cellCol <- "barcode"
 cellPopLabel <- "cluster"
@@ -542,7 +812,7 @@ fragmentsGRangesList <- unlist(lapply(allSamples, function(sample){
 
 Calculate the study signal (the median number of fragments per cell)
 
-```{r}
+```{r, eval=FALSE}
 avg_reads <- lapply(fragmentsGRangesList, function(x){
   filtFrag <- dplyr::filter(as.data.frame(x), barcode  %in% snapMetadata$barcode)
   as.vector(table(filtFrag$barcode))
@@ -552,7 +822,7 @@ studySignal <- median(unlist(avg_reads))
 
 ### Call Open Tiles with MOCHA {#call-tiles}
 
-```{r}
+```{r, eval=FALSE}
 # Call Open Tiles
 tileResults <- MOCHA::callOpenTiles(
   ATACFragments = fragmentsGRangesList,
@@ -564,10 +834,33 @@ tileResults <- MOCHA::callOpenTiles(
   studySignal = studySignal,
   cellCol = cellCol,
   TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-  Org = "org.Hs.eg.db", 
+  OrgDb = "org.Hs.eg.db", 
   outDir = paste(getwd(),'/MOCHA_Out', sep = ''), 
   numCores = 5
 )
 
 TSAM <- MOCHA::getSampleTileMatrix(tileResults, threshold = 0.2, numCores = 3, verbose = TRUE)
+```
+
+## Utilities after import
+
+After `callOpenTiles()`, these helpers inspect or adjust objects without
+running a full downstream workflow:
+
+```{r import-utilities, eval=FALSE}
+```
+
+See `?getPopFrags`, `?correctGenome`, `?openTiles`, and `?getOpenTiles`.
+
+## Next steps
+
+After `callOpenTiles()` returns a `MultiAssayExperiment`:
+
+- Build sample-tile matrices with `getSampleTileMatrix()`.
+- Continue with annotation, differentials, and motifs in the
+  [MOCHA workflow tutorial](MOCHA-workflow-tutorial.html).
+
+## Session information
+
+```{r session-info}
 ```
