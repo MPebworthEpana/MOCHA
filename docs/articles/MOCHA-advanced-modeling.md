@@ -10,12 +10,8 @@ generalized linear mixed models (ZIGLMM), and custom peak training with
 
 This vignette is entirely reference-only (`eval = FALSE`) because
 fitting requires study-specific metadata, sufficient sample counts, and
-optional packages (`lmerTest`, `glmmTMB`). Use it as a template
-alongside
-[`?pilotLMEM`](https://aifimmunology.github.io/MOCHA/reference/pilotLMEM.md),
-[`?runLMEM`](https://aifimmunology.github.io/MOCHA/reference/runLMEM.md),
-and
-[`?trainPeakModel`](https://aifimmunology.github.io/MOCHA/reference/trainPeakModel.md).
+optional packages (`lmerTest`, `glmmTMB`). Code is maintained in
+`inst/tutorials/05-advanced-modeling.R`.
 
 ``` r
 
@@ -33,31 +29,35 @@ Pilot a formula on a subset of tiles, then run LMEM across the matrix.
 
 ``` r
 
-modelFormula <- "exp ~ Treatment + PassQC + (1|Subject)"
-
-pilot <- pilotLMEM(
-  SampleTileObj = sampleTileMatrices,
-  modelFormula = modelFormula,
-  assayName = "C2",
-  initialSampling = 100,
-  numCores = 4,
-  verbose = TRUE
-)
+if (requireNamespace("lmerTest", quietly = TRUE)) {
+  tutorial_try_run({
+    pilot <- pilotLMEM(
+      ExperimentObj = tutorial_stm_multisample,
+      modelFormula = modelFormula,
+      assayName = "C2",
+      pilotIndices = 1:5,
+      verbose = FALSE
+    )
+  }, "pilotLMEM")
+}
 ```
 
 ``` r
 
-modelList <- runLMEM(
-  SampleTileObj = sampleTileMatrices,
-  modelFormula = modelFormula,
-  assayName = "C2",
-  initialSampling = 100,
-  numCores = 4,
-  verbose = TRUE
-)
-
-coefs <- getModelValues(modelList, value = "Estimate")
-head(coefs)
+if (requireNamespace("lmerTest", quietly = TRUE)) {
+  tutorial_try_run({
+    modelList <- runLMEM(
+      ExperimentObj = tutorial_stm_multisample,
+      modelFormula = modelFormula,
+      assayName = "C2",
+      initialSampling = 5,
+      numCores = 1,
+      verbose = FALSE
+    )
+    coefs <- getModelValues(modelList, value = "Estimate")
+    head(coefs)
+  }, "runLMEM")
+}
 ```
 
 ## Zero-inflated GLMM
@@ -67,25 +67,33 @@ framework.
 
 ``` r
 
-zigPilot <- pilotZIGLMM(
-  SampleTileObj = sampleTileMatrices,
-  modelFormula = "exp ~ Treatment + PassQC + (1|Subject)",
-  assayName = "C2",
-  initialSampling = 50,
-  verbose = TRUE
-)
+if (requireNamespace("glmmTMB", quietly = TRUE)) {
+  tutorial_try_run({
+    zigPilot <- pilotZIGLMM(
+      TSAM_Object = tutorial_stm_multisample,
+      cellPopulation = "C2",
+      continuousFormula = exp ~ GroupA,
+      ziformula = ~ GroupA,
+      verbose = FALSE
+    )
+  }, "pilotZIGLMM")
+}
 ```
 
 ``` r
 
-zigModels <- runZIGLMM(
-  SampleTileObj = sampleTileMatrices,
-  modelFormula = "exp ~ Treatment + PassQC + (1|Subject)",
-  assayName = "C2",
-  numCores = 4
-)
-
-variances <- varZIGLMM(zigModels)
+if (requireNamespace("glmmTMB", quietly = TRUE)) {
+  tutorial_try_run({
+    zigModels <- runZIGLMM(
+      TSAM_Object = tutorial_stm_multisample,
+      cellPopulation = "C2",
+      continuousFormula = exp ~ GroupA,
+      ziformula = ~ GroupA,
+      numCores = 1
+    )
+    variances <- varZIGLMM(zigModels)
+  }, "runZIGLMM")
+}
 ```
 
 [`linearModeling()`](https://aifimmunology.github.io/MOCHA/reference/linearModeling.md)
@@ -103,16 +111,27 @@ peak caller.
 
 ``` r
 
-customPeaks <- trainPeakModel(
-  ATACFragments = exampleFragments,
-  cellColData = exampleCellColData,
-  cellPopLabel = "Clusters",
-  cellPopulations = "C2",
-  genome = "BSgenome.Hsapiens.UCSC.hg19",
-  outDir = tempdir(),
-  numCores = 1,
-  verbose = TRUE
-)
+# Slow; run with MOCHA_HEAVY_TESTS=true for a full training pass.
+if (tolower(Sys.getenv("MOCHA_HEAVY_TESTS", "false")) %in% c("true", "1", "yes")) {
+  tutorial_try_run({
+    frags <- exampleFragments[[1]]
+    peaks <- GenomicRanges::reduce(frags)
+    peaks <- peaks[IRanges::width(peaks) >= 200L]
+    customPeaks <- trainPeakModel(
+      ATACFragments = frags,
+      cellColData = exampleCellColData,
+      blackList = exampleBlackList,
+      groundTruthPeaks = peaks,
+      tileSize = 250L,
+      cellSubsetSizes = c(50L, 100L),
+      replicatesFn = function(n) 2L,
+      threshMethod = if (requireNamespace("cutpointr", quietly = TRUE)) "youden" else "f1",
+      numCores = 1L,
+      seed = 42L,
+      verbose = FALSE
+    )
+  }, "trainPeakModel")
+}
 ```
 
 Requires fragment-level data and genome annotation packages (see [Data
@@ -126,12 +145,7 @@ By default, MOCHA returns standard Bioconductor types. Opt in with
 
 ``` r
 
-# tileResultsMocha <- callOpenTiles(..., returnClass = "mocha")
-# stmMocha <- getSampleTileMatrix(..., returnClass = "mocha")
-
 isMOCHAObject(sampleTileMatrices)
-# asMochaSTM(sampleTileMatrices)
-# asMochaTileResults(tileResults)
 ```
 
 Subclasses inherit `MultiAssayExperiment` / `RangedSummarizedExperiment`

@@ -51,6 +51,14 @@
 <li>pkgdown redirects from former article URLs to the new vignette pages.</li>
 <li>Expanded tutorial library: tuning parameters and differential options in the workflow vignette; new articles <code>MOCHA-downstream-workflows</code>, <code>MOCHA-export-and-sharing</code>, and <code>MOCHA-advanced-modeling</code>; expanded alt-TSS/motif and import-utility sections.</li>
 <li>Bioconductor build policy: only bundled-data chunks execute on builders; other vignette chunks are reference-only (<code>eval = FALSE</code>).</li>
+<li>Tutorial code lives in <code>inst/tutorials/*.R</code> (single source of truth); vignettes include scripts via <code><a href="https://rdrr.io/pkg/knitr/man/read_chunk.html" class="external-link">knitr::read_chunk()</a></code>. Verified by <code>tests/scripts/run_tutorials.R</code> and <code>.github/workflows/tutorial-check.yml</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="coverage-storage-development-version">Coverage storage<a class="anchor" aria-label="anchor" href="#coverage-storage-development-version"></a></h3>
+<ul><li>Coverage tracks from <code><a href="../reference/callOpenTiles-methods.html">callOpenTiles()</a></code> are now saved as per-sample bigWig files under <code>tracks/{cellPop}/{Accessibility|Insertions}/</code>, with legacy <code>{cellPop}_CoverageFiles.RDS</code> bundles still supported for reading.</li>
+<li>Added <code><a href="../reference/migrateCoverageToTracks.html">migrateCoverageToTracks()</a></code> to convert legacy RDS bundles to the structured layout.</li>
+<li>Track filenames use reversible percent-encoding to avoid sample-name collisions; <code><a href="../reference/exportCoverage.html">exportCoverage()</a></code> copies existing structured tracks when exporting sample-specific bigWigs without regrouping.</li>
+<li>Coverage I/O validates unsafe path characters, prunes orphaned bigWigs when sample sets change, and repairs incomplete migrations from legacy RDS bundles when available.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>

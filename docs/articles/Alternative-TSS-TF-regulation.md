@@ -17,8 +17,8 @@ modules that correspond to Figures 4–5 of the manuscript:
     instances within open chromatin.
 
 All chunks in this vignette are shown with `eval = FALSE` because the
-bundled example data is intentionally minimal. They are meant as a
-template you can adapt to your own MOCHA objects.
+bundled example data is intentionally minimal. Code is maintained in
+`inst/tutorials/06-alt-tss-motifs.R`.
 
 ## Setup
 
@@ -44,28 +44,23 @@ BSgenome):
 
 ``` r
 
-sampleTileMatrices <- addMotifSet(
-  SampleTileObj = sampleTileMatrices,
-  motifPWMs = chromVARmotifs::human_pwms_v2,
-  motifSetName = "CISBP"
-)
-# Motif positions are stored in metadata(sampleTileMatrices)$CISBP
+# Slow PWM matching; run with MOCHA_HEAVY_TESTS=true.
+if (tolower(Sys.getenv("MOCHA_HEAVY_TESTS", "false")) %in% c("true", "1", "yes") &&
+    requireNamespace("chromVARmotifs", quietly = TRUE) &&
+    requireNamespace("motifmatchr", quietly = TRUE)) {
+  sampleTileMatrices <- addMotifSet(
+    SampleTileObj = sampleTileMatrices,
+    motifPWMs = chromVARmotifs::human_pwms_v2,
+    motifSetName = "CISBP"
+  )
+}
 ```
 
 ## 1. Motif enrichment in differential regions
 
 [`MotifEnrichment()`](https://aifimmunology.github.io/MOCHA/reference/MotifEnrichment.md)
 runs a hypergeometric enrichment test for each motif in a `GRangesList`
-of motif positions against a background of non-target regions. A typical
-workflow is:
-
-1.  Split `differentials` into a target set (e.g. FDR ≤ 0.1, \|Log2FC\|
-    ≥ 1) and a background set (the remaining tested tiles).
-2.  Provide a `motifPosList` — a named `GRangesList` keyed by motif ID
-    (e.g. JASPAR identifiers). MOCHA’s
-    [`addMotifSet()`](https://aifimmunology.github.io/MOCHA/reference/addMotifSet.md)
-    annotates a SampleTileMatrix with motif positions; the positions can
-    then be pulled out for enrichment testing.
+of motif positions against a background of non-target regions.
 
 ``` r
 
@@ -73,142 +68,91 @@ sig <- differentials[!is.na(differentials$FDR) &
                      differentials$FDR <= 0.1 &
                      abs(differentials$Log2FC_C) >= 1]
 bg <- differentials[!(differentials %in% sig)]
-
-# motifPosList is a named GRangesList of motif binding sites.
-# In practice you would build this once and reuse it.
-enr <- MotifEnrichment(
-  Group1       = sig,
-  Group2       = bg,
-  motifPosList = motifPosList
-)
-head(enr[order(enr$adjp_val), ])
+if (length(sig) > 0L && length(bg) > 0L &&
+    "CISBP" %in% names(S4Vectors::metadata(sampleTileMatrices))) {
+  tutorial_try_run({
+    motifPosList <- S4Vectors::metadata(sampleTileMatrices)$CISBP
+    enr <- MotifEnrichment(
+      Group1 = sig,
+      Group2 = bg,
+      motifPosList = motifPosList
+    )
+    head(enr[order(enr$adjp_val), ])
+  }, "motif-enrichment")
+}
 ```
 
 [`MotifSetEnrichmentAnalysis()`](https://aifimmunology.github.io/MOCHA/reference/MotifSetEnrichmentAnalysis.md)
-is a higher-level wrapper that takes a ligand–TF matrix and an existing
-motif-enrichment table, and identifies upstream regulators whose motif
-set is over-represented in the target peaks. Use it when you want to go
-from “these peaks moved” to “these TFs are likely driving the change”:
+is a higher-level wrapper for upstream TF regulators:
 
 ``` r
 
-upstream <- MotifSetEnrichmentAnalysis(
-  ligandTFMatrix     = ligandTFMatrix,
-  motifEnrichmentDF  = enr,
-  # additional parameters control significance thresholds and TF filtering
-)
-head(upstream)
+# upstream <- MotifSetEnrichmentAnalysis(
+#   ligandTFMatrix = ligandTFMatrix,
+#   motifEnrichmentDF = enr
+# )
 ```
 
 ## 2. Alternative TSS regulation (`getAltTSS`)
 
-Genes can have multiple TSSs that respond independently to a treatment.
-[`getAltTSS()`](https://aifimmunology.github.io/MOCHA/reference/getAltTSS.md)
-annotates each differential peak with its overlapping TSS (if any),
-groups peaks by gene, and flags genes where the TSS-level behaviour is
-mixed:
-
-- **Type i** — only some of the open TSSs are significantly more or less
-  accessible.
-- **Type ii** — multiple TSSs are significant but with *opposite* signs.
-
 ``` r
 
-altTSS <- getAltTSS(
-  completeDAPs = differentials,   # GRanges of all tested tiles with FDR + Log2FC_C
-  threshold    = 0.2,             # FDR cutoff for "significant"
-  TxDb         = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-  OrgDb        = "org.Hs.eg.db"
-)
-table(altTSS$type)               # type i / type ii counts
-head(altTSS[altTSS$type == "ii", ])  # opposite-direction TSS pairs
+tutorial_try_run({
+  altTSS <- getAltTSS(
+    completeDAPs = differentials,
+    threshold = 0.2,
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    OrgDb = "org.Hs.eg.db"
+  )
+  table(altTSS$type)
+  head(altTSS[altTSS$type == "ii", ])
+}, "get-alt-tss")
 ```
 
-Set `returnAllTSS = TRUE` to get the annotated long table of every TSS
-overlap (one row per TSS-tile pair) without filtering. That’s the form
-you want when feeding the result into
-[`plotRegion()`](https://aifimmunology.github.io/MOCHA/reference/plotRegion.md)
-to visualise a specific locus across conditions:
+Locus-level visualization:
 
 ``` r
 
-# Pick a candidate alternative TSS gene from the table above:
-candidate <- "MYD88"
-regionGR <- GenomicRanges::GRanges("chr3:38179000-38186000")
-
-countSE <- getCoverage(
-  sampleTileMatrices,
-  cellPopulations = "C2",
-  regions         = regionGR,
-  groupColumn     = "COVID_status"
-)
-
-plotRegion(countSE = countSE, whichGene = candidate)
+# candidate <- "MYD88"
+# regionGR <- GenomicRanges::GRanges("chr3:38179000-38186000")
+# countSE <- getCoverage(
+#   sampleTileMatrices,
+#   cellPopulations = "C2",
+#   regions = regionGR,
+#   groupColumn = "Sample"
+# )
+# plotRegion(countSE = countSE, whichGene = candidate)
 ```
 
 ## 3. Motif footprinting
 
-[`motifFootprint()`](https://aifimmunology.github.io/MOCHA/reference/motifFootprint.md)
-returns a per-position average of normalised insertions in a window
-around motif centres, optionally split by group. You typically run it
-after
-[`addMotifSet()`](https://aifimmunology.github.io/MOCHA/reference/addMotifSet.md)
-has annotated the `SampleTileMatrix` with motif positions:
-
 ``` r
 
-fp <- motifFootprint(
-  SampleTileObj   = sampleTileMatrices,
-  motifName       = "Motifs",          # the slot populated by addMotifSet()
-  specMotif       = "MA0080.4_SPI1",   # JASPAR ID of the motif of interest
-  cellPopulations = "CD16 Mono",
-  windowSize      = 500,
-  normTn5         = TRUE,
-  smoothTn5       = 10,
-  groupColumn     = "COVID_status"
-)
-fp
+# fp <- motifFootprint(
+#   SampleTileObj = sampleTileMatrices,
+#   motifName = "CISBP",
+#   specMotif = "MA0080.4_SPI1",
+#   cellPopulations = "C2",
+#   windowSize = 500,
+#   normTn5 = TRUE,
+#   smoothTn5 = 10,
+#   groupColumn = "Sample"
+# )
 ```
-
-The returned `SummarizedExperiment` carries a per-position-by-sample
-matrix of normalised insertion counts. Aggregate it with
-`SummarizedExperiment::assays(fp)` and plot the mean profile across
-groups; or pass `sampleSpecific = TRUE` to get one curve per sample.
 
 [`plotMotifs()`](https://aifimmunology.github.io/MOCHA/reference/plotMotifs.md)
-visualizes footprint profiles and can return summary statistics when
-`returnDF = TRUE`:
+can return summary statistics when `returnDF = TRUE`:
 
 ``` r
 
-fp_stats <- plotMotifs(
-  fp,
-  footprint = "MA0080.4_SPI1",
-  groupColumn = "COVID_status",
-  returnDF = TRUE,
-  plotIndividualRegions = FALSE
-)
-head(fp_stats)
+# fp_stats <- plotMotifs(
+#   fp,
+#   footprint = "MA0080.4_SPI1",
+#   groupColumn = "Sample",
+#   returnDF = TRUE,
+#   plotIndividualRegions = FALSE
+# )
 ```
-
-## Putting it together
-
-A common Figure 4–5 narrative threads these three modules:
-
-1.  Find differential tiles →
-    [`getDifferentialAccessibleTiles()`](https://aifimmunology.github.io/MOCHA/reference/getDifferentialAccessibleTiles.md).
-2.  Score motif enrichment in the differentials →
-    [`MotifEnrichment()`](https://aifimmunology.github.io/MOCHA/reference/MotifEnrichment.md) +
-    [`MotifSetEnrichmentAnalysis()`](https://aifimmunology.github.io/MOCHA/reference/MotifSetEnrichmentAnalysis.md)
-    to identify candidate upstream TFs.
-3.  Drill into specific candidate loci →
-    [`getAltTSS()`](https://aifimmunology.github.io/MOCHA/reference/getAltTSS.md)
-    for alternative TSS regulation,
-    [`plotRegion()`](https://aifimmunology.github.io/MOCHA/reference/plotRegion.md)
-    for locus-level visualisation.
-4.  Validate TF activity at the binding-site level →
-    [`motifFootprint()`](https://aifimmunology.github.io/MOCHA/reference/motifFootprint.md)
-    to show insertion-profile shifts at the motif’s binding sites.
 
 ## Session information
 

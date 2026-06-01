@@ -207,7 +207,10 @@ callOpenTiles(
   is a string describing the output directory for coverage files. Must
   be a complete directory string. With ArchR input, set outDir to NULL
   to create a directory within the input ArchR project directory named
-  MOCHA for saving files.
+  MOCHA for saving files. Coverage tracks are written under
+  \`tracks/cellPop/Accessibility\|Insertions/sample.bw\` with a
+  \`tracks/manifest.rds\` index. Legacy \`cellPop_CoverageFiles.RDS\`
+  bundles are still read when present.
 
 - numCores:
 

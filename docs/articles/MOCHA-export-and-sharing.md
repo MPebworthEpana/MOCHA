@@ -12,7 +12,8 @@ IGV or the MOCHA Dash app.
 This vignette ports the narrative from
 `inst/notebooks/MOCHA-Export-Vignette.ipynb` into BiocStyle R Markdown.
 All chunks are reference-only because exports involve file I/O, large
-fragment data, and optional heavy dependencies.
+fragment data, and optional heavy dependencies. Code is maintained in
+`inst/tutorials/04-export.R`.
 
 ``` r
 
@@ -28,68 +29,32 @@ and `sampleTileMatrices` from
 
 [`packMOCHA()`](https://aifimmunology.github.io/MOCHA/reference/packMOCHA.md)
 archives a MOCHA object and its on-disk outputs into a single zip for
-transfer. New MOCHA runs store per-sample accessibility and insertion
-tracks as bigWig files under `tracks/{cellPop}/{Accessibility|Insertions}/`
-inside the object directory; legacy `{cellPop}_CoverageFiles.RDS` bundles
-are still read automatically when present.
+transfer.
 [`unpackMOCHA()`](https://aifimmunology.github.io/MOCHA/reference/unpackMOCHA.md)
 restores the object and rewrites stored paths.
 
 ``` r
 
-outDir <- tempdir()
-zipPath <- packMOCHA(
-  MOCHAObj = tileResults,
-  zipfile = file.path(outDir, "mocha_results.zip")
-)
-unpacked <- unpackMOCHA(
-  zipfile = zipPath,
-  exdir = file.path(outDir, "unpacked_mocha")
-)
+if (requireNamespace("zip", quietly = TRUE)) {
+  zipPath <- packMOCHA(
+    MOCHAObj = tileResults,
+    zipfile = file.path(outDir, "mocha_results.zip")
+  )
+  unpacked <- unpackMOCHA(
+    zipfile = zipPath,
+    exdir = file.path(outDir, "unpacked_mocha")
+  )
+}
 ```
 
 If you move the project directory after unpacking, update stored paths:
 
 ``` r
 
-tileResults <- updateDirectoryPath(
-  tileResults,
-  directoryPath = file.path(outDir, "unpacked_mocha")
-)
+if (exists("unpacked")) {
+  tileResults <- unpacked
+}
 ```
-
-## Migrate legacy coverage bundles
-
-If you have an older MOCHA output directory with
-`{cellPop}_CoverageFiles.RDS` bundles, convert to the structured bigWig
-layout with [`migrateCoverageToTracks()`](https://aifimmunology.github.io/MOCHA/reference/migrateCoverageToTracks.md):
-
-``` r
-
-tileResults <- migrateCoverageToTracks(
-  MOCHAObj = tileResults,
-  cellPopulations = "ALL",
-  removeLegacy = FALSE,
-  verbose = TRUE
-)
-```
-
-If structured tracks are incomplete and no legacy RDS remains, re-run
-`callOpenTiles(force = TRUE)` or `migrateCoverageToTracks(force = TRUE)`.
-
-## Structured track filenames
-
-On-disk bigWig files under `tracks/` use percent-encoded sample names
-(for example `Sample%20A.bw` for sample `"Sample A"`). When
-[`exportCoverage()`](https://aifimmunology.github.io/MOCHA/reference/exportCoverage.md)
-writes sample-specific bigWigs for IGV or other browsers, export filenames
-use the legacy double-underscore convention (for example
-`C3__Sample__A_Coverage.bw`). MOCHA copies existing structured tracks when
-possible instead of recomputing coverage.
-
-If both structured tracks and legacy `{cellPop}_CoverageFiles.RDS` bundles
-exist, MOCHA reads the structured layout and warns that the legacy file
-can be removed after migration.
 
 ## Export sample-specific coverage
 
@@ -100,24 +65,40 @@ output directory.
 
 ``` r
 
-exportCoverage(
-  SampleTileObject = tileResults,
-  dir = "./data/sample_specific_coverage/",
-  cellPopulations = c("C2", "C5"),
-  sampleSpecific = TRUE,
-  saveFile = TRUE,
-  numCores = 4
-)
+# Heavy: writes bigWig files from fragments. Run with MOCHA_HEAVY_TESTS=true.
+if (tolower(Sys.getenv("MOCHA_HEAVY_TESTS", "false")) %in% c("true", "1", "yes") &&
+    requireNamespace("rtracklayer", quietly = TRUE)) {
+  tutorial_try_run(
+    suppressWarnings(
+      exportCoverage(
+        SampleTileObject = tileResults,
+        dir = file.path(outDir, "sample_specific_coverage"),
+        cellPopulations = c("C2", "C5"),
+        sampleSpecific = TRUE,
+        saveFile = TRUE,
+        numCores = 1
+      )
+    ),
+    label = "export-coverage"
+  )
+}
 ```
 
 ## Export open tiles
 
 ``` r
 
-exportOpenTiles(
-  SampleTileObject = sampleTileMatrices,
-  outDir = "./data/tiles_samplespecific/"
-)
+if (requireNamespace("rtracklayer", quietly = TRUE)) {
+  tutorial_try_run(
+    exportOpenTiles(
+      SampleTileObject = sampleTileMatrices,
+      cellPopulation = "C2",
+      outDir = file.path(outDir, "tiles_samplespecific"),
+      verbose = FALSE
+    ),
+    label = "export-open-tiles"
+  )
+}
 ```
 
 ## Export differential tiles
@@ -128,12 +109,18 @@ then export accessibility tracks for foreground/background contrasts.
 
 ``` r
 
-# diffsGR <- readRDS("./data/my_differential_peaks.rds")
-exportDifferentials(
-  SampleTileObject = sampleTileMatrices,
-  DifferentialsGRList = list(C2 = diffs),
-  outDir = "./data/tiles_differential/"
-)
+if (requireNamespace("rtracklayer", quietly = TRUE) &&
+    !is.null(diffs) && inherits(diffs, "GRanges") && length(diffs) > 0L) {
+  tutorial_try_run(
+    exportDifferentials(
+      SampleTileObject = sampleTileMatrices,
+      DifferentialsGRList = list(C2 = diffs),
+      outDir = file.path(outDir, "tiles_differential"),
+      verbose = FALSE
+    ),
+    label = "export-diffs"
+  )
+}
 ```
 
 ## Export motifs
@@ -146,34 +133,45 @@ regulation](https://aifimmunology.github.io/MOCHA/articles/Alternative-TSS-TF-re
 
 ``` r
 
-library(chromVARmotifs)
-motifsGRanges <- addMotifSet(
-  SampleTileObj = sampleTileMatrices,
-  motifPWMs = chromVARmotifs::human_pwms_v2,
-  returnSTM = FALSE,
-  motifSetName = "CISBP"
-)
-
-exportMotifs(
-  SampleTileObject = tileResults,
-  motifsGRanges = unlist(motifsGRanges),
-  motifSetName = "CISBP",
-  outDir = "./data/motifs/",
-  filterCellTypePeaks = TRUE,
-  verbose = TRUE
-)
+# Full CIS-BP motif export is slow; enable with MOCHA_HEAVY_TESTS=true.
+if (tolower(Sys.getenv("MOCHA_HEAVY_TESTS", "false")) %in% c("true", "1", "yes") &&
+    requireNamespace("chromVARmotifs", quietly = TRUE) &&
+    requireNamespace("motifmatchr", quietly = TRUE) &&
+    requireNamespace("rtracklayer", quietly = TRUE)) {
+  tutorial_try_run({
+    motifsGRanges <- addMotifSet(
+      SampleTileObj = sampleTileMatrices,
+      motifPWMs = chromVARmotifs::human_pwms_v2,
+      returnSTM = FALSE,
+      motifSetName = "CISBP"
+    )
+    exportMotifs(
+      SampleTileObject = tileResults,
+      motifsGRanges = unlist(motifsGRanges),
+      motifSetName = "CISBP",
+      outDir = file.path(outDir, "motifs"),
+      filterCellTypePeaks = TRUE,
+      verbose = FALSE
+    )
+  }, label = "export-motifs")
+}
 ```
 
 ## Export local footprints
 
 ``` r
 
-exportLocalFootprints(
-  SampleTileObj = sampleTileMatrices,
-  cellPopulations = "C2",
-  outDir = "./data/footprints/",
-  numCores = 4
-)
+if (requireNamespace("rtracklayer", quietly = TRUE)) {
+  tutorial_try_run(
+    exportLocalFootprints(
+      SampleTileObj = sampleTileMatrices,
+      cellPopulation = "C2",
+      outDir = file.path(outDir, "footprints"),
+      numCores = 1
+    ),
+    label = "export-footprints"
+  )
+}
 ```
 
 ## Interactive tracks (Dash app)

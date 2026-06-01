@@ -1,0 +1,78 @@
+in method for 'callOpenTiles' with signature 'ATACFragments="ArchRProject"': no definition for class "ArchRProject"
+Warning message:
+replacing previous import 'SummarizedExperiment::shift' by 'data.table::shift' when loading 'MOCHA' 
+==> 00-fixtures.R
+
+
+Attaching package: 'generics'
+
+The following objects are masked from 'package:base':
+
+    as.difftime, as.factor, as.ordered, intersect, is.element, setdiff,
+    setequal, union
+
+
+Attaching package: 'BiocGenerics'
+
+The following objects are masked from 'package:stats':
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from 'package:base':
+
+    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+    get, grep, grepl, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, saveRDS, table, tapply, unique,
+    unsplit, which.max, which.min
+
+
+Attaching package: 'S4Vectors'
+
+The following objects are masked from 'package:MOCHA':
+
+    first, second
+
+The following object is masked from 'package:utils':
+
+    findMatches
+
+The following objects are masked from 'package:base':
+
+    expand.grid, I, unname
+
+
+Attaching package: 'IRanges'
+
+The following object is masked from 'package:MOCHA':
+
+    shift
+
+
+Attaching package: 'Biostrings'
+
+The following object is masked from 'package:base':
+
+    strsplit
+
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+'select()' returned 1:1 mapping between keys and columns
+==> 03-downstream.R
+Tutorial combine-stm skipped: Could not map all combined sample keys to CellCounts metadata. Missing: C2__, C5__
+==> 04-export.R
+Tutorial export-open-tiles skipped: subscript out of bounds
+Tutorial export-footprints skipped: Attempting to normalize by Tn5 insertion bias, but no bias calculated. Please run addInsertionBias.
+==> 05-advanced-modeling.R
+Tutorial pilotLMEM skipped: number of levels of each grouping factor must be < number of observations (problems: Sample)
+Tutorial runLMEM skipped: For the initial sampling, every test model failed to converge. Reconsider modelFormula or increase 'initialSampling'.
+Tutorial runZIGLMM skipped: argument is of length zero
+==> 06-alt-tss-motifs.R
+Tutorial get-alt-tss skipped: unable to find an inherited method for function 'transcriptsBy' for signature 'x = "character"'
+Tutorial scripts completed.
+There were 25 warnings (use warnings() to see them)

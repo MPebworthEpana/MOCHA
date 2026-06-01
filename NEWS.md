@@ -19,6 +19,9 @@
   `MOCHA-advanced-modeling`; expanded alt-TSS/motif and import-utility sections.
 * Bioconductor build policy: only bundled-data chunks execute on builders; other vignette
   chunks are reference-only (`eval = FALSE`).
+* Tutorial code lives in `inst/tutorials/*.R` (single source of truth); vignettes include
+  scripts via `knitr::read_chunk()`. Verified by `tests/scripts/run_tutorials.R` and
+  `.github/workflows/tutorial-check.yml`.
 
 ## Coverage storage
 

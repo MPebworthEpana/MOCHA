@@ -135,6 +135,9 @@
   : Export open tiles of a given cell population to BigBed format for
   visualization in genome browsers.
 
+- [`migrateCoverageToTracks()`](https://aifimmunology.github.io/MOCHA/reference/migrateCoverageToTracks.md)
+  : Migrate legacy coverage RDS bundles to structured bigWig tracks
+
 - [`packMOCHA()`](https://aifimmunology.github.io/MOCHA/reference/packMOCHA.md)
   : Zip up a MOCHA object and its linked files for portability between
   file systems

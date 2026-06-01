@@ -55,7 +55,7 @@
                         <h4 data-toc-skip class="author">MOCHA
 authors</h4>
             
-            <h4 data-toc-skip class="date">22 May 2026</h4>
+            <h4 data-toc-skip class="date">29 May 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/aifimmunology/MOCHA/blob/HEAD/vignettes/MOCHA-downstream-workflows.Rmd" class="external-link"><code>vignettes/MOCHA-downstream-workflows.Rmd</code></a></small>
       <div class="d-none name"><code>MOCHA-downstream-workflows.Rmd</code></div>
@@ -76,7 +76,8 @@ utilities.</p>
 from your project).</p>
 <p>All code chunks are reference-only (<code>eval = FALSE</code>) so the
 vignette builds on Bioconductor without large optional dependencies.
-Adapt paths and parameters to your data.</p>
+Code is maintained in <code>inst/tutorials/03-downstream.R</code> and
+verified by <code>tests/scripts/run_tutorials.R</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://aifimmunology.github.io/MOCHA/">MOCHA</a></span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -86,32 +87,33 @@ Adapt paths and parameters to your data.</p>
 <p>Co-accessibility links pairs of open tiles whose accessibility
 covaries across samples within a cell population. Start from regions of
 interest (as <code>GRanges</code> or MOCHA tile strings), then filter
-and test links.</p>
+and test links. The example uses a synthetic multisample matrix with a
+<code>GroupA</code> column for contrast testing.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">regions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/StringsToGRanges.html">StringsToGRanges</a></span><span class="op">(</span><span class="st">"chr1:101873000-101873499"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">regions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/StringsToGRanges.html">StringsToGRanges</a></span><span class="op">(</span><span class="va">region_name</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">links</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getCoAccessibleLinks.html">getCoAccessibleLinks</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
+<span>  SampleTileObj <span class="op">=</span> <span class="va">stm_multi</span>,</span>
 <span>  cellPopulation <span class="op">=</span> <span class="st">"C2"</span>,</span>
 <span>  regions <span class="op">=</span> <span class="va">regions</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">links</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filterCoAccessibleLinks.html">filterCoAccessibleLinks</a></span><span class="op">(</span></span>
 <span>  <span class="va">links</span>,</span>
-<span>  correlationThreshold <span class="op">=</span> <span class="fl">0.5</span></span>
+<span>  threshold <span class="op">=</span> <span class="fl">0.5</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">coAccessTests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/testCoAccessibility.html">testCoAccessibility</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  cellPopulation <span class="op">=</span> <span class="st">"C2"</span>,</span>
-<span>  links <span class="op">=</span> <span class="va">filtered</span>,</span>
-<span>  groupColumn <span class="op">=</span> <span class="st">"Sample"</span>,</span>
-<span>  foreground <span class="op">=</span> <span class="st">"sample_A"</span>,</span>
-<span>  background <span class="op">=</span> <span class="st">"sample_B"</span>,</span>
-<span>  numCores <span class="op">=</span> <span class="fl">4</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">filtered</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0L</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">coAccessTests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/testCoAccessibility.html">testCoAccessibility</a></span><span class="op">(</span></span>
+<span>    SampleTileObj <span class="op">=</span> <span class="va">stm_multi</span>,</span>
+<span>    tile1 <span class="op">=</span> <span class="va">filtered</span><span class="op">$</span><span class="va">Tile1</span>,</span>
+<span>    tile2 <span class="op">=</span> <span class="va">filtered</span><span class="op">$</span><span class="va">Tile2</span>,</span>
+<span>    numCores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <p>For chromVAR-based testing on motif-linked regions, see
 <code><a href="../reference/testCoAccessibilityChromVar.html">?testCoAccessibilityChromVar</a></code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -126,19 +128,20 @@ estimates per-tile dropout probabilities and can integrate them into
 <code><a href="../reference/getDifferentialAccessibleTiles.html">getDifferentialAccessibleTiles()</a></code> via
 <code>dropoutAdjustment</code>.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># colData should include FragNumber and CellCounts (or equivalent QC columns)</span></span>
-<span><span class="va">stm_with_dropout</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/assessDropout.html">assessDropout</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">c2Matrix</span>,</span>
-<span>  cellPopulations <span class="op">=</span> <span class="st">"C2"</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<code class="sourceCode R"><span><span class="va">stm_with_dropout</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/assessDropout.html">assessDropout</a></span><span class="op">(</span></span>
+<span>  TSAM_Object <span class="op">=</span> <span class="va">tutorial_dropout_stm</span>,</span>
+<span>  cellPopulation <span class="op">=</span> <span class="st">"C2"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimateDropoutModel.html">estimateDropoutModel</a></span><span class="op">(</span><span class="va">stm_with_dropout</span>, cellPopulation <span class="op">=</span> <span class="st">"C2"</span><span class="op">)</span></span>
 <span><span class="va">probs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getDropoutProb.html">getDropoutProb</a></span><span class="op">(</span><span class="va">stm_with_dropout</span>, <span class="st">"C2"</span><span class="op">)</span></span>
 <span><span class="va">cls</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/classifyZeros.html">classifyZeros</a></span><span class="op">(</span><span class="va">stm_with_dropout</span>, <span class="st">"C2"</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotDropoutDiagnostics.html">plotDropoutDiagnostics</a></span><span class="op">(</span><span class="va">stm_with_dropout</span>, <span class="st">"C2"</span>, type <span class="op">=</span> <span class="st">"probHist"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plotDropoutDiagnostics.html">plotDropoutDiagnostics</a></span><span class="op">(</span><span class="va">stm_with_dropout</span>, <span class="st">"C2"</span>, type <span class="op">=</span> <span class="st">"calibration"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/plotDropoutDiagnostics.html">plotDropoutDiagnostics</a></span><span class="op">(</span><span class="va">stm_with_dropout</span>, <span class="st">"C2"</span>, type <span class="op">=</span> <span class="st">"probHist"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/plotDropoutDiagnostics.html">plotDropoutDiagnostics</a></span><span class="op">(</span><span class="va">stm_with_dropout</span>, <span class="st">"C2"</span>, type <span class="op">=</span> <span class="st">"calibration"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <p>Use <code>dropoutAdjustment</code> in
 <code><a href="../reference/getDifferentialAccessibleTiles.html">getDifferentialAccessibleTiles()</a></code>; see the workflow tutorial
 cheat-sheet and <code><a href="../reference/getDifferentialAccessibleTiles.html">?getDifferentialAccessibleTiles</a></code>.</p>
@@ -149,12 +152,15 @@ cheat-sheet and <code><a href="../reference/getDifferentialAccessibleTiles.html"
 <p>Summarize sample-level accessibility across tiles for exploratory
 PCA/UMAP. Requires <code>uwot</code> (Suggests).</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lse</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bulkDimReduction.html">bulkDimReduction</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  cellType <span class="op">=</span> <span class="st">"all"</span>,</span>
-<span>  componentNumber <span class="op">=</span> <span class="fl">10</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">umap_coords</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bulkUMAP.html">bulkUMAP</a></span><span class="op">(</span><span class="va">lse</span>, n_neighbors <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"uwot"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"irlba"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">lse</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bulkDimReduction.html">bulkDimReduction</a></span><span class="op">(</span></span>
+<span>    SampleTileObj <span class="op">=</span> <span class="va">stm_multi</span>,</span>
+<span>    cellType <span class="op">=</span> <span class="st">"All"</span>,</span>
+<span>    componentNumber <span class="op">=</span> <span class="fl">2</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">umap_coords</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bulkUMAP.html">bulkUMAP</a></span><span class="op">(</span><span class="va">lse</span>, components <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, nNeighbors <span class="op">=</span> <span class="fl">4</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="combining-studies">Combining studies<a class="anchor" aria-label="anchor" href="#combining-studies"></a>
@@ -168,8 +174,13 @@ combine sample-tile matrices for joint analysis.</p>
 <span><span class="co">#   cellPopulations = c("C2", "C5")</span></span>
 <span><span class="co"># )</span></span></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/combineSampleTileMatrix.html">combineSampleTileMatrix</a></span><span class="op">(</span><span class="va">sampleTileMatrices</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">combined</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">combined</span> <span class="op">&lt;-</span> <span class="fu">tutorial_try_run</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/combineSampleTileMatrix.html">combineSampleTileMatrix</a></span><span class="op">(</span><span class="va">sampleTileMatrices</span><span class="op">)</span>,</span>
+<span>  label <span class="op">=</span> <span class="st">"combine-stm"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">combined</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">combined</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="utilities">Utilities<a class="anchor" aria-label="anchor" href="#utilities"></a>
@@ -177,8 +188,8 @@ combine sample-tile matrices for joint analysis.</p>
 <p>Common getters and metadata helpers:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getCellTypes.html">getCellTypes</a></span><span class="op">(</span><span class="va">sampleTileMatrices</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/getCellTypeTiles.html">getCellTypeTiles</a></span><span class="op">(</span><span class="va">tileResults</span>, cellPopulations <span class="op">=</span> <span class="st">"C2"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/getSampleCellTypeMetadata.html">getSampleCellTypeMetadata</a></span><span class="op">(</span><span class="va">sampleTileMatrices</span>, cellPopulation <span class="op">=</span> <span class="st">"C2"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/getCellTypeTiles.html">getCellTypeTiles</a></span><span class="op">(</span><span class="va">sampleTileMatrices</span>, cellType <span class="op">=</span> <span class="st">"C2"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/getSampleCellTypeMetadata.html">getSampleCellTypeMetadata</a></span><span class="op">(</span><span class="va">sampleTileMatrices</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># renamed &lt;- renameCellTypes(sampleTileMatrices, oldName = "C2", newName = "Mono")</span></span>
 <span><span class="co"># withCol &lt;- addCellColData(tileResults, newColData = data.frame(...))</span></span>

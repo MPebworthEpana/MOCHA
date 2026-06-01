@@ -55,7 +55,7 @@
                         <h4 data-toc-skip class="author">MOCHA
 authors</h4>
             
-            <h4 data-toc-skip class="date">22 May 2026</h4>
+            <h4 data-toc-skip class="date">29 May 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/aifimmunology/MOCHA/blob/HEAD/vignettes/MOCHA-workflow-tutorial.Rmd" class="external-link"><code>vignettes/MOCHA-workflow-tutorial.Rmd</code></a></small>
       <div class="d-none name"><code>MOCHA-workflow-tutorial.Rmd</code></div>
@@ -73,6 +73,9 @@ workflow on small bundled example data (<code>exampleFragments</code>,
 <code>exampleCellColData</code>, <code>exampleBlackList</code>) so it
 can be built on the Bioconductor build system without an ArchR
 project.</p>
+<p>Runnable code is maintained in
+<code>inst/tutorials/01-workflow.R</code> (included here via
+<code><a href="https://rdrr.io/pkg/knitr/man/read_chunk.html" class="external-link">knitr::read_chunk()</a></code>).</p>
 <p>For importing from ArchR, Signac, SnapATAC2, and other sources and
 calling open tiles, see <a href="Data-Import-Tutorial.html">Data Import
 Tutorial: Signac, ArchR, SnapATAC and more</a>.</p>
@@ -134,6 +137,10 @@ reproducibility varies across samples. <code><a href="../reference/plotConsensus
 <code><a href="../reference/suggestConsensusThreshold.html">suggestConsensusThreshold()</a></code> help you choose
 <code>reproducibilityThreshold</code> for
 <code><a href="../reference/getSampleTileMatrix.html">getSampleTileMatrix()</a></code>.</p>
+<p>The bundled PBMCSmall example has one sample per cell population, so
+<code><a href="../reference/suggestConsensusThreshold.html">suggestConsensusThreshold()</a></code> may return an empty table; use
+<code>reproducibilityThreshold = 0</code> (union) below when that
+happens.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">consensusDF</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotConsensus.html">plotConsensus</a></span><span class="op">(</span></span>
 <span>  <span class="va">tileResults</span>,</span>
@@ -154,7 +161,13 @@ reproducibility varies across samples. <code><a href="../reference/plotConsensus
 <span><span class="op">)</span></span>
 <span><span class="va">suggested</span></span>
 <span><span class="co">#&gt; [1] CellPopulation  Reproducibility PeakNumber      Method         </span></span>
-<span><span class="co">#&gt; &lt;0 rows&gt; (or 0-length row.names)</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;0 rows&gt; (or 0-length row.names)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">suggested</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0L</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span></span>
+<span>    <span class="st">"Bundled PBMCSmall has one sample per population; "</span>,</span>
+<span>    <span class="st">"threshold suggestion needs multi-sample curves. Use reproducibilityThreshold = 0 below."</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <p>The table below maps common tuning knobs to the functions that help
 you inspect them. For dropout-aware differentials, see <a href="MOCHA-downstream-workflows.html">MOCHA downstream
 workflows</a>.</p>
@@ -205,7 +218,8 @@ workflows</a>.</p>
 <code><a href="../reference/getSampleTileMatrix.html">getSampleTileMatrix()</a></code>. We use
 <code>reproducibilityThreshold = 0</code> here for a permissive union;
 in practice you may use the value from
-<code><a href="../reference/suggestConsensusThreshold.html">suggestConsensusThreshold()</a></code> above.</p>
+<code><a href="../reference/suggestConsensusThreshold.html">suggestConsensusThreshold()</a></code> above when multiple samples are
+available.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sampleTileMatrices</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getSampleTileMatrix.html">getSampleTileMatrix</a></span><span class="op">(</span></span>
 <span>  <span class="va">tileResults</span>,</span>
@@ -215,7 +229,7 @@ in practice you may use the value from
 <span><span class="va">sampleTileMatrices</span></span>
 <span><span class="co">#&gt; class: RangedSummarizedExperiment </span></span>
 <span><span class="co">#&gt; dim: 25112 1 </span></span>
-<span><span class="co">#&gt; metadata(6): summarizedData Genome ... Directory History</span></span>
+<span><span class="co">#&gt; metadata(7): summarizedData Genome ... CoverageLayout History</span></span>
 <span><span class="co">#&gt; assays(2): C2 C5</span></span>
 <span><span class="co">#&gt; rownames(25112): chr1:1000000-1000499 chr1:10002000-10002499 ...</span></span>
 <span><span class="co">#&gt;   chr2:99954000-99954499 chr2:99954500-99954999</span></span>
@@ -310,7 +324,7 @@ arguments for paired designs and dropout handling:</p>
 <span><span class="co">#   foreground = samples[1],</span></span>
 <span><span class="co">#   background = samples[2],</span></span>
 <span><span class="co">#   method = "wilcoxon_paired",</span></span>
-<span><span class="co">#   pairColumn = "Subject",       # column linking paired samples</span></span>
+<span><span class="co">#   pairColumn = "Subject",</span></span>
 <span><span class="co">#   dropoutAdjustment = "biological_only",</span></span>
 <span><span class="co">#   bioThreshold = 0.8,</span></span>
 <span><span class="co">#   numCores = 4</span></span>

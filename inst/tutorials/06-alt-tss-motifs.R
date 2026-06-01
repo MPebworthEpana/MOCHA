@@ -1,8 +1,16 @@
-# Alternative TSS and TF regulation tutorial — executable chunks.
-
 # ---- libraries ----
 library(MOCHA)
 
+# ---- script-init ----
+if (!exists("tutorial_try_run", mode = "function")) {
+  shared_path <- system.file("tutorials", "_shared.R", package = "MOCHA")
+  if (!nzchar(shared_path)) {
+    shared_path <- file.path(getwd(), "inst", "tutorials", "_shared.R")
+  }
+  if (file.exists(shared_path)) {
+    source(shared_path, local = FALSE)
+  }
+}
 if (!exists("differentials")) {
   fixture_dir <- file.path(tempdir(), "mocha_tutorial_fixtures")
   if (!file.exists(file.path(fixture_dir, "differentials.rds"))) {
@@ -13,7 +21,9 @@ if (!exists("differentials")) {
 }
 
 # ---- add-motif-set ----
-if (requireNamespace("chromVARmotifs", quietly = TRUE) &&
+# Slow PWM matching; run with MOCHA_HEAVY_TESTS=true.
+if (tolower(Sys.getenv("MOCHA_HEAVY_TESTS", "false")) %in% c("true", "1", "yes") &&
+    requireNamespace("chromVARmotifs", quietly = TRUE) &&
     requireNamespace("motifmatchr", quietly = TRUE)) {
   sampleTileMatrices <- addMotifSet(
     SampleTileObj = sampleTileMatrices,
@@ -29,13 +39,15 @@ sig <- differentials[!is.na(differentials$FDR) &
 bg <- differentials[!(differentials %in% sig)]
 if (length(sig) > 0L && length(bg) > 0L &&
     "CISBP" %in% names(S4Vectors::metadata(sampleTileMatrices))) {
-  motifPosList <- S4Vectors::metadata(sampleTileMatrices)$CISBP
-  enr <- MotifEnrichment(
-    Group1 = sig,
-    Group2 = bg,
-    motifPosList = motifPosList
-  )
-  head(enr[order(enr$adjp_val), ])
+  tutorial_try_run({
+    motifPosList <- S4Vectors::metadata(sampleTileMatrices)$CISBP
+    enr <- MotifEnrichment(
+      Group1 = sig,
+      Group2 = bg,
+      motifPosList = motifPosList
+    )
+    head(enr[order(enr$adjp_val), ])
+  }, "motif-enrichment")
 }
 
 # ---- motifset-enrichment ----
@@ -45,14 +57,16 @@ if (length(sig) > 0L && length(bg) > 0L &&
 # )
 
 # ---- get-alt-tss ----
-altTSS <- getAltTSS(
-  completeDAPs = differentials,
-  threshold = 0.2,
-  TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-  OrgDb = "org.Hs.eg.db"
-)
-table(altTSS$type)
-head(altTSS[altTSS$type == "ii", ])
+tutorial_try_run({
+  altTSS <- getAltTSS(
+    completeDAPs = differentials,
+    threshold = 0.2,
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    OrgDb = "org.Hs.eg.db"
+  )
+  table(altTSS$type)
+  head(altTSS[altTSS$type == "ii", ])
+}, "get-alt-tss")
 
 # ---- plot-alt-tss ----
 # candidate <- "MYD88"

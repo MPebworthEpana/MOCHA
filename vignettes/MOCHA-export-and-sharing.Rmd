@@ -22,15 +22,12 @@ knitr::opts_chunk$set(
   warning = FALSE,
   eval = FALSE
 )
-tutorial_read_chunks <- function(...) {
-  files <- unlist(list(...))
-  for (f in files) {
-    p <- system.file("tutorials", f, package = "MOCHA")
-    if (!nzchar(p)) p <- file.path("..", "inst", "tutorials", f)
-    knitr::read_chunk(p)
-  }
+vignette_setup <- system.file("tutorials", "vignette_setup.R", package = "MOCHA")
+if (!nzchar(vignette_setup)) {
+  vignette_setup <- file.path("..", "inst", "tutorials", "vignette_setup.R")
 }
-tutorial_read_chunks("04-export.R")
+source(vignette_setup, local = FALSE)
+vignette_read_tutorial("04-export.R")
 ```
 
 ## Introduction

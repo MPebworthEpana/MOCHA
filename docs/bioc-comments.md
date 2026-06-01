@@ -34,6 +34,11 @@ GitHub Action.
 - Only chunks using bundled `exampleFragments` / package data run on
   Bioconductor builders; all other chunks use `eval = FALSE` or
   `NOT_CRAN` guards.
+- Tutorial code lives in `inst/tutorials/*.R` (single source of truth);
+  vignettes use
+  [`knitr::read_chunk()`](https://rdrr.io/pkg/knitr/man/read_chunk.html).
+  Tier A/B scripts are exercised by `tutorial-check` CI and
+  `tests/scripts/run_tutorials.R`.
 - `ImportingFromOtherSources.Rmd` merged into `Data-Import-Tutorial.Rmd`
   (removed).
 - Pre-built vignette HTML under `vignettes/` is excluded via

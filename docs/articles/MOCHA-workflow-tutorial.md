@@ -9,6 +9,10 @@ workflow on small bundled example data (`exampleFragments`,
 `exampleCellColData`, `exampleBlackList`) so it can be built on the
 Bioconductor build system without an ArchR project.
 
+Runnable code is maintained in `inst/tutorials/01-workflow.R` (included
+here via
+[`knitr::read_chunk()`](https://rdrr.io/pkg/knitr/man/read_chunk.html)).
+
 For importing from ArchR, Signac, SnapATAC2, and other sources and
 calling open tiles, see [Data Import Tutorial: Signac, ArchR, SnapATAC
 and
@@ -81,6 +85,11 @@ and
 help you choose `reproducibilityThreshold` for
 [`getSampleTileMatrix()`](https://aifimmunology.github.io/MOCHA/reference/getSampleTileMatrix.md).
 
+The bundled PBMCSmall example has one sample per cell population, so
+[`suggestConsensusThreshold()`](https://aifimmunology.github.io/MOCHA/reference/suggestConsensusThreshold.md)
+may return an empty table; use `reproducibilityThreshold = 0` (union)
+below when that happens.
+
 ``` r
 
 consensusDF <- plotConsensus(
@@ -106,6 +115,12 @@ suggested <- suggestConsensusThreshold(
 suggested
 #> [1] CellPopulation  Reproducibility PeakNumber      Method         
 #> <0 rows> (or 0-length row.names)
+if (nrow(suggested) == 0L) {
+  message(
+    "Bundled PBMCSmall has one sample per population; ",
+    "threshold suggestion needs multi-sample curves. Use reproducibilityThreshold = 0 below."
+  )
+}
 ```
 
 The table below maps common tuning knobs to the functions that help you
@@ -126,7 +141,7 @@ Consensus tiles across samples are summarized with
 We use `reproducibilityThreshold = 0` here for a permissive union; in
 practice you may use the value from
 [`suggestConsensusThreshold()`](https://aifimmunology.github.io/MOCHA/reference/suggestConsensusThreshold.md)
-above.
+above when multiple samples are available.
 
 ``` r
 
@@ -138,7 +153,7 @@ sampleTileMatrices <- getSampleTileMatrix(
 sampleTileMatrices
 #> class: RangedSummarizedExperiment 
 #> dim: 25112 1 
-#> metadata(6): summarizedData Genome ... Directory History
+#> metadata(7): summarizedData Genome ... CoverageLayout History
 #> assays(2): C2 C5
 #> rownames(25112): chr1:1000000-1000499 chr1:10002000-10002499 ...
 #>   chr2:99954000-99954499 chr2:99954500-99954999
@@ -252,7 +267,7 @@ supports additional arguments for paired designs and dropout handling:
 #   foreground = samples[1],
 #   background = samples[2],
 #   method = "wilcoxon_paired",
-#   pairColumn = "Subject",       # column linking paired samples
+#   pairColumn = "Subject",
 #   dropoutAdjustment = "biological_only",
 #   bioThreshold = 0.8,
 #   numCores = 4

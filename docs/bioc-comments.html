@@ -57,6 +57,7 @@
 <code>ArchR</code> remains in <code>Suggests</code>; not available on Bioconductor. Examples and vignette use bundled <code>GRangesList</code> data only.</li>
 <li>Six vignettes: <code>MOCHA-workflow-tutorial.Rmd</code> (runnable end-to-end on bundled data), <code>Data-Import-Tutorial.Rmd</code> (runnable bundled section only; other import paths <code>eval = FALSE</code>), <code>MOCHA-downstream-workflows.Rmd</code>, <code>MOCHA-export-and-sharing.Rmd</code>, and <code>MOCHA-advanced-modeling.Rmd</code> (reference-only, <code>eval = FALSE</code>), <code>Alternative-TSS-TF-regulation.Rmd</code> (mostly <code>eval = FALSE</code> templates).</li>
 <li>Only chunks using bundled <code>exampleFragments</code> / package data run on Bioconductor builders; all other chunks use <code>eval = FALSE</code> or <code>NOT_CRAN</code> guards.</li>
+<li>Tutorial code lives in <code>inst/tutorials/*.R</code> (single source of truth); vignettes use <code><a href="https://rdrr.io/pkg/knitr/man/read_chunk.html" class="external-link">knitr::read_chunk()</a></code>. Tier A/B scripts are exercised by <code>tutorial-check</code> CI and <code>tests/scripts/run_tutorials.R</code>.</li>
 <li>
 <code>ImportingFromOtherSources.Rmd</code> merged into <code>Data-Import-Tutorial.Rmd</code> (removed).</li>
 <li>Pre-built vignette HTML under <code>vignettes/</code> is excluded via <code>.Rbuildignore</code>.</li>

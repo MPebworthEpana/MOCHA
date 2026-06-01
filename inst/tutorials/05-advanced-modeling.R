@@ -1,8 +1,7 @@
-# Advanced modeling tutorial — executable chunks.
-
 # ---- libraries ----
 library(MOCHA)
 
+# ---- script-init ----
 if (!exists("tutorial_try_run", mode = "function")) {
   shared_path <- system.file("tutorials", "_shared.R", package = "MOCHA")
   if (!nzchar(shared_path)) {
@@ -12,7 +11,6 @@ if (!exists("tutorial_try_run", mode = "function")) {
     source(shared_path, local = FALSE)
   }
 }
-
 if (!exists("sampleTileMatrices")) {
   fixture_dir <- file.path(tempdir(), "mocha_tutorial_fixtures")
   if (!file.exists(file.path(fixture_dir, "sampleTileMatrices.rds"))) {
@@ -21,27 +19,26 @@ if (!exists("sampleTileMatrices")) {
   sampleTileMatrices <- readRDS(file.path(fixture_dir, "sampleTileMatrices.rds"))
   tutorial_stm_multisample <- readRDS(file.path(fixture_dir, "tutorial_stm_multisample.rds"))
 }
+modelFormula <- "exp ~ GroupA + PassQC + (1|Sample)"
 
 # ---- pilot-lmem ----
-modelFormula <- "exp ~ GroupA + PassQC + (1|Sample)"
-if (requireNamespace("lmerTest", quietly = TRUE) && exists("tutorial_stm_multisample")) {
+if (requireNamespace("lmerTest", quietly = TRUE)) {
   tutorial_try_run({
     pilot <- pilotLMEM(
-      SampleTileObj = tutorial_stm_multisample,
+      ExperimentObj = tutorial_stm_multisample,
       modelFormula = modelFormula,
       assayName = "C2",
-      initialSampling = 5,
-      numCores = 1,
+      pilotIndices = 1:5,
       verbose = FALSE
     )
   }, "pilotLMEM")
 }
 
 # ---- run-lmem ----
-if (requireNamespace("lmerTest", quietly = TRUE) && exists("tutorial_stm_multisample")) {
+if (requireNamespace("lmerTest", quietly = TRUE)) {
   tutorial_try_run({
     modelList <- runLMEM(
-      SampleTileObj = tutorial_stm_multisample,
+      ExperimentObj = tutorial_stm_multisample,
       modelFormula = modelFormula,
       assayName = "C2",
       initialSampling = 5,
@@ -54,25 +51,26 @@ if (requireNamespace("lmerTest", quietly = TRUE) && exists("tutorial_stm_multisa
 }
 
 # ---- pilot-ziglmm ----
-if (requireNamespace("glmmTMB", quietly = TRUE) && exists("tutorial_stm_multisample")) {
+if (requireNamespace("glmmTMB", quietly = TRUE)) {
   tutorial_try_run({
     zigPilot <- pilotZIGLMM(
-      SampleTileObj = tutorial_stm_multisample,
-      modelFormula = "exp ~ GroupA + PassQC + (1|Sample)",
-      assayName = "C2",
-      initialSampling = 5,
+      TSAM_Object = tutorial_stm_multisample,
+      cellPopulation = "C2",
+      continuousFormula = exp ~ GroupA,
+      ziformula = ~ GroupA,
       verbose = FALSE
     )
   }, "pilotZIGLMM")
 }
 
 # ---- run-ziglmm ----
-if (requireNamespace("glmmTMB", quietly = TRUE) && exists("tutorial_stm_multisample")) {
+if (requireNamespace("glmmTMB", quietly = TRUE)) {
   tutorial_try_run({
     zigModels <- runZIGLMM(
-      SampleTileObj = tutorial_stm_multisample,
-      modelFormula = "exp ~ GroupA + PassQC + (1|Sample)",
-      assayName = "C2",
+      TSAM_Object = tutorial_stm_multisample,
+      cellPopulation = "C2",
+      continuousFormula = exp ~ GroupA,
+      ziformula = ~ GroupA,
       numCores = 1
     )
     variances <- varZIGLMM(zigModels)
@@ -80,16 +78,27 @@ if (requireNamespace("glmmTMB", quietly = TRUE) && exists("tutorial_stm_multisam
 }
 
 # ---- train-peak-model ----
-customPeaks <- trainPeakModel(
-  ATACFragments = exampleFragments,
-  cellColData = exampleCellColData,
-  cellPopLabel = "Clusters",
-  cellPopulations = "C2",
-  genome = "BSgenome.Hsapiens.UCSC.hg19",
-  outDir = tempdir(),
-  numCores = 1,
-  verbose = FALSE
-)
+# Slow; run with MOCHA_HEAVY_TESTS=true for a full training pass.
+if (tolower(Sys.getenv("MOCHA_HEAVY_TESTS", "false")) %in% c("true", "1", "yes")) {
+  tutorial_try_run({
+    frags <- exampleFragments[[1]]
+    peaks <- GenomicRanges::reduce(frags)
+    peaks <- peaks[IRanges::width(peaks) >= 200L]
+    customPeaks <- trainPeakModel(
+      ATACFragments = frags,
+      cellColData = exampleCellColData,
+      blackList = exampleBlackList,
+      groundTruthPeaks = peaks,
+      tileSize = 250L,
+      cellSubsetSizes = c(50L, 100L),
+      replicatesFn = function(n) 2L,
+      threshMethod = if (requireNamespace("cutpointr", quietly = TRUE)) "youden" else "f1",
+      numCores = 1L,
+      seed = 42L,
+      verbose = FALSE
+    )
+  }, "trainPeakModel")
+}
 
 # ---- s4-classes ----
 isMOCHAObject(sampleTileMatrices)

@@ -55,7 +55,7 @@
                         <h4 data-toc-skip class="author">MOCHA
 authors</h4>
             
-            <h4 data-toc-skip class="date">22 May 2026</h4>
+            <h4 data-toc-skip class="date">29 May 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/aifimmunology/MOCHA/blob/HEAD/vignettes/MOCHA-export-and-sharing.Rmd" class="external-link"><code>vignettes/MOCHA-export-and-sharing.Rmd</code></a></small>
       <div class="d-none name"><code>MOCHA-export-and-sharing.Rmd</code></div>
@@ -73,7 +73,8 @@ the MOCHA Dash app.</p>
 <p>This vignette ports the narrative from
 <code>inst/notebooks/MOCHA-Export-Vignette.ipynb</code> into BiocStyle R
 Markdown. All chunks are reference-only because exports involve file
-I/O, large fragment data, and optional heavy dependencies.</p>
+I/O, large fragment data, and optional heavy dependencies. Code is
+maintained in <code>inst/tutorials/04-export.R</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://aifimmunology.github.io/MOCHA/">MOCHA</a></span><span class="op">)</span></span></code></pre></div>
 <p><strong>Prerequisites:</strong> <code>tileResults</code> from
@@ -87,22 +88,22 @@ I/O, large fragment data, and optional heavy dependencies.</p>
 outputs into a single zip for transfer. <code><a href="../reference/unpackMOCHA.html">unpackMOCHA()</a></code>
 restores the object and rewrites stored paths.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">outDir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">zipPath</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/packMOCHA.html">packMOCHA</a></span><span class="op">(</span></span>
-<span>  MOCHAObj <span class="op">=</span> <span class="va">tileResults</span>,</span>
-<span>  zipfile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"mocha_results.zip"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">unpacked</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/unpackMOCHA.html">unpackMOCHA</a></span><span class="op">(</span></span>
-<span>  zipfile <span class="op">=</span> <span class="va">zipPath</span>,</span>
-<span>  exdir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"unpacked_mocha"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"zip"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">zipPath</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/packMOCHA.html">packMOCHA</a></span><span class="op">(</span></span>
+<span>    MOCHAObj <span class="op">=</span> <span class="va">tileResults</span>,</span>
+<span>    zipfile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"mocha_results.zip"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">unpacked</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/unpackMOCHA.html">unpackMOCHA</a></span><span class="op">(</span></span>
+<span>    zipfile <span class="op">=</span> <span class="va">zipPath</span>,</span>
+<span>    exdir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"unpacked_mocha"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <p>If you move the project directory after unpacking, update stored
 paths:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tileResults</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/updateDirectoryPath.html">updateDirectoryPath</a></span><span class="op">(</span></span>
-<span>  <span class="va">tileResults</span>,</span>
-<span>  directoryPath <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"unpacked_mocha"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/AnnotationDbi/man/Bimap-envirAPI.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"unpacked"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">tileResults</span> <span class="op">&lt;-</span> <span class="va">unpacked</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="export-sample-specific-coverage">Export sample-specific coverage<a class="anchor" aria-label="anchor" href="#export-sample-specific-coverage"></a>
@@ -111,23 +112,39 @@ paths:</p>
 in a tile-results object. This step can be slow and disk-intensive; use
 <code>numCores</code> and a dedicated output directory.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/exportCoverage.html">exportCoverage</a></span><span class="op">(</span></span>
-<span>  SampleTileObject <span class="op">=</span> <span class="va">tileResults</span>,</span>
-<span>  dir <span class="op">=</span> <span class="st">"./data/sample_specific_coverage/"</span>,</span>
-<span>  cellPopulations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"C2"</span>, <span class="st">"C5"</span><span class="op">)</span>,</span>
-<span>  sampleSpecific <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  saveFile <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  numCores <span class="op">=</span> <span class="fl">4</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Heavy: writes bigWig files from fragments. Run with MOCHA_HEAVY_TESTS=true.</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/chartr.html" class="external-link">tolower</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"MOCHA_HEAVY_TESTS"</span>, <span class="st">"false"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/BiocGenerics/man/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"true"</span>, <span class="st">"1"</span>, <span class="st">"yes"</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rtracklayer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span></span>
+<span>      <span class="fu"><a href="../reference/exportCoverage.html">exportCoverage</a></span><span class="op">(</span></span>
+<span>        SampleTileObject <span class="op">=</span> <span class="va">tileResults</span>,</span>
+<span>        dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"sample_specific_coverage"</span><span class="op">)</span>,</span>
+<span>        cellPopulations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"C2"</span>, <span class="st">"C5"</span><span class="op">)</span>,</span>
+<span>        sampleSpecific <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>        saveFile <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>        numCores <span class="op">=</span> <span class="fl">1</span></span>
+<span>      <span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    label <span class="op">=</span> <span class="st">"export-coverage"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="export-open-tiles">Export open tiles<a class="anchor" aria-label="anchor" href="#export-open-tiles"></a>
 </h2>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/exportOpenTiles.html">exportOpenTiles</a></span><span class="op">(</span></span>
-<span>  SampleTileObject <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  outDir <span class="op">=</span> <span class="st">"./data/tiles_samplespecific/"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rtracklayer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/exportOpenTiles.html">exportOpenTiles</a></span><span class="op">(</span></span>
+<span>      SampleTileObject <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
+<span>      cellPopulation <span class="op">=</span> <span class="st">"C2"</span>,</span>
+<span>      outDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"tiles_samplespecific"</span><span class="op">)</span>,</span>
+<span>      verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    label <span class="op">=</span> <span class="st">"export-open-tiles"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="export-differential-tiles">Export differential tiles<a class="anchor" aria-label="anchor" href="#export-differential-tiles"></a>
@@ -136,12 +153,18 @@ in a tile-results object. This step can be slow and disk-intensive; use
 (<code><a href="../reference/getDifferentialAccessibleTiles.html">getDifferentialAccessibleTiles()</a></code>), then export
 accessibility tracks for foreground/background contrasts.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># diffsGR &lt;- readRDS("./data/my_differential_peaks.rds")</span></span>
-<span><span class="fu"><a href="../reference/exportDifferentials.html">exportDifferentials</a></span><span class="op">(</span></span>
-<span>  SampleTileObject <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  DifferentialsGRList <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>C2 <span class="op">=</span> <span class="va">diffs</span><span class="op">)</span>,</span>
-<span>  outDir <span class="op">=</span> <span class="st">"./data/tiles_differential/"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rtracklayer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">diffs</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">diffs</span>, <span class="st">"GRanges"</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">diffs</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0L</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/exportDifferentials.html">exportDifferentials</a></span><span class="op">(</span></span>
+<span>      SampleTileObject <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
+<span>      DifferentialsGRList <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>C2 <span class="op">=</span> <span class="va">diffs</span><span class="op">)</span>,</span>
+<span>      outDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"tiles_differential"</span><span class="op">)</span>,</span>
+<span>      verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    label <span class="op">=</span> <span class="st">"export-diffs"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="export-motifs">Export motifs<a class="anchor" aria-label="anchor" href="#export-motifs"></a>
@@ -150,33 +173,44 @@ accessibility tracks for foreground/background contrasts.</p>
 motif positions for visualization. See also <a href="Alternative-TSS-TF-regulation.html">Alternative TSS usage and TF
 regulation</a>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">chromVARmotifs</span><span class="op">)</span></span>
-<span><span class="va">motifsGRanges</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/addMotifSet.html">addMotifSet</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  motifPWMs <span class="op">=</span> <span class="fu">chromVARmotifs</span><span class="fu">::</span><span class="va">human_pwms_v2</span>,</span>
-<span>  returnSTM <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  motifSetName <span class="op">=</span> <span class="st">"CISBP"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/exportMotifs.html">exportMotifs</a></span><span class="op">(</span></span>
-<span>  SampleTileObject <span class="op">=</span> <span class="va">tileResults</span>,</span>
-<span>  motifsGRanges <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">motifsGRanges</span><span class="op">)</span>,</span>
-<span>  motifSetName <span class="op">=</span> <span class="st">"CISBP"</span>,</span>
-<span>  outDir <span class="op">=</span> <span class="st">"./data/motifs/"</span>,</span>
-<span>  filterCellTypePeaks <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Full CIS-BP motif export is slow; enable with MOCHA_HEAVY_TESTS=true.</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/chartr.html" class="external-link">tolower</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"MOCHA_HEAVY_TESTS"</span>, <span class="st">"false"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/BiocGenerics/man/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"true"</span>, <span class="st">"1"</span>, <span class="st">"yes"</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"chromVARmotifs"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"motifmatchr"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rtracklayer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">motifsGRanges</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/addMotifSet.html">addMotifSet</a></span><span class="op">(</span></span>
+<span>      SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
+<span>      motifPWMs <span class="op">=</span> <span class="fu">chromVARmotifs</span><span class="fu">::</span><span class="va">human_pwms_v2</span>,</span>
+<span>      returnSTM <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>      motifSetName <span class="op">=</span> <span class="st">"CISBP"</span></span>
+<span>    <span class="op">)</span></span>
+<span>    <span class="fu"><a href="../reference/exportMotifs.html">exportMotifs</a></span><span class="op">(</span></span>
+<span>      SampleTileObject <span class="op">=</span> <span class="va">tileResults</span>,</span>
+<span>      motifsGRanges <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">motifsGRanges</span><span class="op">)</span>,</span>
+<span>      motifSetName <span class="op">=</span> <span class="st">"CISBP"</span>,</span>
+<span>      outDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"motifs"</span><span class="op">)</span>,</span>
+<span>      filterCellTypePeaks <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>      verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">}</span>, label <span class="op">=</span> <span class="st">"export-motifs"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="export-local-footprints">Export local footprints<a class="anchor" aria-label="anchor" href="#export-local-footprints"></a>
 </h2>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/exportLocalFootprints.html">exportLocalFootprints</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  cellPopulations <span class="op">=</span> <span class="st">"C2"</span>,</span>
-<span>  outDir <span class="op">=</span> <span class="st">"./data/footprints/"</span>,</span>
-<span>  numCores <span class="op">=</span> <span class="fl">4</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rtracklayer"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/exportLocalFootprints.html">exportLocalFootprints</a></span><span class="op">(</span></span>
+<span>      SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
+<span>      cellPopulation <span class="op">=</span> <span class="st">"C2"</span>,</span>
+<span>      outDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outDir</span>, <span class="st">"footprints"</span><span class="op">)</span>,</span>
+<span>      numCores <span class="op">=</span> <span class="fl">1</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    label <span class="op">=</span> <span class="st">"export-footprints"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="interactive-tracks-dash-app">Interactive tracks (Dash app)<a class="anchor" aria-label="anchor" href="#interactive-tracks-dash-app"></a>

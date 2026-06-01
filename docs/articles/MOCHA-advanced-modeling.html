@@ -55,7 +55,7 @@
                         <h4 data-toc-skip class="author">MOCHA
 authors</h4>
             
-            <h4 data-toc-skip class="date">22 May 2026</h4>
+            <h4 data-toc-skip class="date">29 May 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/aifimmunology/MOCHA/blob/HEAD/vignettes/MOCHA-advanced-modeling.Rmd" class="external-link"><code>vignettes/MOCHA-advanced-modeling.Rmd</code></a></small>
       <div class="d-none name"><code>MOCHA-advanced-modeling.Rmd</code></div>
@@ -73,9 +73,8 @@ linear mixed models (ZIGLMM), and custom peak training with
 <p>This vignette is entirely reference-only (<code>eval = FALSE</code>)
 because fitting requires study-specific metadata, sufficient sample
 counts, and optional packages (<code>lmerTest</code>,
-<code>glmmTMB</code>). Use it as a template alongside
-<code><a href="../reference/pilotLMEM.html">?pilotLMEM</a></code>, <code><a href="../reference/runLMEM.html">?runLMEM</a></code>, and
-<code><a href="../reference/trainPeakModel.html">?trainPeakModel</a></code>.</p>
+<code>glmmTMB</code>). Code is maintained in
+<code>inst/tutorials/05-advanced-modeling.R</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://aifimmunology.github.io/MOCHA/">MOCHA</a></span><span class="op">)</span></span></code></pre></div>
 <p><strong>Prerequisites:</strong> A sample-tile matrix from
@@ -89,28 +88,32 @@ random effects).</p>
 <p>Pilot a formula on a subset of tiles, then run LMEM across the
 matrix.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">modelFormula</span> <span class="op">&lt;-</span> <span class="st">"exp ~ Treatment + PassQC + (1|Subject)"</span></span>
-<span></span>
-<span><span class="va">pilot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pilotLMEM.html">pilotLMEM</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  modelFormula <span class="op">=</span> <span class="va">modelFormula</span>,</span>
-<span>  assayName <span class="op">=</span> <span class="st">"C2"</span>,</span>
-<span>  initialSampling <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  numCores <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"lmerTest"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">pilot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pilotLMEM.html">pilotLMEM</a></span><span class="op">(</span></span>
+<span>      ExperimentObj <span class="op">=</span> <span class="va">tutorial_stm_multisample</span>,</span>
+<span>      modelFormula <span class="op">=</span> <span class="va">modelFormula</span>,</span>
+<span>      assayName <span class="op">=</span> <span class="st">"C2"</span>,</span>
+<span>      pilotIndices <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,</span>
+<span>      verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">}</span>, <span class="st">"pilotLMEM"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">modelList</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runLMEM.html">runLMEM</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  modelFormula <span class="op">=</span> <span class="va">modelFormula</span>,</span>
-<span>  assayName <span class="op">=</span> <span class="st">"C2"</span>,</span>
-<span>  initialSampling <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  numCores <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">coefs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getModelValues.html">getModelValues</a></span><span class="op">(</span><span class="va">modelList</span>, value <span class="op">=</span> <span class="st">"Estimate"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">coefs</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"lmerTest"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">modelList</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runLMEM.html">runLMEM</a></span><span class="op">(</span></span>
+<span>      ExperimentObj <span class="op">=</span> <span class="va">tutorial_stm_multisample</span>,</span>
+<span>      modelFormula <span class="op">=</span> <span class="va">modelFormula</span>,</span>
+<span>      assayName <span class="op">=</span> <span class="st">"C2"</span>,</span>
+<span>      initialSampling <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>      numCores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>      verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span></span>
+<span>    <span class="va">coefs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getModelValues.html">getModelValues</a></span><span class="op">(</span><span class="va">modelList</span>, value <span class="op">=</span> <span class="st">"Estimate"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">coefs</span><span class="op">)</span></span>
+<span>  <span class="op">}</span>, <span class="st">"runLMEM"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="zero-inflated-glmm">Zero-inflated GLMM<a class="anchor" aria-label="anchor" href="#zero-inflated-glmm"></a>
@@ -118,22 +121,30 @@ matrix.</p>
 <p>For count data with excess zeros, ZIGLMM extends the mixed-model
 framework.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">zigPilot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pilotZIGLMM.html">pilotZIGLMM</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  modelFormula <span class="op">=</span> <span class="st">"exp ~ Treatment + PassQC + (1|Subject)"</span>,</span>
-<span>  assayName <span class="op">=</span> <span class="st">"C2"</span>,</span>
-<span>  initialSampling <span class="op">=</span> <span class="fl">50</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"glmmTMB"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">zigPilot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pilotZIGLMM.html">pilotZIGLMM</a></span><span class="op">(</span></span>
+<span>      TSAM_Object <span class="op">=</span> <span class="va">tutorial_stm_multisample</span>,</span>
+<span>      cellPopulation <span class="op">=</span> <span class="st">"C2"</span>,</span>
+<span>      continuousFormula <span class="op">=</span> <span class="va">exp</span> <span class="op">~</span> <span class="va">GroupA</span>,</span>
+<span>      ziformula <span class="op">=</span> <span class="op">~</span> <span class="va">GroupA</span>,</span>
+<span>      verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">}</span>, <span class="st">"pilotZIGLMM"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">zigModels</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runZIGLMM.html">runZIGLMM</a></span><span class="op">(</span></span>
-<span>  SampleTileObj <span class="op">=</span> <span class="va">sampleTileMatrices</span>,</span>
-<span>  modelFormula <span class="op">=</span> <span class="st">"exp ~ Treatment + PassQC + (1|Subject)"</span>,</span>
-<span>  assayName <span class="op">=</span> <span class="st">"C2"</span>,</span>
-<span>  numCores <span class="op">=</span> <span class="fl">4</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">variances</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varZIGLMM.html">varZIGLMM</a></span><span class="op">(</span><span class="va">zigModels</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"glmmTMB"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">zigModels</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runZIGLMM.html">runZIGLMM</a></span><span class="op">(</span></span>
+<span>      TSAM_Object <span class="op">=</span> <span class="va">tutorial_stm_multisample</span>,</span>
+<span>      cellPopulation <span class="op">=</span> <span class="st">"C2"</span>,</span>
+<span>      continuousFormula <span class="op">=</span> <span class="va">exp</span> <span class="op">~</span> <span class="va">GroupA</span>,</span>
+<span>      ziformula <span class="op">=</span> <span class="op">~</span> <span class="va">GroupA</span>,</span>
+<span>      numCores <span class="op">=</span> <span class="fl">1</span></span>
+<span>    <span class="op">)</span></span>
+<span>    <span class="va">variances</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varZIGLMM.html">varZIGLMM</a></span><span class="op">(</span><span class="va">zigModels</span><span class="op">)</span></span>
+<span>  <span class="op">}</span>, <span class="st">"runZIGLMM"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <p><code><a href="../reference/linearModeling.html">linearModeling()</a></code> provides a higher-level interface when
 you want MOCHA to select between LMEM and ZIGLMM workflows; see
 <code><a href="../reference/linearModeling.html">?linearModeling</a></code>.</p>
@@ -145,16 +156,27 @@ you want MOCHA to select between LMEM and ZIGLMM workflows; see
 from fragments when you need models beyond the default
 <code><a href="../reference/callOpenTiles-methods.html">callOpenTiles()</a></code> peak caller.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">customPeaks</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/trainPeakModel.html">trainPeakModel</a></span><span class="op">(</span></span>
-<span>  ATACFragments <span class="op">=</span> <span class="va">exampleFragments</span>,</span>
-<span>  cellColData <span class="op">=</span> <span class="va">exampleCellColData</span>,</span>
-<span>  cellPopLabel <span class="op">=</span> <span class="st">"Clusters"</span>,</span>
-<span>  cellPopulations <span class="op">=</span> <span class="st">"C2"</span>,</span>
-<span>  genome <span class="op">=</span> <span class="st">"BSgenome.Hsapiens.UCSC.hg19"</span>,</span>
-<span>  outDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  numCores <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Slow; run with MOCHA_HEAVY_TESTS=true for a full training pass.</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/chartr.html" class="external-link">tolower</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"MOCHA_HEAVY_TESTS"</span>, <span class="st">"false"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/BiocGenerics/man/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"true"</span>, <span class="st">"1"</span>, <span class="st">"yes"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tutorial_try_run</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">frags</span> <span class="op">&lt;-</span> <span class="va">exampleFragments</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span>    <span class="va">peaks</span> <span class="op">&lt;-</span> <span class="fu">GenomicRanges</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/IRanges/man/inter-range-methods.html" class="external-link">reduce</a></span><span class="op">(</span><span class="va">frags</span><span class="op">)</span></span>
+<span>    <span class="va">peaks</span> <span class="op">&lt;-</span> <span class="va">peaks</span><span class="op">[</span><span class="fu">IRanges</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/start.html" class="external-link">width</a></span><span class="op">(</span><span class="va">peaks</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">200L</span><span class="op">]</span></span>
+<span>    <span class="va">customPeaks</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/trainPeakModel.html">trainPeakModel</a></span><span class="op">(</span></span>
+<span>      ATACFragments <span class="op">=</span> <span class="va">frags</span>,</span>
+<span>      cellColData <span class="op">=</span> <span class="va">exampleCellColData</span>,</span>
+<span>      blackList <span class="op">=</span> <span class="va">exampleBlackList</span>,</span>
+<span>      groundTruthPeaks <span class="op">=</span> <span class="va">peaks</span>,</span>
+<span>      tileSize <span class="op">=</span> <span class="fl">250L</span>,</span>
+<span>      cellSubsetSizes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50L</span>, <span class="fl">100L</span><span class="op">)</span>,</span>
+<span>      replicatesFn <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="fl">2L</span>,</span>
+<span>      threshMethod <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"cutpointr"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="st">"youden"</span> <span class="kw">else</span> <span class="st">"f1"</span>,</span>
+<span>      numCores <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>      seed <span class="op">=</span> <span class="fl">42L</span>,</span>
+<span>      verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">}</span>, <span class="st">"trainPeakModel"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <p>Requires fragment-level data and genome annotation packages (see <a href="Data-Import-Tutorial.html">Data Import Tutorial</a>).</p>
 </div>
 <div class="section level2">
@@ -164,12 +186,7 @@ from fragments when you need models beyond the default
 <code>returnClass = "mocha"</code> in constructors, or coerce existing
 objects:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># tileResultsMocha &lt;- callOpenTiles(..., returnClass = "mocha")</span></span>
-<span><span class="co"># stmMocha &lt;- getSampleTileMatrix(..., returnClass = "mocha")</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/isMOCHAObject.html">isMOCHAObject</a></span><span class="op">(</span><span class="va">sampleTileMatrices</span><span class="op">)</span></span>
-<span><span class="co"># asMochaSTM(sampleTileMatrices)</span></span>
-<span><span class="co"># asMochaTileResults(tileResults)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/isMOCHAObject.html">isMOCHAObject</a></span><span class="op">(</span><span class="va">sampleTileMatrices</span><span class="op">)</span></span></code></pre></div>
 <p>Subclasses inherit <code>MultiAssayExperiment</code> /
 <code>RangedSummarizedExperiment</code> behavior; <code><a href="https://rdrr.io/pkg/BiocGenerics/man/subset.html" class="external-link">subset()</a></code>
 mirrors <code><a href="../reference/subsetMOCHAObject.html">subsetMOCHAObject()</a></code>.</p>

@@ -31,6 +31,30 @@
   alt-TSS/motif and import-utility sections.
 - Bioconductor build policy: only bundled-data chunks execute on
   builders; other vignette chunks are reference-only (`eval = FALSE`).
+- Tutorial code lives in `inst/tutorials/*.R` (single source of truth);
+  vignettes include scripts via
+  [`knitr::read_chunk()`](https://rdrr.io/pkg/knitr/man/read_chunk.html).
+  Verified by `tests/scripts/run_tutorials.R` and
+  `.github/workflows/tutorial-check.yml`.
+
+### Coverage storage
+
+- Coverage tracks from
+  [`callOpenTiles()`](https://aifimmunology.github.io/MOCHA/reference/callOpenTiles-methods.md)
+  are now saved as per-sample bigWig files under
+  `tracks/{cellPop}/{Accessibility|Insertions}/`, with legacy
+  `{cellPop}_CoverageFiles.RDS` bundles still supported for reading.
+- Added
+  [`migrateCoverageToTracks()`](https://aifimmunology.github.io/MOCHA/reference/migrateCoverageToTracks.md)
+  to convert legacy RDS bundles to the structured layout.
+- Track filenames use reversible percent-encoding to avoid sample-name
+  collisions;
+  [`exportCoverage()`](https://aifimmunology.github.io/MOCHA/reference/exportCoverage.md)
+  copies existing structured tracks when exporting sample-specific
+  bigWigs without regrouping.
+- Coverage I/O validates unsafe path characters, prunes orphaned bigWigs
+  when sample sets change, and repairs incomplete migrations from legacy
+  RDS bundles when available.
 
 ### Bug fixes
 

@@ -55,7 +55,7 @@
                         <h4 data-toc-skip class="author">MOCHA
 authors</h4>
             
-            <h4 data-toc-skip class="date">22 May 2026</h4>
+            <h4 data-toc-skip class="date">29 May 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/aifimmunology/MOCHA/blob/HEAD/vignettes/Data-Import-Tutorial.Rmd" class="external-link"><code>vignettes/Data-Import-Tutorial.Rmd</code></a></small>
       <div class="d-none name"><code>Data-Import-Tutorial.Rmd</code></div>
@@ -171,6 +171,8 @@ downloads.</p>
 <code>exampleCellColData</code>, <code>exampleBlackList</code>).
 Fragments use the <code>RG</code> cell barcode column; metadata includes
 <code>Sample</code> and <code>Clusters</code>.</p>
+<p>Bundled code is maintained in
+<code>inst/tutorials/02-import-bundled.R</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://aifimmunology.github.io/MOCHA/">MOCHA</a></span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -934,14 +936,11 @@ cell)</p>
 <p>After <code><a href="../reference/callOpenTiles-methods.html">callOpenTiles()</a></code>, these helpers inspect or adjust
 objects without running a full downstream workflow:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Per-sample fragment GRanges from a tile-results object</span></span>
-<span><span class="va">frags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getPopFrags.html">getPopFrags</a></span><span class="op">(</span><span class="va">tileResults</span>, sampleName <span class="op">=</span> <span class="st">"Sample1"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Per-sample fragment GRanges from an ArchR project (requires ArchR):</span></span>
+<span><span class="co"># frags &lt;- getPopFrags(ArchRProj, cellPopLabel = "Clusters")</span></span>
 <span></span>
-<span><span class="co"># Lift peaks to another genome build when needed</span></span>
-<span><span class="co"># tileResults &lt;- correctGenome(tileResults, targetGenome = "hg38")</span></span>
-<span></span>
-<span><span class="co"># Quick access to called peaks</span></span>
-<span><span class="va">openC2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/openTiles.html">openTiles</a></span><span class="op">(</span><span class="va">tileResults</span>, cellPopulations <span class="op">=</span> <span class="st">"C2"</span><span class="op">)</span></span>
+<span><span class="co"># Quick access to called peaks from tileResults</span></span>
+<span><span class="va">openC2_util</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getOpenTiles.html">getOpenTiles</a></span><span class="op">(</span><span class="va">tileResults</span>, cellPopulations <span class="op">=</span> <span class="st">"C2"</span><span class="op">)</span></span>
 <span><span class="co"># equivalent: getOpenTiles(tileResults, cellPopulations = "C2")</span></span></code></pre></div>
 <p>See <code><a href="../reference/getPopFrags.html">?getPopFrags</a></code>, <code><a href="../reference/correctGenome.html">?correctGenome</a></code>,
 <code><a href="../reference/openTiles.html">?openTiles</a></code>, and <code><a href="../reference/getOpenTiles.html">?getOpenTiles</a></code>.</p>

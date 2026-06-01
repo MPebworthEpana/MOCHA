@@ -23,7 +23,7 @@ Rscript scripts/validate_tutorial_chunks.R
 
 | Tier | Scripts | CI |
 |------|---------|-----|
-| **A** | `00-fixtures.R`, `01-workflow.R`, `02-import-bundled.R` | Bioconductor Docker / every PR |
+| **A** | `01-workflow.R`, `02-import-bundled.R` | Bioconductor Docker / every PR |
 | **B** | `03-downstream.R` … `06-alt-tss-motifs.R` | `NOT_CRAN=true` tutorial-check workflow |
 | **C** | `reference/*.R` | `MOCHA_HEAVY_TESTS=true` (ArchR, Signac smoke, etc.) |
 
@@ -42,3 +42,13 @@ Rscript scripts/validate_tutorial_chunks.R
 
 Reference import paths (ArchR, Signac downloads, SnapATAC) remain in the Data
 Import vignette as `eval = FALSE` chunks only.
+
+## Chunk layout
+
+Each script must start with `# ---- libraries ----` (no executable code before the
+first label). Tier B scripts use a `# ---- script-init ----` chunk for fixture
+loading; that chunk is runner-only (not referenced in vignettes) so Bioconductor
+builds only execute `library(MOCHA)` from the `libraries` chunk.
+
+Pkgdown scans `inst/tutorials/` and requires the `rsconnect` package (listed in
+`environment-mocha-docs.yml`).

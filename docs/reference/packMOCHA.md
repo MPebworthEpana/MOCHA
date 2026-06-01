@@ -1,10 +1,9 @@
 # Zip up a MOCHA object and its linked files for portability between file systems
 
 `packMOCHA` combines a MOCHA object (Sample-Tile Matrix or tileResults)
-with its saved coverage tracks into a single zip archive. This includes
-structured bigWig tracks under `tracks/` (and legacy RDS bundles when
-present). This allows MOCHA objects and the necessary coverage files for
-plotting to be shared to other file systems. See also:
+with its saved coverage tracks into a single zip archive. This allows
+MOCHA objects and the necessary coverage files for plotting to be shared
+to other file systems. See also:
 [unpackMOCHA](https://aifimmunology.github.io/MOCHA/reference/unpackMOCHA.md)
 
 ## Usage

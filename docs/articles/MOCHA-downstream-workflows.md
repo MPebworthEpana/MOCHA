@@ -14,8 +14,9 @@ utilities.
 project).
 
 All code chunks are reference-only (`eval = FALSE`) so the vignette
-builds on Bioconductor without large optional dependencies. Adapt paths
-and parameters to your data.
+builds on Bioconductor without large optional dependencies. Code is
+maintained in `inst/tutorials/03-downstream.R` and verified by
+`tests/scripts/run_tutorials.R`.
 
 ``` r
 
@@ -26,17 +27,19 @@ library(MOCHA)
 
 Co-accessibility links pairs of open tiles whose accessibility covaries
 across samples within a cell population. Start from regions of interest
-(as `GRanges` or MOCHA tile strings), then filter and test links.
+(as `GRanges` or MOCHA tile strings), then filter and test links. The
+example uses a synthetic multisample matrix with a `GroupA` column for
+contrast testing.
 
 ``` r
 
-regions <- StringsToGRanges("chr1:101873000-101873499")
+regions <- StringsToGRanges(region_name)
 
 links <- getCoAccessibleLinks(
-  SampleTileObj = sampleTileMatrices,
+  SampleTileObj = stm_multi,
   cellPopulation = "C2",
   regions = regions,
-  verbose = TRUE
+  verbose = FALSE
 )
 head(links)
 ```
@@ -45,21 +48,21 @@ head(links)
 
 filtered <- filterCoAccessibleLinks(
   links,
-  correlationThreshold = 0.5
+  threshold = 0.5
 )
 ```
 
 ``` r
 
-coAccessTests <- testCoAccessibility(
-  SampleTileObj = sampleTileMatrices,
-  cellPopulation = "C2",
-  links = filtered,
-  groupColumn = "Sample",
-  foreground = "sample_A",
-  background = "sample_B",
-  numCores = 4
-)
+if (nrow(filtered) > 0L) {
+  coAccessTests <- testCoAccessibility(
+    SampleTileObj = stm_multi,
+    tile1 = filtered$Tile1,
+    tile2 = filtered$Tile2,
+    numCores = 1,
+    verbose = FALSE
+  )
+}
 ```
 
 For chromVAR-based testing on motif-linked regions, see
@@ -80,11 +83,10 @@ via `dropoutAdjustment`.
 
 ``` r
 
-# colData should include FragNumber and CellCounts (or equivalent QC columns)
 stm_with_dropout <- assessDropout(
-  SampleTileObj = c2Matrix,
-  cellPopulations = "C2",
-  verbose = TRUE
+  TSAM_Object = tutorial_dropout_stm,
+  cellPopulation = "C2",
+  verbose = FALSE
 )
 ```
 
@@ -97,8 +99,10 @@ cls <- classifyZeros(stm_with_dropout, "C2")
 
 ``` r
 
-plotDropoutDiagnostics(stm_with_dropout, "C2", type = "probHist")
-plotDropoutDiagnostics(stm_with_dropout, "C2", type = "calibration")
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  plotDropoutDiagnostics(stm_with_dropout, "C2", type = "probHist")
+  plotDropoutDiagnostics(stm_with_dropout, "C2", type = "calibration")
+}
 ```
 
 Use `dropoutAdjustment` in
@@ -113,12 +117,15 @@ PCA/UMAP. Requires `uwot` (Suggests).
 
 ``` r
 
-lse <- bulkDimReduction(
-  SampleTileObj = sampleTileMatrices,
-  cellType = "all",
-  componentNumber = 10
-)
-umap_coords <- bulkUMAP(lse, n_neighbors = 15)
+if (requireNamespace("uwot", quietly = TRUE) &&
+    requireNamespace("irlba", quietly = TRUE)) {
+  lse <- bulkDimReduction(
+    SampleTileObj = stm_multi,
+    cellType = "All",
+    componentNumber = 2
+  )
+  umap_coords <- bulkUMAP(lse, components = 1:2, nNeighbors = 4, verbose = FALSE)
+}
 ```
 
 ## Combining studies
@@ -137,8 +144,13 @@ sample-tile matrices for joint analysis.
 
 ``` r
 
-combined <- combineSampleTileMatrix(sampleTileMatrices)
-dim(combined)
+combined <- tutorial_try_run(
+  combineSampleTileMatrix(sampleTileMatrices),
+  label = "combine-stm"
+)
+if (!is.null(combined)) {
+  dim(combined)
+}
 ```
 
 ## Utilities
@@ -148,8 +160,8 @@ Common getters and metadata helpers:
 ``` r
 
 getCellTypes(sampleTileMatrices)
-getCellTypeTiles(tileResults, cellPopulations = "C2")
-getSampleCellTypeMetadata(sampleTileMatrices, cellPopulation = "C2")
+getCellTypeTiles(sampleTileMatrices, cellType = "C2")
+getSampleCellTypeMetadata(sampleTileMatrices)
 ```
 
 ``` r

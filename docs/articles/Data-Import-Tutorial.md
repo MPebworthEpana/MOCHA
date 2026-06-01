@@ -52,6 +52,8 @@ The package ships small example objects derived from ArchR `PBMCSmall`
 Fragments use the `RG` cell barcode column; metadata includes `Sample`
 and `Clusters`.
 
+Bundled code is maintained in `inst/tutorials/02-import-bundled.R`.
+
 ``` r
 
 library(MOCHA)
@@ -931,14 +933,11 @@ downstream workflow:
 
 ``` r
 
-# Per-sample fragment GRanges from a tile-results object
-frags <- getPopFrags(tileResults, sampleName = "Sample1")
+# Per-sample fragment GRanges from an ArchR project (requires ArchR):
+# frags <- getPopFrags(ArchRProj, cellPopLabel = "Clusters")
 
-# Lift peaks to another genome build when needed
-# tileResults <- correctGenome(tileResults, targetGenome = "hg38")
-
-# Quick access to called peaks
-openC2 <- openTiles(tileResults, cellPopulations = "C2")
+# Quick access to called peaks from tileResults
+openC2_util <- getOpenTiles(tileResults, cellPopulations = "C2")
 # equivalent: getOpenTiles(tileResults, cellPopulations = "C2")
 ```
 

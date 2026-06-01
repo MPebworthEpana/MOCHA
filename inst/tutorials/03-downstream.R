@@ -1,28 +1,27 @@
-# MOCHA downstream workflows tutorial — executable chunks.
-
 # ---- libraries ----
 library(MOCHA)
 
-if (!exists("tutorial_stm_multisample")) {
-  if (file.exists(file.path(tempdir(), "mocha_tutorial_fixtures", "sampleTileMatrices.rds"))) {
-    fixture_dir <- file.path(tempdir(), "mocha_tutorial_fixtures")
-    tileResults <- readRDS(file.path(fixture_dir, "tileResults.rds"))
-    sampleTileMatrices <- readRDS(file.path(fixture_dir, "sampleTileMatrices.rds"))
-    c2Matrix <- readRDS(file.path(fixture_dir, "c2Matrix.rds"))
-    shared <- system.file("tutorials", "_shared.R", package = "MOCHA")
-    if (!nzchar(shared)) {
-      shared <- file.path(getwd(), "inst", "tutorials", "_shared.R")
-    }
-    if (file.exists(shared)) {
-      source(shared, local = FALSE)
-    }
-    tutorial_stm_multisample <- tutorial_synthetic_stm()
-    tutorial_dropout_stm <- tutorial_synthetic_dropout_stm()
-  } else {
-    stop("Source 00-fixtures.R before 03-downstream.R")
+# ---- script-init ----
+if (!exists("tutorial_try_run", mode = "function")) {
+  shared_path <- system.file("tutorials", "_shared.R", package = "MOCHA")
+  if (!nzchar(shared_path)) {
+    shared_path <- file.path(getwd(), "inst", "tutorials", "_shared.R")
+  }
+  if (file.exists(shared_path)) {
+    source(shared_path, local = FALSE)
   }
 }
-
+if (!exists("tutorial_stm_multisample")) {
+  fixture_dir <- file.path(tempdir(), "mocha_tutorial_fixtures")
+  if (!file.exists(file.path(fixture_dir, "sampleTileMatrices.rds"))) {
+    stop("Source 00-fixtures.R before 03-downstream.R")
+  }
+  tileResults <- readRDS(file.path(fixture_dir, "tileResults.rds"))
+  sampleTileMatrices <- readRDS(file.path(fixture_dir, "sampleTileMatrices.rds"))
+  c2Matrix <- readRDS(file.path(fixture_dir, "c2Matrix.rds"))
+  tutorial_stm_multisample <- readRDS(file.path(fixture_dir, "tutorial_stm_multisample.rds"))
+  tutorial_dropout_stm <- readRDS(file.path(fixture_dir, "tutorial_dropout_stm.rds"))
+}
 stm_multi <- tutorial_stm_multisample
 region_name <- rownames(stm_multi)[1L]
 
